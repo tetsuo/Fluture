@@ -1,5 +1,5 @@
 import {expect} from 'chai';
-import Future from '../index.mjs.js';
+import {Future, isFuture} from '../index.mjs.js';
 import Z from 'sanctuary-type-classes';
 import {AssertionError, strictEqual} from 'assert';
 
@@ -44,8 +44,14 @@ export var assertEqual = function(a, b){
   b._interpret(throwit, function(x){bstate = 1; bval = x}, function(x){bstate = 2; bval = x});
   if(astate === 0){ throw new Error('First Future passed to assertEqual did not resolve instantly') }
   if(bstate === 0){ throw new Error('Second Future passed to assertEqual did not resolve instantly') }
+  if(isFuture(aval) && isFuture(bval)) return assertEqual(aval, bval);
   if(astate === bstate && Z.equals(aval, bval)){ return true }
-  throw new Error(('\n    ' + (a.toString()) + ' :: Future({ <' + (states[astate]) + '> ' + (Z.toString(aval)) + ' })\n    does not equal:\n    ' + (b.toString()) + ' :: Future({ <' + (states[bstate]) + '> ' + (Z.toString(bval)) + ' })\n  '));
+  throw new Error(
+    '\n    ' + (a.toString()) +
+    ' :: Future({ <' + states[astate] + '> ' + Z.toString(aval) + ' })' +
+    '\n    does not equal:\n    ' + b.toString() +
+    ' :: Future({ <' + states[bstate] + '> ' + Z.toString(bval) + ' })\n  '
+  );
 };
 
 export var interpertAndGuard = function(m, rec, rej, res){
