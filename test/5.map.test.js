@@ -10,7 +10,7 @@ var testInstance = function(map){
     expect(type(map(of(1), U.add(1)))).to.equal(Future['@@type']);
   });
 
-  describe('#fork()', function(){
+  describe('#_interpret()', function(){
 
     it('applies the given function to its inner', function(){
       var actual = map(of(1), U.add(1));
@@ -23,12 +23,12 @@ var testInstance = function(map){
     });
 
     it('does not resolve after being cancelled', function(done){
-      map(F.resolvedSlow, U.failRes).fork(U.failRej, U.failRes)();
+      map(F.resolvedSlow, U.failRes)._interpret(done, U.failRej, U.failRes)();
       setTimeout(done, 25);
     });
 
     it('does not reject after being cancelled', function(done){
-      map(F.rejectedSlow, U.failRes).fork(U.failRej, U.failRes)();
+      map(F.rejectedSlow, U.failRes)._interpret(done, U.failRej, U.failRes)();
       setTimeout(done, 25);
     });
 

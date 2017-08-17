@@ -9,7 +9,7 @@ var testInstance = function(bimap){
     expect(type(bimap(reject(1), U.add(1), U.failRes))).to.equal(Future['@@type']);
   });
 
-  describe('#fork()', function(){
+  describe('#_interpret()', function(){
 
     it('applies the first function to the value in the rejection branch', function(){
       var actual = bimap(reject(1), U.add(1), U.failRes);

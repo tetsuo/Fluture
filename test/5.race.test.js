@@ -1,7 +1,7 @@
 import {expect} from 'chai';
 import {Future, race, of, after, never} from '../index.mjs.js';
 import * as U from './util';
-import {resolvedSlow, rejectedSlow} from './futures';
+import * as F from './futures';
 import type from 'sanctuary-type-identifiers';
 
 var testInstance = function(race){
@@ -12,7 +12,117 @@ var testInstance = function(race){
     expect(type(race(m1, m2))).to.equal(Future['@@type']);
   });
 
-  describe('#fork()', function(){
+  describe('#_interpret()', function(){
+
+    describe('(Crashed, Resolved)', function(){
+
+      it('crashes if left settles first', function(){
+        return U.assertCrashed(race(F.crashed, F.resolvedSlow), new Error(
+          'Intentional error for unit testing'
+        ));
+      });
+
+      it('resolves if left settles last', function(){
+        return U.assertResolved(race(F.crashedSlow, F.resolved), 'resolved');
+      });
+
+    });
+
+    describe('(Crashed, Rejected)', function(){
+
+      it('crashes if left settles first', function(){
+        return U.assertCrashed(race(F.crashed, F.rejectedSlow), new Error(
+          'Intentional error for unit testing'
+        ));
+      });
+
+      it('rejects if left settles last', function(){
+        return U.assertRejected(race(F.crashedSlow, F.rejected), 'rejected');
+      });
+
+    });
+
+    describe('(Resolved, Crashed)', function(){
+
+      it('resolves if left settles first', function(){
+        return U.assertResolved(race(F.resolved, F.crashedSlow), 'resolved');
+      });
+
+      it('crashes if left settles last', function(){
+        return U.assertCrashed(race(F.resolvedSlow, F.crashed), new Error(
+          'Error came up while interpreting a Future:\n' +
+          '  Intentional error for unit testing\n\n' +
+          '  In: Future.after(20, "resolvedSlow")' +
+          '.race(Future(function(){ throw new Error("Intentional error for unit testing") }))\n'
+        ));
+      });
+
+    });
+
+    describe('(Rejected, Crashed)', function(){
+
+      it('rejects if left settles first', function(){
+        return U.assertRejected(race(F.rejected, F.crashedSlow), 'rejected');
+      });
+
+      it('crashes if left settles last', function(){
+        return U.assertCrashed(race(F.rejectedSlow, F.crashed), new Error(
+          'Error came up while interpreting a Future:\n' +
+          '  Intentional error for unit testing\n\n' +
+          '  In: Future.rejectAfter(20, "rejectedSlow")' +
+          '.race(Future(function(){ throw new Error("Intentional error for unit testing") }))\n'
+        ));
+      });
+
+    });
+
+    describe('(Resolved, Resolved)', function(){
+
+      it('resolves with left if left settles first', function(){
+        return U.assertResolved(race(F.resolved, F.resolvedSlow), 'resolved');
+      });
+
+      it('resolves with right if left settles last', function(){
+        return U.assertResolved(race(F.resolvedSlow, F.resolved), 'resolved');
+      });
+
+    });
+
+    describe('(Rejected, Rejected)', function(){
+
+      it('rejects with right if right rejects first', function(){
+        return U.assertRejected(race(F.rejectedSlow, F.rejected), 'rejected');
+      });
+
+      it('rejects with left if right rejects last', function(){
+        return U.assertRejected(race(F.rejected, F.rejectedSlow), 'rejected');
+      });
+
+    });
+
+    describe('(Rejected, Resolved)', function(){
+
+      it('resolves with right if right settles first', function(){
+        return U.assertResolved(race(F.rejectedSlow, F.resolved), 'resolved');
+      });
+
+      it('rejects with left if right settles last', function(){
+        return U.assertRejected(race(F.rejected, F.resolvedSlow), 'rejected');
+      });
+
+    });
+
+    describe('(Resolved, Rejected)', function(){
+
+      it('resolves with left if left settles first', function(){
+        return U.assertResolved(race(F.resolved, F.rejectedSlow), 'resolved');
+      });
+
+      it('rejects with right if left settles last', function(){
+        return U.assertRejected(race(F.resolvedSlow, F.rejected), 'rejected');
+      });
+
+    });
 
     it('rejects when the first one rejects', function(){
       var m1 = Future(function(rej, res){ return void setTimeout(res, 50, 1) });
@@ -27,29 +137,29 @@ var testInstance = function(race){
     });
 
     it('cancels the right if the left resolves', function(done){
-      var m = race(resolvedSlow, Future(function(){ return function(){ return done() } }));
-      m.fork(U.noop, U.noop);
+      var m = race(F.resolvedSlow, Future(function(){ return function(){ return done() } }));
+      m._interpret(done, U.noop, U.noop);
     });
 
     it('cancels the left if the right resolves', function(done){
-      var m = race(Future(function(){ return function(){ return done() } }), resolvedSlow);
-      m.fork(U.noop, U.noop);
+      var m = race(Future(function(){ return function(){ return done() } }), F.resolvedSlow);
+      m._interpret(done, U.noop, U.noop);
     });
 
     it('cancels the right if the left rejects', function(done){
-      var m = race(rejectedSlow, Future(function(){ return function(){ return done() } }));
-      m.fork(U.noop, U.noop);
+      var m = race(F.rejectedSlow, Future(function(){ return function(){ return done() } }));
+      m._interpret(done, U.noop, U.noop);
     });
 
     it('cancels the left if the right rejects', function(done){
-      var m = race(Future(function(){ return function(){ return done() } }), rejectedSlow);
-      m.fork(U.noop, U.noop);
+      var m = race(Future(function(){ return function(){ return done() } }), F.rejectedSlow);
+      m._interpret(done, U.noop, U.noop);
     });
 
     it('creates a cancel function which cancels both Futures', function(done){
       var cancelled = false;
       var m = Future(function(){ return function(){ return (cancelled ? done() : (cancelled = true)) } });
-      var cancel = race(m, m).fork(U.noop, U.noop);
+      var cancel = race(m, m)._interpret(done, U.noop, U.noop);
       cancel();
     });
 

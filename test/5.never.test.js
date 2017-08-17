@@ -13,11 +13,11 @@ describe('Never', function(){
     expect(type(never)).to.equal(Future['@@type']);
   });
 
-  describe('#fork()', function(){
+  describe('#_interpret()', function(){
 
     it('does nothing and returns a noop cancel function', function(){
       var m = never;
-      var cancel = m.fork(U.noop, U.noop);
+      var cancel = m._interpret(U.noop, U.noop, U.noop);
       cancel();
     });
 

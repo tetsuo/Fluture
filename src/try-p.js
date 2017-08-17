@@ -1,10 +1,11 @@
 import {Core} from './core';
-import {show, showf, immediately} from './internal/fn';
+import {noop, show, showf} from './internal/fn';
 import {isThenable, isFunction} from './internal/is';
-import {invalidArgument, typeError} from './internal/throw';
+import {typeError, someError} from './internal/error';
+import {throwInvalidArgument} from './internal/throw';
 
-function check$promise(p, f){
-  return isThenable(p) ? p : typeError(
+function invalidPromise(p, f){
+  return typeError(
     'Future.tryP expects the function it\'s given to return a Promise/Thenable'
     + '\n  Actual: ' + show(p) + '\n  From calling: ' + showf(f)
   );
@@ -16,19 +17,28 @@ export function TryP(fn){
 
 TryP.prototype = Object.create(Core);
 
-TryP.prototype._fork = function TryP$fork(rej, res){
-  var open = true;
-  check$promise(this._fn(), this._fn).then(immediately(function TryP$res(x){
-    if(open){
-      open = false;
-      res(x);
+TryP.prototype._interpret = function TryP$interpret(rec, rej, res){
+  var open = true, fn = this._fn;
+  try{
+    var p = fn();
+    if(!isThenable(p)){
+      rec(someError('Future.tryP was generating its Promise', invalidPromise(p, fn)));
+      return noop;
     }
-  }), immediately(function TryP$rej(x){
-    if(open){
-      open = false;
-      rej(x);
-    }
-  }));
+    p.then(function TryP$res(x){
+      if(open){
+        open = false;
+        res(x);
+      }
+    }, function TryP$rej(x){
+      if(open){
+        open = false;
+        rej(x);
+      }
+    });
+  }catch(e){
+    rec(someError('Future.tryP was generating its Promise', e));
+  }
   return function TryP$cancel(){ open = false };
 };
 
@@ -37,6 +47,6 @@ TryP.prototype.toString = function TryP$toString(){
 };
 
 export function tryP(f){
-  if(!isFunction(f)) invalidArgument('Future.tryP', 0, 'be a function', f);
+  if(!isFunction(f)) throwInvalidArgument('Future.tryP', 0, 'be a function', f);
   return new TryP(f);
 }

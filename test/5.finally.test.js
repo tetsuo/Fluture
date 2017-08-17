@@ -10,14 +10,14 @@ var testInstance = function(fin){
     expect(type(fin(of(1), of(2)))).to.equal(Future['@@type']);
   });
 
-  describe('#fork()', function(){
+  describe('#_interpret()', function(){
 
     it('runs the second Future when the first resolves', function(done){
-      fin(of(1), of(null).map(done)).fork(U.noop, U.noop);
+      fin(of(1), of(null).map(done))._interpret(done, U.noop, U.noop);
     });
 
     it('runs the second Future when the first rejects', function(done){
-      fin(reject(1), of(null).map(done)).fork(U.noop, U.noop);
+      fin(reject(1), of(null).map(done))._interpret(done, U.noop, U.noop);
     });
 
     it('resolves with the resolution value of the first', function(){
@@ -40,15 +40,15 @@ var testInstance = function(fin){
     });
 
     it('does nothing after being cancelled', function(done){
-      fin(F.resolvedSlow, F.resolved).fork(U.failRej, U.failRes)();
-      fin(F.resolved, F.resolvedSlow).fork(U.failRej, U.failRes)();
-      fin(F.rejectedSlow, F.rejected).fork(U.failRej, U.failRes)();
-      fin(F.rejected, F.rejectedSlow).fork(U.failRej, U.failRes)();
+      fin(F.resolvedSlow, F.resolved)._interpret(done, U.failRej, U.failRes)();
+      fin(F.resolved, F.resolvedSlow)._interpret(done, U.failRej, U.failRes)();
+      fin(F.rejectedSlow, F.rejected)._interpret(done, U.failRej, U.failRes)();
+      fin(F.rejected, F.rejectedSlow)._interpret(done, U.failRej, U.failRes)();
       setTimeout(done, 25);
     });
 
     it('immediately runs and cancels the disposal Future when cancelled early', function(done){
-      var cancel = fin(F.resolvedSlow, Future(function(){ return function(){ return done() } })).fork(U.failRej, U.failRes);
+      var cancel = fin(F.resolvedSlow, Future(function(){ return function(){ return done() } }))._interpret(done, U.failRej, U.failRes);
       setTimeout(cancel, 10);
     });
 

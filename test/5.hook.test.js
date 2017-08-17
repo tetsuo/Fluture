@@ -34,23 +34,53 @@ describe('hook()', function(){
     expect(type(m)).to.equal(Future['@@type']);
   });
 
-  describe('#fork()', function(){
+  describe('#_interpret()', function(){
 
-    var m = F.resolved, xs = [NaN, {}, [], 1, 'a', new Date, undefined, null];
-
-    it('throws when the first function does not return Future', function(){
-      var fs = xs.map(function(x){ return function(){ return hook(m, function(){ return x }, function(){ return m }).fork(U.noop, U.noop) } });
-      fs.forEach(function(f){ return expect(f).to.throw(TypeError, /Future/) });
+    it('crashes when the first function does not return Future', function(){
+      var m = hook(F.resolved, function(){ return 1 }, function(){ return F.resolved });
+      return U.assertCrashed(m, new Error(
+        'TypeError came up while trying to dispose resources for a hooked Future:\n' +
+        '  Future.hook expects the first function it\'s given to return a Future.\n' +
+        '    Actual: 1 :: Number\n' +
+        '    From calling: function (){ return 1 }\n' +
+        '    With: "resolved"\n\n' +
+        '  In: Future.hook(Future.of("resolved"), function (){ return 1 }, function (){ return F.resolved })\n'
+      ));
     });
 
-    it('throws when the second function does not return Future', function(){
-      var fs = xs.map(function(x){ return function(){ return hook(m, function(){ return m }, function(){ return x }).fork(U.noop, U.noop) } });
-      fs.forEach(function(f){ return expect(f).to.throw(TypeError, /Future/) });
+    it('crashes when the first function throws', function(){
+      var m = hook(F.resolved, function(){ throw U.error }, function(){ return F.resolved });
+      return U.assertCrashed(m, new Error(
+        'Error came up while trying to dispose resources for a hooked Future:\n' +
+        '  Intentional error for unit testing\n\n' +
+        '  In: Future.hook(Future.of("resolved"), function (){ throw U.error }, function (){ return F.resolved })\n'
+      ));
+    });
+
+    it('crashes when the second function does not return Future', function(){
+      var m = hook(F.resolved, function(){ return F.resolved }, function(){ return 1 });
+      return U.assertCrashed(m, new Error(
+        'TypeError came up while trying to consume resources for a hooked Future:\n' +
+        '  Future.hook expects the second function it\'s given to return a Future.\n' +
+        '    Actual: 1 :: Number\n' +
+        '    From calling: function (){ return 1 }\n' +
+        '    With: "resolved"\n\n' +
+        '  In: Future.hook(Future.of("resolved"), function (){ return F.resolved }, function (){ return 1 })\n'
+      ));
+    });
+
+    it('crashes when the second function throws', function(){
+      var m = hook(F.resolved, function(){ throw F.resolved }, function(){ throw U.error });
+      return U.assertCrashed(m, new Error(
+        'Error came up while trying to consume resources for a hooked Future:\n' +
+        '  Intentional error for unit testing\n\n' +
+        '  In: Future.hook(Future.of("resolved"), function (){ throw F.resolved }, function (){ throw U.error })\n'
+      ));
     });
 
     it('runs the first computation after the second, both with the resource', function(done){
       var ran = false;
-      hook(m,
+      hook(F.resolved,
         function(x){
           expect(x).to.equal('resolved');
           return Future(function(rej, res){ return res(done(ran ? null : new Error('Second did not run'))) });
@@ -59,19 +89,19 @@ describe('hook()', function(){
           expect(x).to.equal('resolved');
           return Future(function(rej, res){ return res(ran = true) });
         }
-      ).fork(done, U.noop);
+      )._interpret(done, done, U.noop);
     });
 
     it('runs the first even if the second rejects', function(done){
-      hook(m,
+      hook(F.resolved,
         function(){ return Future(function(){ return done() }) },
         function(){ return reject(2) }
-      ).fork(U.noop, U.noop);
+      )._interpret(done, U.noop, U.noop);
     });
 
     it('rejects with the rejection reason of the first', function(){
-      var rejected = hook(m, function(){ return reject(1) }, function(){ return reject(2) });
-      var resolved = hook(m, function(){ return reject(1) }, function(){ return of(2) });
+      var rejected = hook(F.resolved, function(){ return reject(1) }, function(){ return reject(2) });
+      var resolved = hook(F.resolved, function(){ return reject(1) }, function(){ return of(2) });
       return Promise.all([
         U.assertRejected(rejected, 1),
         U.assertRejected(resolved, 1)
@@ -79,8 +109,8 @@ describe('hook()', function(){
     });
 
     it('assumes the state of the second if the first resolves', function(){
-      var rejected = hook(m, function(){ return of(1) }, function(){ return reject(2) });
-      var resolved = hook(m, function(){ return of(1) }, function(){ return of(2) });
+      var rejected = hook(F.resolved, function(){ return of(1) }, function(){ return reject(2) });
+      var resolved = hook(F.resolved, function(){ return of(1) }, function(){ return of(2) });
       return Promise.all([
         U.assertRejected(rejected, 2),
         U.assertResolved(resolved, 2)
@@ -88,13 +118,13 @@ describe('hook()', function(){
     });
 
     it('does not hook after being cancelled', function(done){
-      hook(F.resolvedSlow, function(){ return of('dispose') }, U.failRes).fork(U.failRej, U.failRes)();
+      hook(F.resolvedSlow, function(){ return of('dispose') }, U.failRes)._interpret(done, U.failRej, U.failRes)();
       setTimeout(done, 25);
     });
 
     it('does not reject after being cancelled', function(done){
-      hook(F.rejectedSlow, function(){ return of('dispose') }, U.failRes).fork(U.failRej, U.failRes)();
-      hook(F.resolved, function(){ return of('dispose') }, function(){ return F.rejectedSlow }).fork(U.failRej, U.failRes)();
+      hook(F.rejectedSlow, function(){ return of('dispose') }, U.failRes)._interpret(done, U.failRej, U.failRes)();
+      hook(F.resolved, function(){ return of('dispose') }, function(){ return F.rejectedSlow })._interpret(done, U.failRej, U.failRes)();
       setTimeout(done, 25);
     });
 
@@ -102,7 +132,7 @@ describe('hook()', function(){
       var acquire = Future(function(){ return function(){ return done() } });
       var cancel =
         hook(acquire, function(){ return of('dispose') }, function(){ return of('consume') })
-        .fork(U.failRej, U.failRes);
+        ._interpret(done, U.failRej, U.failRes);
       setTimeout(cancel, 10);
     });
 
@@ -110,7 +140,7 @@ describe('hook()', function(){
       var consume = Future(function(){ return function(){ return done() } });
       var cancel =
         hook(F.resolved, function(){ return of('dispose') }, function(){ return consume })
-        .fork(U.failRej, U.failRes);
+        ._interpret(done, U.failRej, U.failRes);
       setTimeout(cancel, 10);
     });
 
@@ -118,7 +148,7 @@ describe('hook()', function(){
       var consume = Future(function(){ return function(){ return done() } });
       var cancel =
         hook(F.resolvedSlow, function(){ return of('dispose') }, function(){ return consume })
-        .fork(U.failRej, U.failRes);
+        ._interpret(done, U.failRej, U.failRes);
       setTimeout(cancel, 25);
     });
 
@@ -126,7 +156,7 @@ describe('hook()', function(){
       var dispose = Future(function(){ return function(){ return done() } });
       var cancel =
         hook(F.resolved, function(){ return dispose }, function(){ return of('consume') })
-        .fork(U.failRej, U.failRes);
+        ._interpret(done, U.failRej, U.failRes);
       setTimeout(cancel, 10);
     });
 
@@ -134,14 +164,14 @@ describe('hook()', function(){
       var dispose = Future(function(){ return function(){ return done() } });
       var cancel =
         hook(F.resolved, function(){ return dispose }, function(){ return F.resolvedSlow })
-        .fork(U.failRej, U.failRes);
+        ._interpret(done, U.failRej, U.failRes);
       setTimeout(cancel, 25);
     });
 
     it('immediately runs and cancels the disposal Future when cancelled after acquire', function(done){
       var cancel =
         hook(F.resolved, function(){ return Future(function(){ return function(){ return done() } }) }, function(){ return F.resolvedSlow })
-        .fork(U.failRej, U.failRes);
+        ._interpret(done, U.failRej, U.failRes);
       setTimeout(cancel, 10);
     });
 
@@ -154,7 +184,7 @@ describe('hook()', function(){
       var d = function(){ return of(2) };
       var c = function(){ return of(3) };
       var m = hook(a, d, c);
-      var expected = 'Future.hook(' + (a.toString()) + ', ' + (d.toString()) + ', ' + (c.toString()) + ')';
+      var expected = 'Future.hook(' + a.toString() + ', ' + d.toString() + ', ' + c.toString() + ')';
       expect(m.toString()).to.equal(expected);
     });
 

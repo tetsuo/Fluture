@@ -9,7 +9,7 @@ var testInstance = function(swap){
     expect(type(swap(of(1)))).to.equal(Future['@@type']);
   });
 
-  describe('#fork()', function(){
+  describe('#_interpret()', function(){
 
     it('rejects with the resolution value', function(){
       var actual = swap(of(1));

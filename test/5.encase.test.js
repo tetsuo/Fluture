@@ -99,7 +99,7 @@ describe('Encase', function(){
     expect(type(encase(U.noop, 1))).to.equal(Future['@@type']);
   });
 
-  describe('#fork()', function(){
+  describe('#_interpret()', function(){
 
     describe('(nullary)', function(){
 
@@ -114,12 +114,12 @@ describe('Encase', function(){
       });
 
       it('does not swallow errors from subsequent maps and such', function(){
-        var f = function(){
- return (attempt(function(x){ return x }))
-          .map(function(){ throw U.error })
-          .fork(U.noop, U.noop);
-};
-        expect(f).to.throw(U.error);
+        var m = attempt(function(x){ return x }).map(function(){ throw U.error });
+        return U.assertCrashed(m, new Error(
+          'Error came up while interpreting a Future:\n' +
+          '  Intentional error for unit testing\n\n' +
+          '  In: Future.try(function (x){ return x }).map(function (){ throw U.error })\n'
+        ));
       });
 
     });
@@ -137,12 +137,12 @@ describe('Encase', function(){
       });
 
       it('does not swallow errors from subsequent maps and such', function(){
-        var f = function(){
- return (encase(function(x){ return x }, 1))
-          .map(function(){ throw U.error })
-          .fork(U.noop, U.noop);
-};
-        expect(f).to.throw(U.error);
+        var m = encase(function(x){ return x }, 1).map(function(){ throw U.error });
+        return U.assertCrashed(m, new Error(
+          'Error came up while interpreting a Future:\n' +
+          '  Intentional error for unit testing\n\n' +
+          '  In: Future.encase(function (x){ return x }, 1).map(function (){ throw U.error })\n'
+        ));
       });
 
     });
@@ -160,12 +160,12 @@ describe('Encase', function(){
       });
 
       it('does not swallow errors from subsequent maps and such', function(){
-        var f = function(){
- return (encase2(function(a, x){ return x }, 1, 1))
-          .map(function(){ throw U.error })
-          .fork(U.noop, U.noop);
-};
-        expect(f).to.throw(U.error);
+        var m = encase2(function(x){ return x }, 1, 1).map(function(){ throw U.error });
+        return U.assertCrashed(m, new Error(
+          'Error came up while interpreting a Future:\n' +
+          '  Intentional error for unit testing\n\n' +
+          '  In: Future.encase2(function (x){ return x }, 1, 1).map(function (){ throw U.error })\n'
+        ));
       });
 
     });
@@ -183,12 +183,12 @@ describe('Encase', function(){
       });
 
       it('does not swallow errors from subsequent maps and such', function(){
-        var f = function(){
- return (encase3(function(a, b, x){ return x }, 1, 1, 1))
-          .map(function(){ throw U.error })
-          .fork(U.noop, U.noop);
-};
-        expect(f).to.throw(U.error);
+        var m = encase3(function(x){ return x }, 1, 1, 1).map(function(){ throw U.error });
+        return U.assertCrashed(m, new Error(
+          'Error came up while interpreting a Future:\n' +
+          '  Intentional error for unit testing\n\n' +
+          '  In: Future.encase3(function (x){ return x }, 1, 1, 1).map(function (){ throw U.error })\n'
+        ));
       });
 
     });

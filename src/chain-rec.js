@@ -2,6 +2,7 @@ import {Core} from './core';
 import {Next, Done} from './internal/iteration';
 import {Undetermined, Synchronous, Asynchronous} from './internal/timing';
 import {show, showf, noop} from './internal/fn';
+import {someError} from './internal/error';
 
 export function ChainRec(step, init){
   this._step = step;
@@ -10,7 +11,7 @@ export function ChainRec(step, init){
 
 ChainRec.prototype = Object.create(Core);
 
-ChainRec.prototype._fork = function ChainRec$_fork(rej, res){
+ChainRec.prototype._interpret = function ChainRec$interpret(rec, rej, res){
 
   var _step = this._step;
   var _init = this._init;
@@ -22,18 +23,22 @@ ChainRec.prototype._fork = function ChainRec$_fork(rej, res){
   }
 
   function drain(){
-    while(!state.done){
-      timing = Undetermined;
-      var m = _step(Next, Done, state.value);
-      cancel = m._fork(rej, resolved);
+    try{
+      while(!state.done){
+        timing = Undetermined;
+        var m = _step(Next, Done, state.value);
+        cancel = m._interpret(rec, rej, resolved);
 
-      if(timing !== Synchronous){
-        timing = Asynchronous;
-        return;
+        if(timing !== Synchronous){
+          timing = Asynchronous;
+          return;
+        }
       }
-    }
 
-    res(state.value);
+      res(state.value);
+    }catch(e){
+      rec(someError('Future.chainRec was calling its iterator', e));
+    }
   }
 
   drain();

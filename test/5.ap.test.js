@@ -11,12 +11,16 @@ var testInstance = function(ap){
     expect(type(ap(of(1), of(U.add(1))))).to.equal(Future['@@type']);
   });
 
-  describe('#fork()', function(){
+  describe('#_interpret()', function(){
 
-    it('throws TypeError when the other does not resolve to a Function', function(){
-      var xs = [NaN, {}, [], 1, 'a', new Date, undefined, null];
-      var fs = xs.map(function(x){ return function(){ return ap(of(1), of(x)).fork(U.noop, U.noop) } });
-      fs.forEach(function(f){ return expect(f).to.throw(TypeError, /Future/) });
+    it('crashes when the other does not resolve to a Function', function(){
+      var m = ap(of(1), of(null));
+      return U.assertCrashed(m, new Error(
+        'TypeError came up while interpreting a Future:\n' +
+        '  Future#ap expects its first argument to be a Future of a Function\n' +
+        '    Actual: Future.of(null)\n\n' +
+        '  In: Future.of(null).ap(Future.of(1))\n'
+      ));
     });
 
     it('calls the function contained in the given Future to its contained value', function(){
@@ -43,24 +47,24 @@ var testInstance = function(ap){
       return U.assertResolved(actual, 2);
     });
 
-    it('forks in sequence', function(done){
+    it('interprets in sequence', function(done){
       var running = true;
       var left = after(20, 1).map(function(x){ running = false; return x });
       var right = of(function(){ expect(running).to.equal(false); done() });
-      ap(left, right).fork(U.noop, U.noop);
+      ap(left, right)._interpret(done, U.noop, U.noop);
     });
 
     it('cancels the left Future if cancel is called while it is running', function(done){
       var left = Future(function(){ return function(){ return done() } });
       var right = of(U.add(1));
-      var cancel = ap(left, right).fork(U.noop, U.noop);
+      var cancel = ap(left, right)._interpret(done, U.noop, U.noop);
       cancel();
     });
 
     it('cancels the right Future if cancel is called while it is running', function(done){
       var left = of(1);
       var right = Future(function(){ return function(){ return done() } });
-      var cancel = ap(left, right).fork(U.noop, U.noop);
+      var cancel = ap(left, right)._interpret(done, U.noop, U.noop);
       cancel();
     });
 

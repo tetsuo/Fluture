@@ -1,16 +1,10 @@
-import {error, invalidArgument} from './src/internal/throw';
-
-if(typeof Object.create !== 'function') error('Please polyfill Object.create to use Fluture');
-if(typeof Object.assign !== 'function') error('Please polyfill Object.assign to use Fluture');
-if(typeof Array.isArray !== 'function') error('Please polyfill Array.isArray to use Fluture');
-
 import concurrify from 'concurrify';
 import type from 'sanctuary-type-identifiers';
+import {throwInvalidArgument} from './src/internal/throw';
 import {Future, of, reject, never} from './src/core';
 import {FL} from './src/internal/const';
 import {chainRec} from './src/chain-rec';
 import {ap, map, bimap, chain, race, alt} from './src/dispatchers';
-import {parallelAp} from './src/parallel-ap';
 
 Future.of = Future[FL.of] = of;
 Future.chainRec = Future[FL.chainRec] = chainRec;
@@ -20,7 +14,7 @@ Future.map = map;
 Future.bimap = bimap;
 Future.chain = chain;
 
-var Par = concurrify(Future, never, race, parallelAp);
+var Par = concurrify(Future, never, race, function parallelAp(a, b){ return b._parallelAp(a) });
 Par.of = Par[FL.of];
 Par.zero = Par[FL.zero];
 Par.map = map;
@@ -32,7 +26,7 @@ function isParallel(x){
 }
 
 function seq(par){
-  if(!isParallel(par)) invalidArgument('Future.seq', 0, 'to be a Par', par);
+  if(!isParallel(par)) throwInvalidArgument('Future.seq', 0, 'to be a Par', par);
   return par.sequential;
 }
 

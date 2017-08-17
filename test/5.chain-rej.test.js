@@ -10,12 +10,18 @@ var testInstance = function(chainRej){
     expect(type(chainRej(F.rejected, function(){ return F.resolved }))).to.equal(Future['@@type']);
   });
 
-  describe('#fork()', function(){
+  describe('#_interpret()', function(){
 
-    it('throws TypeError when the given function does not return Future', function(){
-      var xs = [NaN, {}, [], 1, 'a', new Date, undefined, null];
-      var fs = xs.map(function(x){ return function(){ return chainRej(F.rejected, function(){ return x }).fork(U.noop, U.noop) } });
-      fs.forEach(function(f){ return expect(f).to.throw(TypeError, /Future/) });
+    it('crashes when the given function does not return Future', function(){
+      var m = chainRej(F.rejected, function(){ return null });
+      return U.assertCrashed(m, new Error(
+        'TypeError came up while interpreting a Future:\n' +
+        '  Future#chainRej expects the function it\'s given to return a Future.\n' +
+        '    Actual: null :: Null\n' +
+        '    From calling: function (){ return null }\n' +
+        '    With: "rejected"\n\n' +
+        '  In: Future.reject("rejected").chainRej(function (){ return null })\n'
+      ));
     });
 
     it('calls the given function with the inner of the Future', function(done){
@@ -23,7 +29,7 @@ var testInstance = function(chainRej){
         expect(x).to.equal('rejected');
         done();
         return of(null);
-      }).fork(U.noop, U.noop);
+      })._interpret(done, U.noop, U.noop);
     });
 
     it('returns a Future with an inner equal to the returned Future', function(){
@@ -42,7 +48,7 @@ var testInstance = function(chainRej){
     });
 
     it('does not chain after being cancelled', function(done){
-      chainRej(F.rejectedSlow, U.failRej).fork(U.failRej, U.failRes)();
+      chainRej(F.rejectedSlow, U.failRej)._interpret(done, U.failRej, U.failRes)();
       setTimeout(done, 25);
     });
 

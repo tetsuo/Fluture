@@ -9,7 +9,7 @@ var testInstance = function(fold){
     expect(type(fold(reject(1), U.add(1), U.sub(1)))).to.equal(Future['@@type']);
   });
 
-  describe('#fork()', function(){
+  describe('#_interpret()', function(){
 
     it('resolves with the transformed rejection value', function(){
       return U.assertResolved(fold(reject(1), U.add(1), U.sub(1)), 2);

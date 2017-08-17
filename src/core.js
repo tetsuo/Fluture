@@ -1,17 +1,21 @@
-import {show, showf, noop, moop} from './internal/fn';
+import {show, showf, noop, moop, raise} from './internal/fn';
 import {isFunction} from './internal/is';
-import {error, typeError, invalidArgument, invalidContext, invalidFuture} from './internal/throw';
 import {FL, $$type} from './internal/const';
-import interpreter from './internal/interpreter';
+import interpret from './internal/interpreter';
 import {empty as emptyList, cons} from './internal/list';
 import type from 'sanctuary-type-identifiers';
+import {error, typeError, invalidFuture, someError} from './internal/error';
+import {throwInvalidArgument, throwInvalidContext, throwInvalidFuture} from './internal/throw';
 
-function throwRejection(x){
-  error('Future#value was called on a rejected Future\n  Actual: Future.reject(' + show(x) + ')');
+function Future$value$rej(x){
+  raise(error(
+    'Future#value was called on a rejected Future\n' +
+    '  Actual: Future.reject(' + show(x) + ')'
+  ));
 }
 
 export function Future(computation){
-  if(!isFunction(computation)) invalidArgument('Future', 0, 'be a Function', computation);
+  if(!isFunction(computation)) throwInvalidArgument('Future', 0, 'be a Function', computation);
   return new Computation(computation);
 }
 
@@ -38,114 +42,115 @@ Future.prototype[FL.chain] = function Future$FL$chain(mapper){
 };
 
 Future.prototype.ap = function Future$ap(other){
-  if(!isFuture(this)) invalidContext('Future#ap', this);
-  if(!isFuture(other)) invalidFuture('Future#ap', 0, other);
+  if(!isFuture(this)) throwInvalidContext('Future#ap', this);
+  if(!isFuture(other)) throwInvalidFuture('Future#ap', 0, other);
   return this._ap(other);
 };
 
 Future.prototype.map = function Future$map(mapper){
-  if(!isFuture(this)) invalidContext('Future#map', this);
-  if(!isFunction(mapper)) invalidArgument('Future#map', 0, 'to be a Function', mapper);
+  if(!isFuture(this)) throwInvalidContext('Future#map', this);
+  if(!isFunction(mapper)) throwInvalidArgument('Future#map', 0, 'to be a Function', mapper);
   return this._map(mapper);
 };
 
 Future.prototype.bimap = function Future$bimap(lmapper, rmapper){
-  if(!isFuture(this)) invalidContext('Future#bimap', this);
-  if(!isFunction(lmapper)) invalidArgument('Future#bimap', 0, 'to be a Function', lmapper);
-  if(!isFunction(rmapper)) invalidArgument('Future#bimap', 1, 'to be a Function', rmapper);
+  if(!isFuture(this)) throwInvalidContext('Future#bimap', this);
+  if(!isFunction(lmapper)) throwInvalidArgument('Future#bimap', 0, 'to be a Function', lmapper);
+  if(!isFunction(rmapper)) throwInvalidArgument('Future#bimap', 1, 'to be a Function', rmapper);
   return this._bimap(lmapper, rmapper);
 };
 
 Future.prototype.chain = function Future$chain(mapper){
-  if(!isFuture(this)) invalidContext('Future#chain', this);
-  if(!isFunction(mapper)) invalidArgument('Future#chain', 0, 'to be a Function', mapper);
+  if(!isFuture(this)) throwInvalidContext('Future#chain', this);
+  if(!isFunction(mapper)) throwInvalidArgument('Future#chain', 0, 'to be a Function', mapper);
   return this._chain(mapper);
 };
 
 Future.prototype.mapRej = function Future$mapRej(mapper){
-  if(!isFuture(this)) invalidContext('Future#mapRej', this);
-  if(!isFunction(mapper)) invalidArgument('Future#mapRej', 0, 'to be a Function', mapper);
+  if(!isFuture(this)) throwInvalidContext('Future#mapRej', this);
+  if(!isFunction(mapper)) throwInvalidArgument('Future#mapRej', 0, 'to be a Function', mapper);
   return this._mapRej(mapper);
 };
 
 Future.prototype.chainRej = function Future$chainRej(mapper){
-  if(!isFuture(this)) invalidContext('Future#chainRej', this);
-  if(!isFunction(mapper)) invalidArgument('Future#chainRej', 0, 'to be a Function', mapper);
+  if(!isFuture(this)) throwInvalidContext('Future#chainRej', this);
+  if(!isFunction(mapper)) throwInvalidArgument('Future#chainRej', 0, 'to be a Function', mapper);
   return this._chainRej(mapper);
 };
 
 Future.prototype.race = function Future$race(other){
-  if(!isFuture(this)) invalidContext('Future#race', this);
-  if(!isFuture(other)) invalidFuture('Future#race', 0, other);
+  if(!isFuture(this)) throwInvalidContext('Future#race', this);
+  if(!isFuture(other)) throwInvalidFuture('Future#race', 0, other);
   return this._race(other);
 };
 
 Future.prototype.both = function Future$both(other){
-  if(!isFuture(this)) invalidContext('Future#both', this);
-  if(!isFuture(other)) invalidFuture('Future#both', 0, other);
+  if(!isFuture(this)) throwInvalidContext('Future#both', this);
+  if(!isFuture(other)) throwInvalidFuture('Future#both', 0, other);
   return this._both(other);
 };
 
 Future.prototype.and = function Future$and(other){
-  if(!isFuture(this)) invalidContext('Future#and', this);
-  if(!isFuture(other)) invalidFuture('Future#and', 0, other);
+  if(!isFuture(this)) throwInvalidContext('Future#and', this);
+  if(!isFuture(other)) throwInvalidFuture('Future#and', 0, other);
   return this._and(other);
 };
 
 Future.prototype.or = function Future$or(other){
-  if(!isFuture(this)) invalidContext('Future#or', this);
-  if(!isFuture(other)) invalidFuture('Future#or', 0, other);
+  if(!isFuture(this)) throwInvalidContext('Future#or', this);
+  if(!isFuture(other)) throwInvalidFuture('Future#or', 0, other);
   return this._or(other);
 };
 
 Future.prototype.swap = function Future$swap(){
-  if(!isFuture(this)) invalidContext('Future#ap', this);
+  if(!isFuture(this)) throwInvalidContext('Future#ap', this);
   return this._swap();
 };
 
 Future.prototype.fold = function Future$fold(lmapper, rmapper){
-  if(!isFuture(this)) invalidContext('Future#ap', this);
-  if(!isFunction(lmapper)) invalidArgument('Future#fold', 0, 'to be a Function', lmapper);
-  if(!isFunction(rmapper)) invalidArgument('Future#fold', 1, 'to be a Function', rmapper);
+  if(!isFuture(this)) throwInvalidContext('Future#ap', this);
+  if(!isFunction(lmapper)) throwInvalidArgument('Future#fold', 0, 'to be a Function', lmapper);
+  if(!isFunction(rmapper)) throwInvalidArgument('Future#fold', 1, 'to be a Function', rmapper);
   return this._fold(lmapper, rmapper);
 };
 
 Future.prototype.finally = function Future$finally(other){
-  if(!isFuture(this)) invalidContext('Future#finally', this);
-  if(!isFuture(other)) invalidFuture('Future#finally', 0, other);
+  if(!isFuture(this)) throwInvalidContext('Future#finally', this);
+  if(!isFuture(other)) throwInvalidFuture('Future#finally', 0, other);
   return this._finally(other);
 };
 
 Future.prototype.lastly = function Future$lastly(other){
-  if(!isFuture(this)) invalidContext('Future#lastly', this);
-  if(!isFuture(other)) invalidFuture('Future#lastly', 0, other);
+  if(!isFuture(this)) throwInvalidContext('Future#lastly', this);
+  if(!isFuture(other)) throwInvalidFuture('Future#lastly', 0, other);
   return this._finally(other);
 };
 
 Future.prototype.fork = function Future$fork(rej, res){
-  if(!isFuture(this)) invalidContext('Future#fork', this);
-  if(!isFunction(rej)) invalidArgument('Future#fork', 0, 'to be a Function', rej);
-  if(!isFunction(res)) invalidArgument('Future#fork', 0, 'to be a Function', res);
-  return this._fork(rej, res);
+  if(!isFuture(this)) throwInvalidContext('Future#fork', this);
+  if(!isFunction(rej)) throwInvalidArgument('Future#fork', 0, 'to be a Function', rej);
+  if(!isFunction(res)) throwInvalidArgument('Future#fork', 1, 'to be a Function', res);
+  return this._interpret(raise, rej, res);
 };
 
 Future.prototype.value = function Future$value(res){
-  if(!isFuture(this)) invalidContext('Future#value', this);
-  if(!isFunction(res)) invalidArgument('Future#value', 0, 'to be a Function', res);
-  return this._fork(throwRejection, res);
+  if(!isFuture(this)) throwInvalidContext('Future#value', this);
+  if(!isFunction(res)) throwInvalidArgument('Future#value', 0, 'to be a Function', res);
+  return this._interpret(raise, Future$value$rej, res);
 };
 
 Future.prototype.done = function Future$done(callback){
-  if(!isFuture(this)) invalidContext('Future#done', this);
-  if(!isFunction(callback)) invalidArgument('Future#done', 0, 'to be a Function', callback);
-  return this._fork(function Future$done$rej(x){ callback(x) },
-                    function Future$done$res(x){ callback(null, x) });
+  if(!isFuture(this)) throwInvalidContext('Future#done', this);
+  if(!isFunction(callback)) throwInvalidArgument('Future#done', 0, 'to be a Function', callback);
+  return this._interpret(raise,
+                         function Future$done$rej(x){ callback(x) },
+                         function Future$done$res(x){ callback(null, x) });
 };
 
 Future.prototype.promise = function Future$promise(){
   var _this = this;
   return new Promise(function Future$promise$computation(res, rej){
-    _this._fork(rej, res);
+    _this._interpret(raise, rej, res);
   });
 };
 
@@ -173,6 +178,10 @@ export var Core = Object.create(Future.prototype);
 
 Core._ap = function Core$ap(other){
   return new Sequence(this)._ap(other);
+};
+
+Core._parallelAp = function Core$parallelAp(other){
+  return new Sequence(this)._parallelAp(other);
 };
 
 Core._map = function Core$map(mapper){
@@ -223,34 +232,35 @@ Core._finally = function Core$finally(other){
   return new Sequence(this)._finally(other);
 };
 
-function check$fork(f, c){
-  if(!(f === undefined || (isFunction(f) && f.length === 0))) typeError(
-    'Future expected its computation to return a nullary function or void'
-    + '\n  Actual: ' + show(f) + '\n  From calling: ' + showf(c)
-  );
-}
-
 export function Computation(computation){
   this._computation = computation;
 }
 
 Computation.prototype = Object.create(Core);
 
-Computation.prototype._fork = function Computation$_fork(rej, res){
-  var open = true;
-  var cancel = this._computation(function Computation$rej(x){
-    if(open){
-      open = false;
-      rej(x);
+Computation.prototype._interpret = function Computation$interpret(rec, rej, res){
+  var open = true, cancel = noop;
+  try{
+    cancel = this._computation(function Computation$rej(x){
+      if(open){
+        open = false;
+        rej(x);
+      }
+    }, function Computation$res(x){
+      if(open){
+        open = false;
+        res(x);
+      }
+    }) || noop;
+    if(!(isFunction(cancel) && cancel.length === 0)){
+      rec(someError('Future ran its computation', typeError(
+        'The computation was expected to return a nullary function or void\n' +
+        '  Actual: ' + show(cancel)
+      ), show(this)));
     }
-  }, function Computation$res(x){
-    if(open){
-      open = false;
-      res(x);
-    }
-  });
-  check$fork(cancel, this._computation);
-
+  }catch(e){
+    rec(someError('Future was running its computation', e, show(this)));
+  }
   return function Computation$cancel(){
     if(open){
       open = false;
@@ -270,6 +280,7 @@ export function Rejected(value){
 Rejected.prototype = Object.create(Core);
 
 Rejected.prototype._ap = moop;
+Rejected.prototype._parallelAp = moop;
 Rejected.prototype._map = moop;
 Rejected.prototype._chain = moop;
 Rejected.prototype._race = moop;
@@ -288,7 +299,7 @@ Rejected.prototype._swap = function Rejected$swap(){
   return new Resolved(this._value);
 };
 
-Rejected.prototype._fork = function Rejected$_fork(rej){
+Rejected.prototype._interpret = function Rejected$interpret(rec, rej){
   rej(this._value);
   return noop;
 };
@@ -341,7 +352,7 @@ Resolved.prototype._finally = function Resolved$finally(other){
   });
 };
 
-Resolved.prototype._fork = function _fork(rej, res){
+Resolved.prototype._interpret = function Resolved$interpret(rec, rej, res){
   res(this._value);
   return noop;
 };
@@ -369,6 +380,7 @@ function Never(){
 Never.prototype = Object.create(Future.prototype);
 
 Never.prototype._ap = moop;
+Never.prototype._parallelAp = moop;
 Never.prototype._map = moop;
 Never.prototype._bimap = moop;
 Never.prototype._chain = moop;
@@ -384,7 +396,7 @@ Never.prototype._race = function Never$race(other){
   return other;
 };
 
-Never.prototype._fork = function Never$_fork(){
+Never.prototype._interpret = function Never$interpret(){
   return noop;
 };
 
@@ -398,14 +410,50 @@ export function isNever(x){
   return isFuture(x) && x._isNever === true;
 }
 
+export function Crashed(error){
+  this._error = error;
+}
+
+Crashed.prototype = Object.create(Future.prototype);
+
+Crashed.prototype._ap = moop;
+Crashed.prototype._parallelAp = moop;
+Crashed.prototype._map = moop;
+Crashed.prototype._bimap = moop;
+Crashed.prototype._chain = moop;
+Crashed.prototype._mapRej = moop;
+Crashed.prototype._chainRej = moop;
+Crashed.prototype._both = moop;
+Crashed.prototype._or = moop;
+Crashed.prototype._swap = moop;
+Crashed.prototype._fold = moop;
+Crashed.prototype._finally = moop;
+Crashed.prototype._race = moop;
+
+Crashed.prototype._interpret = function Crashed$interpret(rec){
+  rec(this._error);
+  return noop;
+};
+
+Crashed.prototype.toString = function Crashed$toString(){
+  return 'Future(function(){ throw ' + show(this._error) + ' })';
+};
+
 function Eager(future){
   var _this = this;
+  _this.rec = noop;
   _this.rej = noop;
   _this.res = noop;
+  _this.crashed = false;
   _this.rejected = false;
   _this.resolved = false;
   _this.value = null;
-  _this.cancel = future._fork(function Eager$reject(x){
+  _this.cancel = future._interpret(function Eager$crash(x){
+    _this.value = x;
+    _this.crashed = true;
+    _this.cancel = noop;
+    _this.rec(x);
+  }, function Eager$reject(x){
     _this.value = x;
     _this.rejected = true;
     _this.cancel = noop;
@@ -420,40 +468,17 @@ function Eager(future){
 
 Eager.prototype = Object.create(Core);
 
-Eager.prototype._fork = function Eager$_fork(rej, res){
-  if(this.rejected) rej(this.value);
+Eager.prototype._interpret = function Eager$interpret(rec, rej, res){
+  if(this.crashed) rec(this.value);
+  else if(this.rejected) rej(this.value);
   else if(this.resolved) res(this.value);
   else{
+    this.rec = rec;
     this.rej = rej;
     this.res = res;
   }
   return this.cancel;
 };
-
-function check$ap(f){
-  return isFunction(f) ? f : typeError(
-    'Future#ap expects its first argument to be a Future of a Function'
-    + '\n  Actual: Future.of(' + show(f) + ')'
-  );
-}
-
-function check$chain(m, f, x){
-  return isFuture(m) ? m : invalidFuture(
-    'Future#chain',
-    'the function it\'s given to return a Future',
-    m,
-    '\n  From calling: ' + showf(f) + '\n  With: ' + show(x)
-  );
-}
-
-function check$chainRej(m, f, x){
-  return isFuture(m) ? m : invalidFuture(
-    'Future#chainRej',
-    'the function it\'s given to return a Future',
-    m,
-    '\n  From calling: ' + showf(f) + '\n  With: ' + show(x)
-  );
-}
 
 export var Action = {
   rejected: function Action$rejected(x){ this.cancel(); return new Rejected(x) },
@@ -466,8 +491,12 @@ export function ApAction(other){ this.other = other }
 ApAction.prototype = Object.create(Action);
 
 ApAction.prototype.resolved = function ApAction$resolved(f){
-  check$ap(f);
-  return this.other._map(function ApAction$resolved$mapper(x){ return f(x) });
+  return isFunction(f) ?
+         this.other._map(function ApAction$resolved$mapper(x){ return f(x) }) :
+         new Crashed(typeError(
+           'Future#ap expects its first argument to be a Future of a Function'
+           + '\n  Actual: Future.of(' + show(f) + ')'
+         ));
 };
 
 ApAction.prototype.toString = function ApAction$toString(){
@@ -478,7 +507,9 @@ export function MapAction(mapper){ this.mapper = mapper }
 MapAction.prototype = Object.create(Action);
 
 MapAction.prototype.resolved = function MapAction$resolved(x){
-  return new Resolved(this.mapper(x));
+  var m;
+  try{ m = new Resolved(this.mapper(x)) }catch(e){ m = new Crashed(e) }
+  return m;
 };
 
 MapAction.prototype.toString = function MapAction$toString(){
@@ -489,11 +520,15 @@ export function BimapAction(lmapper, rmapper){ this.lmapper = lmapper; this.rmap
 BimapAction.prototype = Object.create(Action);
 
 BimapAction.prototype.rejected = function BimapAction$rejected(x){
-  return new Rejected(this.lmapper(x));
+  var m;
+  try{ m = new Rejected(this.lmapper(x)) }catch(e){ m = new Crashed(e) }
+  return m;
 };
 
 BimapAction.prototype.resolved = function BimapAction$resolved(x){
-  return new Resolved(this.rmapper(x));
+  var m;
+  try{ m = new Resolved(this.rmapper(x)) }catch(e){ m = new Crashed(e) }
+  return m;
 };
 
 BimapAction.prototype.toString = function BimapAction$toString(){
@@ -504,7 +539,14 @@ export function ChainAction(mapper){ this.mapper = mapper }
 ChainAction.prototype = Object.create(Action);
 
 ChainAction.prototype.resolved = function ChainAction$resolved(x){
-  return check$chain(this.mapper(x), this.mapper, x);
+  var m;
+  try{ m = this.mapper(x) }catch(e){ return new Crashed(e) }
+  return isFuture(m) ? m : new Crashed(invalidFuture(
+    'Future#chain',
+    'the function it\'s given to return a Future',
+    m,
+    '\n  From calling: ' + showf(this.mapper) + '\n  With: ' + show(x)
+  ));
 };
 
 ChainAction.prototype.toString = function ChainAction$toString(){
@@ -515,7 +557,9 @@ export function MapRejAction(mapper){ this.mapper = mapper }
 MapRejAction.prototype = Object.create(Action);
 
 MapRejAction.prototype.rejected = function MapRejAction$rejected(x){
-  return new Rejected(this.mapper(x));
+  var m;
+  try{ m = new Rejected(this.mapper(x)) }catch(e){ m = new Crashed(e) }
+  return m;
 };
 
 MapRejAction.prototype.toString = function MapRejAction$toString(){
@@ -526,7 +570,14 @@ export function ChainRejAction(mapper){ this.mapper = mapper }
 ChainRejAction.prototype = Object.create(Action);
 
 ChainRejAction.prototype.rejected = function ChainRejAction$rejected(x){
-  return check$chainRej(this.mapper(x), this.mapper, x);
+  var m;
+  try{ m = this.mapper(x) }catch(e){ return new Crashed(e) }
+  return isFuture(m) ? m : new Crashed(invalidFuture(
+    'Future#chainRej',
+    'the function it\'s given to return a Future',
+    m,
+    '\n  From calling: ' + showf(this.mapper) + '\n  With: ' + show(x)
+  ));
 };
 
 ChainRejAction.prototype.toString = function ChainRejAction$toString(){
@@ -552,11 +603,15 @@ export function FoldAction(lmapper, rmapper){ this.lmapper = lmapper; this.rmapp
 FoldAction.prototype = Object.create(Action);
 
 FoldAction.prototype.rejected = function FoldAction$rejected(x){
-  return new Resolved(this.lmapper(x));
+  var m;
+  try{ m = new Resolved(this.lmapper(x)) }catch(e){ m = new Crashed(e) }
+  return m;
 };
 
 FoldAction.prototype.resolved = function FoldAction$resolved(x){
-  return new Resolved(this.rmapper(x));
+  var m;
+  try{ m = new Resolved(this.rmapper(x)) }catch(e){ m = new Crashed(e) }
+  return m;
 };
 
 FoldAction.prototype.toString = function FoldAction$toString(){
@@ -575,7 +630,7 @@ FinallyAction.prototype.resolved = function FinallyAction$resolved(x){
 };
 
 FinallyAction.prototype.cancel = function FinallyAction$cancel(){
-  this.other._fork(noop, noop)();
+  this.other._interpret(noop, noop, noop)();
 };
 
 FinallyAction.prototype.toString = function FinallyAction$toString(){
@@ -604,6 +659,17 @@ OrAction.prototype.toString = function OrAction$toString(){
   return 'or(' + this.other.toString() + ')';
 };
 
+export function ParallelApAction(other){ this.other = other }
+ParallelApAction.prototype = Object.create(ApAction.prototype);
+
+ParallelApAction.prototype.run = function ParallelApAction$run(early){
+  return new ParallelApActionState(early, this.other);
+};
+
+ParallelApAction.prototype.toString = function ParallelApAction$toString(){
+  return '_parallelAp(' + this.other.toString() + ')';
+};
+
 export function RaceAction(other){ this.other = other }
 RaceAction.prototype = Object.create(Action);
 
@@ -630,10 +696,23 @@ BothAction.prototype.toString = function BothAction$toString(){
   return 'both(' + this.other.toString() + ')';
 };
 
+export function ParallelApActionState(early, other){
+  var _this = this;
+  _this.other = new Eager(other);
+  _this.cancel = this.other._interpret(
+    function ParallelApActionState$rec(x){ early(new Crashed(x), _this) },
+    function ParallelApActionState$rej(x){ early(new Rejected(x), _this) },
+    noop
+  );
+}
+
+ParallelApActionState.prototype = Object.create(ParallelApAction.prototype);
+
 export function RaceActionState(early, other){
   var _this = this;
   _this.other = other;
-  _this.cancel = other._fork(
+  _this.cancel = other._interpret(
+    function RaceActionState$rec(x){ early(new Crashed(x), _this) },
     function RaceActionState$rej(x){ early(new Rejected(x), _this) },
     function RaceActionState$res(x){ early(new Resolved(x), _this) }
   );
@@ -644,7 +723,8 @@ RaceActionState.prototype = Object.create(RaceAction.prototype);
 export function BothActionState(early, other){
   var _this = this;
   _this.other = other;
-  _this.cancel = other._fork(
+  _this.cancel = other._interpret(
+    function BothActionState$rec(x){ early(new Crashed(x), _this) },
     function BothActionState$rej(x){ early(new Rejected(x), _this) },
     noop
   );
@@ -665,6 +745,10 @@ Sequence.prototype._transform = function Sequence$_transform(action){
 
 Sequence.prototype._ap = function Sequence$ap(other){
   return this._transform(new ApAction(other));
+};
+
+Sequence.prototype._parallelAp = function Sequence$pap(other){
+  return this._transform(new ParallelApAction(other));
 };
 
 Sequence.prototype._map = function Sequence$map(mapper){
@@ -715,7 +799,9 @@ Sequence.prototype._finally = function Sequence$finally(other){
   return this._transform(new FinallyAction(other));
 };
 
-Sequence.prototype._fork = interpreter;
+Sequence.prototype._interpret = function Sequence$interpret(rec, rej, res){
+  return interpret(this, rec, rej, res);
+};
 
 Sequence.prototype.toString = function Sequence$toString(){
   var str = '', tail = this._actions;

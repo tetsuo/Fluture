@@ -40,11 +40,27 @@ describe('Parallel', function(){
     expect(type(parallel(1, []))).to.equal(Future['@@type']);
   });
 
-  describe('#fork()', function(){
+  describe('#_interpret()', function(){
+
+    it('crashes when one of the Futures crash', function(){
+      return U.assertCrashed(parallel(2, [F.resolved, F.crashed]), new Error(
+        'Error came up while Future.parallel was running the second future:\n' +
+        '  Intentional error for unit testing\n\n' +
+        '  In: Future(function(){ throw new Error("Intentional error for unit testing") })\n'
+      ));
+    });
+
+    it('crashes when one of the Futures crash', function(){
+      return U.assertCrashed(parallel(2, [F.resolved, F.resolved, F.resolved, F.resolved, F.resolved, F.crashed]), new Error(
+        'Error came up while Future.parallel was running future 6:\n' +
+        '  Intentional error for unit testing\n\n' +
+        '  In: Future(function(){ throw new Error("Intentional error for unit testing") })\n'
+      ));
+    });
 
     it('throws when the Array contains something other than Futures', function(){
       var xs = [NaN, {}, [], 1, 'a', new Date, undefined, null];
-      var fs = xs.map(function(x){ return function(){ return parallel(1, [x]).fork(U.noop, U.noop) } });
+      var fs = xs.map(function(x){ return function(){ return parallel(1, [x])._interpret(U.noop, U.noop, U.noop) } });
       fs.forEach(function(f){ return expect(f).to.throw(TypeError, /Future/) });
     });
 
@@ -87,13 +103,13 @@ describe('Parallel', function(){
     });
 
     it('can deal with synchronously resolving futures', function(done){
-      parallel(5, U.repeat(10, of(1))).fork(U.failRej, function(xs){
+      parallel(5, U.repeat(10, of(1)))._interpret(done, U.failRej, function(xs){
         expect(xs).to.have.length(10);
         done();
       });
     });
 
-    it('forks the synchronous futures in the provided sequence', function(done){
+    it('interprets the synchronous futures in the provided sequence', function(done){
       var ns = Array.from({length: 10}, function(_, i){ return i });
       var xs = [];
       var ms = ns.map(function(i){
@@ -102,14 +118,14 @@ describe('Parallel', function(){
           res(i);
         });
       });
-      parallel(5, ms).fork(U.noop, function(out){
+      parallel(5, ms)._interpret(done, U.noop, function(out){
         expect(out).to.deep.equal(ns);
         expect(xs).to.deep.equal(ns);
         done();
       });
     });
 
-    it('forks the asynchronous futures in the provided sequence', function(done){
+    it('interprets the asynchronous futures in the provided sequence', function(done){
       var ns = Array.from({length: 10}, function(_, i){ return i });
       var xs = [];
       var ms = ns.map(function(i){
@@ -118,7 +134,7 @@ describe('Parallel', function(){
           setTimeout(res, 10, i);
         });
       });
-      parallel(5, ms).fork(U.noop, function(out){
+      parallel(5, ms)._interpret(done, U.noop, function(out){
         expect(out).to.deep.equal(ns);
         expect(xs).to.deep.equal(ns);
         done();
@@ -148,12 +164,12 @@ describe('Parallel', function(){
 
     it('does not reject multiple times', function(done){
       var actual = parallel(2, [F.rejectedSlow, F.rejected]);
-      actual.fork(function(){ return done() }, U.failRes);
+      actual._interpret(done, function(){ return done() }, U.failRes);
     });
 
     it('cancels Futures when cancelled', function(done){
       var m = Future(function(){ return function(){ return done() } });
-      var cancel = parallel(1, [m]).fork(U.noop, U.noop);
+      var cancel = parallel(1, [m])._interpret(done, U.noop, U.noop);
       setTimeout(cancel, 20);
     });
 
@@ -167,7 +183,7 @@ describe('Parallel', function(){
           clearTimeout(x);
         };
       });
-      var cancel = parallel(2, [m, m, m, m]).fork(U.failRej, U.failRes);
+      var cancel = parallel(2, [m, m, m, m])._interpret(done, U.failRej, U.failRes);
       setTimeout(function(){
         cancel();
         expect(i).to.equal(2);
@@ -176,52 +192,52 @@ describe('Parallel', function(){
       }, 30);
     });
 
-    it('does not fork any computations after one rejects', function(done){
+    it('does not interpret any computations after one rejects', function(done){
       var m = Future(function(){ done(U.error) });
-      parallel(2, [F.rejected, m]).fork(U.noop, U.failRes);
+      parallel(2, [F.rejected, m])._interpret(done, U.noop, U.failRes);
       done();
     });
 
     it('automatically cancels running computations when one rejects', function(done){
       var m = Future(function(){ return function(){ done() } });
-      parallel(2, [m, F.rejected]).fork(U.noop, U.failRes);
+      parallel(2, [m, F.rejected])._interpret(done, U.noop, U.failRes);
     });
 
-    it('[GH #123] does not cancel settled computations', function(done){
+    it('does not cancel settled computations (#123)', function(done){
       var m1 = Object.create(F.mock);
       var m2 = Object.create(F.mock);
 
-      m1._fork = function(rej, res){
+      m1._interpret = function(_, rej, res){
         setTimeout(res, 10, 1);
         return function(){ return done(U.error) };
       };
 
-      m2._fork = function(rej){
+      m2._interpret = function(_, rej){
         setTimeout(rej, 20, 2);
         return function(){ return done(U.error) };
       };
 
-      parallel(2, [m1, m2]).fork(U.noop, U.noop);
+      parallel(2, [m1, m2])._interpret(done, U.noop, U.noop);
       setTimeout(done, 50, null);
     });
 
     it('does not resolve after being cancelled', function(done){
       var cancel = parallel(1, [F.resolvedSlow, F.resolvedSlow])
-      .fork(U.failRej, U.failRes);
+      ._interpret(done, U.failRej, U.failRes);
       setTimeout(cancel, 10);
       setTimeout(done, 50);
     });
 
     it('does not reject after being cancelled', function(done){
       var cancel = parallel(1, [F.rejectedSlow, F.rejectedSlow])
-      .fork(U.failRej, U.failRes);
+      ._interpret(done, U.failRej, U.failRes);
       setTimeout(cancel, 10);
       setTimeout(done, 50);
     });
 
-    it('[GH #130] is stack safe', function(done){
+    it('is stack safe (#130)', function(done){
       var ms = Array.from({length: U.STACKSIZE}, function(_, i){ return of(i) });
-      parallel(1, ms).fork(U.failRej, function(xs){
+      parallel(1, ms)._interpret(done, U.failRej, function(xs){
         expect(xs).to.have.length(U.STACKSIZE);
         done();
       });

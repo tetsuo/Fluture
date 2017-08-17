@@ -1,6 +1,6 @@
 import {Future, of, never, after} from '../index.mjs.js';
 import {expect} from 'chai';
-import {add, bang, noop, error, assertResolved, assertRejected} from './util';
+import {add, bang, noop, error, assertResolved, assertRejected, assertCrashed} from './util';
 import {resolved, rejected, resolvedSlow} from './futures';
 import {Sequence, Core} from '../src/core';
 import {StateT} from 'fantasy-states';
@@ -8,12 +8,14 @@ import {StateT} from 'fantasy-states';
 describe('Sequence', function(){
 
   var dummy = new Sequence(resolved);
+  var rejectedDummy = new Sequence(rejected);
+  var throwing = function(){ throw error };
 
   describe('ap', function(){
 
     var seq = of(bang).ap(dummy);
 
-    describe('#fork()', function(){
+    describe('#_interpret()', function(){
 
       it('runs the action', function(){
         return assertResolved(seq, 'resolved!');
@@ -24,8 +26,8 @@ describe('Sequence', function(){
     describe('#toString()', function(){
 
       it('returns code to create the same data-structure', function(){
-        var expected = 'Future.of(' + bang.toString() + ').ap(Future.of("resolved")).map(' + bang.toString() + ')';
-        expect(seq.map(bang).toString()).to.equal(expected);
+        var expected = 'Future.of(' + bang.toString() + ').ap(Future.of("resolved"))';
+        expect(seq.toString()).to.equal(expected);
       });
 
     });
@@ -36,7 +38,15 @@ describe('Sequence', function(){
 
     var seq = dummy.map(bang);
 
-    describe('#fork()', function(){
+    describe('#_interpret()', function(){
+
+      it('crashes if the mapper throws', function(){
+        return assertCrashed(dummy.map(throwing), new Error(
+          'Error came up while interpreting a Future:\n' +
+          '  Intentional error for unit testing\n\n' +
+          '  In: Future.of("resolved").map(function (){ throw error })\n'
+        ));
+      });
 
       it('runs the action', function(){
         return assertResolved(seq, 'resolved!');
@@ -58,7 +68,23 @@ describe('Sequence', function(){
 
     var seq = dummy.bimap(add(1), bang);
 
-    describe('#fork()', function(){
+    describe('#_interpret()', function(){
+
+      it('crashes if the left mapper throws', function(){
+        return assertCrashed(rejectedDummy.bimap(throwing, noop), new Error(
+          'Error came up while interpreting a Future:\n' +
+          '  Intentional error for unit testing\n\n' +
+          '  In: Future.reject("rejected").bimap(function (){ throw error }, function (){})\n'
+        ));
+      });
+
+      it('crashes if the right mapper throws', function(){
+        return assertCrashed(dummy.bimap(noop, throwing), new Error(
+          'Error came up while interpreting a Future:\n' +
+          '  Intentional error for unit testing\n\n' +
+          '  In: Future.of("resolved").bimap(function (){}, function (){ throw error })\n'
+        ));
+      });
 
       it('runs the action', function(){
         return assertResolved(seq, 'resolved!');
@@ -80,7 +106,15 @@ describe('Sequence', function(){
 
     var seq = dummy.chain(function(x){ return of(bang(x)) });
 
-    describe('#fork()', function(){
+    describe('#_interpret()', function(){
+
+      it('crashes if the mapper throws', function(){
+        return assertCrashed(dummy.chain(throwing), new Error(
+          'Error came up while interpreting a Future:\n' +
+          '  Intentional error for unit testing\n\n' +
+          '  In: Future.of("resolved").chain(function (){ throw error })\n'
+        ));
+      });
 
       it('runs the action', function(){
         return assertResolved(seq, 'resolved!');
@@ -102,7 +136,15 @@ describe('Sequence', function(){
 
     var seq = dummy.mapRej(add(1));
 
-    describe('#fork()', function(){
+    describe('#_interpret()', function(){
+
+      it('crashes if the mapper throws', function(){
+        return assertCrashed(rejectedDummy.mapRej(throwing), new Error(
+          'Error came up while interpreting a Future:\n' +
+          '  Intentional error for unit testing\n\n' +
+          '  In: Future.reject("rejected").mapRej(function (){ throw error })\n'
+        ));
+      });
 
       it('runs the action', function(){
         return assertResolved(seq, 'resolved');
@@ -124,7 +166,15 @@ describe('Sequence', function(){
 
     var seq = dummy.chainRej(function(){ return of(1) });
 
-    describe('#fork()', function(){
+    describe('#_interpret()', function(){
+
+      it('crashes if the mapper throws', function(){
+        return assertCrashed(rejectedDummy.chainRej(throwing), new Error(
+          'Error came up while interpreting a Future:\n' +
+          '  Intentional error for unit testing\n\n' +
+          '  In: Future.reject("rejected").chainRej(function (){ throw error })\n'
+        ));
+      });
 
       it('runs the action', function(){
         return assertResolved(seq, 'resolved');
@@ -150,7 +200,7 @@ describe('Sequence', function(){
       expect(dummy.race(never)).to.equal(dummy);
     });
 
-    describe('#fork()', function(){
+    describe('#_interpret()', function(){
 
       it('runs the action', function(){
         return assertResolved(seq, 'resolved');
@@ -168,11 +218,34 @@ describe('Sequence', function(){
 
   });
 
+  describe('_parallelAp', function(){
+
+    var seq = of(bang)._parallelAp(dummy);
+
+    describe('#_interpret()', function(){
+
+      it('runs the action', function(){
+        return assertResolved(seq, 'resolved!');
+      });
+
+    });
+
+    describe('#toString()', function(){
+
+      it('returns code to create the same data-structure', function(){
+        var expected = 'Future.of(' + bang.toString() + ')._parallelAp(Future.of("resolved"))';
+        expect(seq.toString()).to.equal(expected);
+      });
+
+    });
+
+  });
+
   describe('both', function(){
 
     var seq = dummy.both(dummy);
 
-    describe('#fork()', function(){
+    describe('#_interpret()', function(){
 
       it('runs the action', function(){
         return assertResolved(seq, ['resolved', 'resolved']);
@@ -194,7 +267,7 @@ describe('Sequence', function(){
 
     var seq = dummy.and(dummy);
 
-    describe('#fork()', function(){
+    describe('#_interpret()', function(){
 
       it('runs the action', function(){
         return assertResolved(seq, 'resolved');
@@ -216,7 +289,7 @@ describe('Sequence', function(){
 
     var seq = dummy.or(dummy);
 
-    describe('#fork()', function(){
+    describe('#_interpret()', function(){
 
       it('runs the action', function(){
         return assertResolved(seq, 'resolved');
@@ -239,7 +312,7 @@ describe('Sequence', function(){
     var seq = dummy.swap();
     var nseq = new Sequence(rejected).swap();
 
-    describe('#fork()', function(){
+    describe('#_interpret()', function(){
 
       it('swaps from right to left', function(){
         return assertRejected(seq, 'resolved');
@@ -265,7 +338,23 @@ describe('Sequence', function(){
 
     var seq = dummy.fold(function(){ return 0 }, function(){ return 1 });
 
-    describe('#fork()', function(){
+    describe('#_interpret()', function(){
+
+      it('crashes if the left mapper throws', function(){
+        return assertCrashed(rejectedDummy.fold(throwing, noop), new Error(
+          'Error came up while interpreting a Future:\n' +
+          '  Intentional error for unit testing\n\n' +
+          '  In: Future.reject("rejected").fold(function (){ throw error }, function (){})\n'
+        ));
+      });
+
+      it('crashes if the right mapper throws', function(){
+        return assertCrashed(dummy.fold(noop, throwing), new Error(
+          'Error came up while interpreting a Future:\n' +
+          '  Intentional error for unit testing\n\n' +
+          '  In: Future.of("resolved").fold(function (){}, function (){ throw error })\n'
+        ));
+      });
 
       it('runs the action', function(){
         return assertResolved(seq, 1);
@@ -287,7 +376,7 @@ describe('Sequence', function(){
 
     var seq = dummy.finally(dummy);
 
-    describe('#fork()', function(){
+    describe('#_interpret()', function(){
 
       it('runs the action', function(){
         return assertResolved(seq, 'resolved');
@@ -296,7 +385,7 @@ describe('Sequence', function(){
       it('runs the other if the left rejects', function(done){
         var other = Future(function(){done()});
         var m = new Sequence(rejected).finally(other);
-        m.fork(noop, noop);
+        m._interpret(done, noop, noop);
       });
 
     });
@@ -313,7 +402,7 @@ describe('Sequence', function(){
 
   describe('in general', function(){
 
-    describe('#fork()', function(){
+    describe('#_interpret()', function(){
 
       it('is capable of joining', function(){
         var m = new Sequence(of('a'))
@@ -331,7 +420,7 @@ describe('Sequence', function(){
           return function(){ return clearTimeout(id) };
         }));
         var m = slow.race(slow).race(slow).race(slow).race(resolved);
-        m.fork(noop, noop);
+        m._interpret(done, noop, noop);
         setTimeout(done, 40, null);
       });
 
@@ -341,14 +430,14 @@ describe('Sequence', function(){
           return function(){ return clearTimeout(id) };
         }));
         var m = slow.race(slow).race(slow).race(slow).race(resolvedSlow);
-        m.fork(noop, noop);
+        m._interpret(done, noop, noop);
         setTimeout(done, 100, null);
       });
 
       it('does not run actions unnecessarily when one early-terminates synchronously', function(done){
         var broken = new Sequence(Future(function(){ done(error) }));
         var m = resolvedSlow.race(broken).race(broken).race(resolved);
-        m.fork(noop, function(){ return done() });
+        m._interpret(done, noop, function(){ return done() });
       });
 
       it('resolves the left-hand side first when running actions in parallel', function(){
@@ -365,16 +454,16 @@ describe('Sequence', function(){
 
       it('does not run early terminating actions twice, or cancel them', function(done){
         var mock = Object.create(Core);
-        mock._fork = function(l, r){ return r(done()) || (function(){ return done(error) }) };
+        mock._interpret = function(_, l, r){ return r(done()) || (function(){ return done(error) }) };
         var m = new Sequence(after(30, 'a')).map(function(x){ return (x + 'b') }).race(mock);
-        m.fork(noop, noop);
+        m._interpret(done, noop, noop);
       });
 
-      it('does not run run concurrent computations twice', function(done){
+      it('does not run concurrent computations twice', function(done){
         var ran = false;
         var mock = Future(function(){ ran ? done(error) : (ran = true) });
         var m = new Sequence(resolvedSlow).chain(function(){ return resolvedSlow }).race(mock);
-        m.fork(done, function(){ return done() });
+        m._interpret(done, done, function(){ return done() });
       });
 
       it('returns a cancel function which cancels all running actions', function(done){
@@ -383,7 +472,7 @@ describe('Sequence', function(){
         var cancelled = function(){ return --i < 1 && done() };
         var slow = Future(function(){ return started() || (function(){ return cancelled() }) });
         var m = slow.race(slow).race(slow).race(slow).race(slow);
-        var cancel = m.fork(noop, noop);
+        var cancel = m._interpret(done, noop, noop);
         expect(i).to.equal(5);
         cancel();
       });
@@ -399,7 +488,7 @@ describe('Sequence', function(){
     var program = slow.chain(function(){ return slow.chain(function(){ return slow }) }).evalState(null);
 
     it('does not occur', function(done){
-      program.fork(done, function(){ return done() });
+      program._interpret(done, done, function(){ return done() });
     });
 
   });

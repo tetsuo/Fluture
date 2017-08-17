@@ -1,7 +1,8 @@
 import {Core} from './core';
 import {show, showf, partial1, partial2} from './internal/fn';
 import {isFunction} from './internal/is';
-import {invalidArgument} from './internal/throw';
+import {throwInvalidArgument} from './internal/throw';
+import {someError} from './internal/error';
 
 export function EncaseN2(fn, a, b){
   this._fn = fn;
@@ -11,14 +12,18 @@ export function EncaseN2(fn, a, b){
 
 EncaseN2.prototype = Object.create(Core);
 
-EncaseN2.prototype._fork = function EncaseN2$fork(rej, res){
+EncaseN2.prototype._interpret = function EncaseN2$interpret(rec, rej, res){
   var open = true;
-  this._fn(this._a, this._b, function EncaseN2$done(err, val){
-    if(open){
-      open = false;
-      err ? rej(err) : res(val);
-    }
-  });
+  try{
+    this._fn(this._a, this._b, function EncaseN2$done(err, val){
+      if(open){
+        open = false;
+        err ? rej(err) : res(val);
+      }
+    });
+  }catch(e){
+    rec(someError('Future.encaseN2 was executing its operation', e));
+  }
   return function EncaseN2$cancel(){ open = false };
 };
 
@@ -27,7 +32,7 @@ EncaseN2.prototype.toString = function EncaseN2$toString(){
 };
 
 export function encaseN2(f, x, y){
-  if(!isFunction(f)) invalidArgument('Future.encaseN2', 0, 'be a function', f);
+  if(!isFunction(f)) throwInvalidArgument('Future.encaseN2', 0, 'be a function', f);
 
   switch(arguments.length){
     case 1: return partial1(encaseN2, f);

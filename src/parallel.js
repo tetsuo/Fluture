@@ -1,16 +1,9 @@
 import {Core, Resolved, isFuture} from './core';
-import {invalidArgument, invalidFuture} from './internal/throw';
-import {noop, show, mapArray, partial1} from './internal/fn';
+import {ordinal} from './internal/const';
+import {someError} from './internal/error';
+import {throwInvalidFuture, throwInvalidArgument} from './internal/throw';
+import {noop, show, partial1} from './internal/fn';
 import {isUnsigned, isArray} from './internal/is';
-
-function check$parallel(m, i){
-  return isFuture(m) ? m : invalidFuture(
-    'Future.parallel',
-    'its second argument to be an array of valid Futures. '
-  + 'The value at position ' + i + ' in the array is not a Future',
-    m
-  );
-}
 
 export function Parallel(max, futures){
   this._futures = futures;
@@ -20,7 +13,7 @@ export function Parallel(max, futures){
 
 Parallel.prototype = Object.create(Core);
 
-Parallel.prototype._fork = function Parallel$_fork(rej, res){
+Parallel.prototype._interpret = function Parallel$interpret(rec, rej, res){
 
   var _futures = this._futures, _length = this._length, _max = this._max;
   var cancels = new Array(_length), out = new Array(_length);
@@ -33,7 +26,16 @@ Parallel.prototype._fork = function Parallel$_fork(rej, res){
 
   function Parallel$run(idx){
     running++;
-    cancels[idx] = _futures[idx]._fork(function Parallel$rej(reason){
+    cancels[idx] = _futures[idx]._interpret(function Parallel$rec(e){
+      cancels[idx] = noop;
+      Parallel$cancel();
+      rec(someError(
+        'Future.parallel was running ' +
+        (ordinal[idx] ? 'the ' + ordinal[idx] + ' future' : 'future ' + (idx + 1)),
+        e,
+        _futures[idx].toString()
+      ));
+    }, function Parallel$rej(reason){
       cancels[idx] = noop;
       Parallel$cancel();
       rej(reason);
@@ -64,14 +66,23 @@ Parallel.prototype.toString = function Parallel$toString(){
 
 var emptyArray = new Resolved([]);
 
+function validateNthFuture(m, i){
+  if(!isFuture(m)) throwInvalidFuture(
+    'Future.parallel',
+    'its second argument to be an array of valid Futures. ' +
+    'The value at position ' + i + ' in the array is not a Future',
+    m
+  );
+}
+
 function parallel$max(max, xs){
-  if(!isArray(xs)) invalidArgument('Future.parallel', 1, 'be an array', xs);
-  var futures = mapArray(xs, check$parallel);
-  return futures.length === 0 ? emptyArray : new Parallel(max, futures);
+  if(!isArray(xs)) throwInvalidArgument('Future.parallel', 1, 'be an array', xs);
+  for(var idx = 0; idx < xs.length; idx++) validateNthFuture(xs[idx], idx);
+  return xs.length === 0 ? emptyArray : new Parallel(max, xs);
 }
 
 export function parallel(max, xs){
-  if(!isUnsigned(max)) invalidArgument('Future.parallel', 0, 'be a positive integer', max);
+  if(!isUnsigned(max)) throwInvalidArgument('Future.parallel', 0, 'be a positive integer', max);
   if(arguments.length === 1) return partial1(parallel$max, max);
   return parallel$max(max, xs);
 }

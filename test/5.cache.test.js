@@ -2,6 +2,7 @@ import {expect} from 'chai';
 import {Future, cache, of, reject, after} from '../index.mjs.js';
 import {Cached} from '../src/cache';
 import * as U from './util';
+import * as F from './futures';
 import type from 'sanctuary-type-identifiers';
 
 describe('cache()', function(){
@@ -15,24 +16,50 @@ describe('cache()', function(){
     expect(type(cache(of(1)))).to.equal(Future['@@type']);
   });
 
-  describe('#fork()', function(){
+  describe('#_interpret()', function(){
+
+    it('crashes if the underlying computation crashes', function(){
+      return U.assertCrashed(cache(F.crashed), new Error(
+        'Error came up while Future.cache was running the cached Future:\n' +
+        '  Intentional error for unit testing\n\n' +
+        '  In: Future(function(){ throw new Error("Intentional error for unit testing") })\n'
+      ));
+    });
 
     it('resolves with the resolution value of the given Future', function(){
-      U.assertResolved(cache(of(1)), 1);
+      return U.assertResolved(cache(of(1)), 1);
     });
 
     it('rejects with the rejection reason of the given Future', function(){
-      U.assertRejected(cache(reject(U.error)), U.error);
+      return U.assertRejected(cache(reject(U.error)), U.error);
     });
 
-    it('only forks its given Future once', function(){
+    it('only interprets its given Future once', function(){
       var m = cache(Future(U.onceOrError(function(rej, res){ return res(1) })));
-      m.fork(U.noop, U.noop);
-      m.fork(U.noop, U.noop);
+      m._interpret(U.noop, U.noop, U.noop);
+      m._interpret(U.noop, U.noop, U.noop);
       return U.assertResolved(m, 1);
     });
 
-    it('resolves all forks once a delayed resolution happens', function(){
+    it('crashes all consumers once a delayed crash happens', function(){
+      var m = cache(F.crashedSlow);
+      var e = new Error(
+        'Error came up while Future.cache was running the cached Future:\n' +
+        '  Error came up while interpreting a Future:\n' +
+        '    Intentional error for unit testing\n' +
+        '  \n' +
+        '    In: Future.after(20, null)' +
+        '.and(Future(function(){ throw new Error("Intentional error for unit testing") }))\n\n' +
+        '  In: Future.after(20, null)' +
+        '.and(Future(function(){ throw new Error("Intentional error for unit testing") }))\n'
+      );
+      var a = U.assertCrashed(m, e);
+      var b = U.assertCrashed(m, e);
+      var c = U.assertCrashed(m, e);
+      return Promise.all([a, b, c]);
+    });
+
+    it('resolves all consumers once a delayed resolution happens', function(){
       var m = cache(after(20, 1));
       var a = U.assertResolved(m, 1);
       var b = U.assertResolved(m, 1);
@@ -40,7 +67,7 @@ describe('cache()', function(){
       return Promise.all([a, b, c]);
     });
 
-    it('rejects all forks once a delayed rejection happens', function(){
+    it('rejects all consumers once a delayed rejection happens', function(){
       var m = cache(Future(function(rej){ return void setTimeout(rej, 20, U.error) }));
       var a = U.assertRejected(m, U.error);
       var b = U.assertRejected(m, U.error);
@@ -48,22 +75,32 @@ describe('cache()', function(){
       return Promise.all([a, b, c]);
     });
 
-    it('rejects all new forks after a rejection happened', function(){
+    it('crashes all new consumers after a crash happened', function(){
+      var m = cache(F.crashed);
+      m._interpret(U.noop, U.noop, U.noop);
+      return U.assertCrashed(m, new Error(
+        'Error came up while Future.cache was running the cached Future:\n' +
+        '  Intentional error for unit testing\n\n' +
+        '  In: Future(function(){ throw new Error("Intentional error for unit testing") })\n'
+      ));
+    });
+
+    it('rejects all new consumers after a rejection happened', function(){
       var m = cache(reject('err'));
-      m.fork(U.noop, U.noop);
+      m._interpret(U.noop, U.noop, U.noop);
       return U.assertRejected(m, 'err');
     });
 
-    it('it forks the internal Future again when forked after having been cancelled', function(done){
+    it('it interprets the internal Future again when interpreted after having been cancelled', function(done){
       var m = cache(Future(function(rej, res){
         var o = {cancelled: false};
         var id = setTimeout(res, 20, o);
         return function(){ return (o.cancelled = true, clearTimeout(id)) };
       }));
-      var clear = m.fork(U.noop, U.noop);
+      var clear = m._interpret(done, U.noop, U.noop);
       setTimeout(function(){
         clear();
-        m.fork(U.noop, function(v){ return (expect(v).to.have.property('cancelled', false), done()) });
+        m._interpret(done, U.noop, function(v){ return (expect(v).to.have.property('cancelled', false), done()) });
       }, 10);
     });
 
@@ -72,8 +109,8 @@ describe('cache()', function(){
         setTimeout(res, 5, 1);
         return function(){ return done(new Error('Reset happened')) };
       }));
-      var cancel = m.fork(U.noop, U.noop);
-      m.fork(U.noop, U.noop);
+      var cancel = m._interpret(done, U.noop, U.noop);
+      m._interpret(done, U.noop, U.noop);
       cancel();
       setTimeout(done, 20);
     });
@@ -83,11 +120,28 @@ describe('cache()', function(){
         res(1);
         return function(){ return done(new Error('Cancelled after settled')) };
       }));
-      var cancel = m.fork(U.noop, U.noop);
+      var cancel = m._interpret(done, U.noop, U.noop);
       setTimeout(function(){
         cancel();
         done();
       }, 5);
+    });
+
+  });
+
+  describe('#crash()', function(){
+
+    it('sets state to Crashed', function(){
+      var m = cache(Future(U.noop));
+      m.crash(1);
+      expect(m._state).to.equal(Cached.Crashed);
+    });
+
+    it('does nothing when state is resolved', function(){
+      var m = cache(Future(U.noop));
+      m.resolve(1);
+      m.crash(2);
+      expect(m._state).to.equal(Cached.Resolved);
     });
 
   });
@@ -131,7 +185,7 @@ describe('cache()', function(){
       var m = cache(of(1));
       m._drainQueue();
       m._drainQueue();
-      m.fork(U.noop, U.noop);
+      m._interpret(U.noop, U.noop, U.noop);
       m._drainQueue();
       m._drainQueue();
     });
@@ -153,8 +207,14 @@ describe('cache()', function(){
     it('is idempotent', function(){
       var m = cache(of(1));
       m.reset();
-      m.fork(U.noop, U.noop);
+      m._interpret(U.noop, U.noop, U.noop);
       m.reset();
+      m.reset();
+    });
+
+    it('cancels the underlying computation', function(done){
+      var m = cache(Future(function(){ return function(){ done() } }));
+      m.run();
       m.reset();
     });
 

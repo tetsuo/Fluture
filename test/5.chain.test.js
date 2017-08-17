@@ -10,12 +10,18 @@ var testInstance = function(chain){
     expect(type(chain(F.resolved, function(){ return F.resolvedSlow }))).to.equal(Future['@@type']);
   });
 
-  describe('#fork()', function(){
+  describe('#_interpret()', function(){
 
     it('throws TypeError when the given function does not return Future', function(){
-      var xs = [NaN, {}, [], 1, 'a', new Date, undefined, null];
-      var fs = xs.map(function(x){ return function(){ return chain(F.resolved, function(){ return x }).fork(U.noop, U.noop) } });
-      fs.forEach(function(f){ return expect(f).to.throw(TypeError, /Future/) });
+      var m = chain(F.resolved, function(){ return null });
+      return U.assertCrashed(m, new Error(
+        'TypeError came up while interpreting a Future:\n' +
+        '  Future#chain expects the function it\'s given to return a Future.\n' +
+        '    Actual: null :: Null\n' +
+        '    From calling: function (){ return null }\n' +
+        '    With: "resolved"\n\n' +
+        '  In: Future.of("resolved").chain(function (){ return null })\n'
+      ));
     });
 
     it('calls the given function with the inner of the Future', function(done){
@@ -23,7 +29,7 @@ var testInstance = function(chain){
         expect(x).to.equal('resolved');
         done();
         return of(null);
-      }).fork(U.noop, U.noop);
+      })._interpret(done, U.noop, U.noop);
     });
 
     it('returns a Future with an inner equal to the returned Future', function(){
@@ -42,13 +48,13 @@ var testInstance = function(chain){
     });
 
     it('does not chain after being cancelled', function(done){
-      chain(F.resolvedSlow, U.failRes).fork(U.failRej, U.failRes)();
+      chain(F.resolvedSlow, U.failRes)._interpret(done, U.failRej, U.failRes)();
       setTimeout(done, 25);
     });
 
     it('does not reject after being cancelled', function(done){
-      chain(F.rejectedSlow, U.failRes).fork(U.failRej, U.failRes)();
-      chain(F.resolved, function(){ return F.rejectedSlow }).fork(U.failRej, U.failRes)();
+      chain(F.rejectedSlow, U.failRes)._interpret(done, U.failRej, U.failRes)();
+      chain(F.resolved, function(){ return F.rejectedSlow })._interpret(done, U.failRej, U.failRes)();
       setTimeout(done, 25);
     });
 

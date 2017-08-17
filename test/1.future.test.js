@@ -60,14 +60,15 @@ describe('Future', function(){
       expect(f).to.throw(TypeError, /Future.*third/);
     });
 
-    it('dispatches to #_fork()', function(done){
+    it('dispatches to #_interpret()', function(done){
       var a = function(){};
       var b = function(){};
       var mock = Object.create(F.mock);
 
-      mock._fork = function(x, y){
-        expect(x).to.equal(a);
-        expect(y).to.equal(b);
+      mock._interpret = function(rec, rej, res){
+        expect(rec).to.be.a('function');
+        expect(rej).to.equal(a);
+        expect(res).to.equal(b);
         done();
       };
 
@@ -220,18 +221,28 @@ describe('Future', function(){
     });
 
     it('does not throw when both arguments are functions', function(){
-      var f = function(){ return F.mock.fork(U.noop, U.noop) };
-      expect(f).to.not.throw(TypeError);
+      var mock = Object.create(F.mock);
+      mock._interpret = U.noop;
+      var f = function(){ return mock.fork(U.noop, U.noop) };
+      expect(f).to.not.throw();
     });
 
-    it('dispatches to #_fork()', function(done){
-      var mock = Object.create(Future.prototype);
+    it('throws when called on a crashed Future', function(){
+      var mock = Object.create(F.mock);
+      mock._interpret = function(rec){ rec(U.error) };
+      var f = function(){ return mock.fork(U.noop, U.noop) };
+      expect(f).to.throw(U.error);
+    });
+
+    it('dispatches to #_interpret()', function(done){
       var a = function(){};
       var b = function(){};
+      var mock = Object.create(F.mock);
 
-      mock._fork = function(x, y){
-        expect(x).to.equal(a);
-        expect(y).to.equal(b);
+      mock._interpret = function(rec, rej, res){
+        expect(rec).to.be.a('function');
+        expect(rej).to.equal(a);
+        expect(res).to.equal(b);
         done();
       };
 
@@ -253,11 +264,11 @@ describe('Future', function(){
       fs.forEach(function(f){ return expect(f).to.throw(TypeError, /Future/) });
     });
 
-    it('dispatches to #_fork(), using the input as resolution callback', function(done){
-      var mock = Object.create(Future.prototype);
+    it('dispatches to #_interpret(), using the input as resolution callback', function(done){
       var res = function(){};
+      var mock = Object.create(F.mock);
 
-      mock._fork = function(l, r){
+      mock._interpret = function(rec, l, r){
         expect(r).to.equal(res);
         done();
       };
@@ -265,16 +276,19 @@ describe('Future', function(){
       mock.value(res);
     });
 
-    it('throws when _f calls the rejection callback', function(){
-      var mock = Object.create(Future.prototype);
-      mock._fork = function(l){l(1)};
-      expect(function(){ return mock.value(U.noop) }).to.throw(Error);
+    it('throws when _interpret calls the rejection callback', function(){
+      var mock = Object.create(F.mock);
+      mock._interpret = function(rec, rej){rej(1)};
+      expect(mock.value.bind(mock, U.noop)).to.throw(Error, (
+        'Future#value was called on a rejected Future\n' +
+        '  Actual: Future.reject(1)'
+      ));
     });
 
-    it('returns the return value of #_fork()', function(){
+    it('returns the return value of #_interpret()', function(){
       var mock = Object.create(Future.prototype);
       var sentinel = {};
-      mock._fork = function(){ return sentinel };
+      mock._interpret = function(){ return sentinel };
       expect(mock.value(U.noop)).to.equal(sentinel);
     });
 
@@ -295,7 +309,7 @@ describe('Future', function(){
 
     it('passes the rejection value as first parameter', function(fin){
       var mock = Object.create(Future.prototype);
-      mock._fork = function(l){l(1)};
+      mock._interpret = function(_, l){l(1)};
       mock.done(function(x, y){
         expect(x).to.equal(1);
         expect(y).to.equal(undefined);
@@ -305,7 +319,7 @@ describe('Future', function(){
 
     it('passes the resolution value as second parameter', function(fin){
       var mock = Object.create(Future.prototype);
-      mock._fork = function(l, r){r(1)};
+      mock._interpret = function(_, l, r){r(1)};
       mock.done(function(x, y){
         expect(x).to.equal(null);
         expect(y).to.equal(1);
@@ -313,10 +327,10 @@ describe('Future', function(){
       });
     });
 
-    it('returns the return done of #_fork()', function(){
+    it('returns the return done of #_interpret()', function(){
       var mock = Object.create(Future.prototype);
       var sentinel = {};
-      mock._fork = function(){ return sentinel };
+      mock._interpret = function(){ return sentinel };
       expect(mock.done(U.noop)).to.equal(sentinel);
     });
 
@@ -325,13 +339,15 @@ describe('Future', function(){
   describe('#promise()', function(){
 
     it('returns a Promise', function(){
-      var actual = F.mock.promise();
+      var mock = Object.create(Future.prototype);
+      mock._interpret = U.noop;
+      var actual = mock.promise();
       expect(actual).to.be.an.instanceof(Promise);
     });
 
     it('resolves if the Future resolves', function(done){
       var mock = Object.create(Future.prototype);
-      mock._fork = function(l, r){ return r(1) };
+      mock._interpret = function(_, l, r){ return r(1) };
       mock.promise().then(
         function(x){ return (expect(x).to.equal(1), done()) },
         done
@@ -340,7 +356,7 @@ describe('Future', function(){
 
     it('rejects if the Future rejects', function(done){
       var mock = Object.create(Future.prototype);
-      mock._fork = function(l){ return l(1) };
+      mock._interpret = function(_, l){ return l(1) };
       mock.promise().then(
         function(){ return done(new Error('It resolved')) },
         function(x){ return (expect(x).to.equal(1), done()) }

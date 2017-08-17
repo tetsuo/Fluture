@@ -28,7 +28,7 @@ describe('Resolved', function(){
     expect(type(m)).to.equal(Future['@@type']);
   });
 
-  describe('#fork()', function(){
+  describe('#_interpret()', function(){
 
     it('calls success callback with the value', function(){
       return U.assertResolved(m, 1);

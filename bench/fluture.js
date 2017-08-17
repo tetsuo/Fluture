@@ -23,8 +23,52 @@ module.exports = require('sanctuary-benchmark')(Old, New, config, {
     {}, ({of}) => of(1)
   ],
 
+  'def.construct.reject': [
+    {}, ({reject}) => reject(1)
+  ],
+
+  'def.construct.after': [
+    {}, ({after}) => after(1, 1)
+  ],
+
+  'def.construct.attempt': [
+    {}, ({attempt}) => attempt(noop)
+  ],
+
+  'def.construct.cache': [
+    {}, ({of, cache}) => cache(of(1))
+  ],
+
+  'def.construct.chainRec': [
+    {}, ({chainRec}) => chainRec(noop, 1)
+  ],
+
+  'def.construct.encase': [
+    {}, ({encase}) => encase(noop, 1)
+  ],
+
+  'def.construct.encaseN': [
+    {}, ({encaseN}) => encaseN(noop, 1)
+  ],
+
+  'def.construct.encaseP': [
+    {}, ({encaseP}) => encaseP(noop, 1)
+  ],
+
+  'def.construct.go': [
+    {}, ({go}) => go(noop)
+  ],
+
+  'def.construct.hook': [
+    {}, ({of, hook}) => hook(of(1), noop, noop)
+  ],
+
   'def.construct.node': [
     {}, ({node}) => node(done => done(null, 1))
+  ],
+
+  'def.construct.parallel': [
+    {}, ({of, parallel}) => parallel(1, [of(1)])
   ],
 
   'def.transform.ap': [

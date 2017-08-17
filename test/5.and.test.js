@@ -10,7 +10,7 @@ var testInstance = function(and){
     expect(type(and(F.resolved, F.resolvedSlow))).to.equal(Future['@@type']);
   });
 
-  describe('#fork()', function(){
+  describe('#_interpret()', function(){
 
     describe('(res, res)', function(){
 
@@ -62,7 +62,7 @@ var testInstance = function(and){
 
     it('cancels the running Future', function(done){
       var m = Future(function(){ return function(){ return done() } });
-      var cancel = and(m, m).fork(U.noop, U.noop);
+      var cancel = and(m, m)._interpret(done, U.noop, U.noop);
       cancel();
     });
 

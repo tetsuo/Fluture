@@ -1,7 +1,7 @@
 import {isFuture} from '../core';
-import {invalidFuture} from '../internal/throw';
+import {throwInvalidFuture} from '../internal/throw';
 
 export function swap(m){
-  if(!isFuture(m)) invalidFuture('Future.swap', 0, m);
+  if(!isFuture(m)) throwInvalidFuture('Future.swap', 0, m);
   return m.swap();
 }

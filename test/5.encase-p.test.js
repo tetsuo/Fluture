@@ -102,13 +102,26 @@ describe('EncaseP', function(){
     expect(type(encaseP(U.noop, 1))).to.equal(Future['@@type']);
   });
 
-  describe('#fork()', function(){
+  describe('#_interpret()', function(){
 
     describe('(nullary)', function(){
 
-      it('throws TypeError when the function does not return a Promise', function(){
-        var f = function(){ return tryP(U.noop).fork(U.noop, U.noop) };
-        expect(f).to.throw(TypeError, /Future.*Promise/);
+      it('crashes when the Promise generator throws', function(){
+        var m = tryP(function(){ throw U.error });
+        return U.assertCrashed(m, new Error(
+          'Error came up while Future.tryP was generating its Promise:\n' +
+          '  Intentional error for unit testing\n'
+        ));
+      });
+
+      it('crashes when the Promise generator does not return a Promise', function(){
+        var m = tryP(U.noop);
+        return U.assertCrashed(m, new Error(
+          'TypeError came up while Future.tryP was generating its Promise:\n' +
+          '  Future.tryP expects the function it\'s given to return a Promise/Thenable\n' +
+          '    Actual: undefined\n' +
+          '    From calling: function (){}\n'
+        ));
       });
 
       it('resolves with the resolution value of the returned Promise', function(){
@@ -123,23 +136,55 @@ describe('EncaseP', function(){
 
       it('ensures no resolution happens after cancel', function(done){
         var actual = tryP(function(){ return Promise.resolve(1) });
-        actual.fork(U.failRej, U.failRes)();
+        actual._interpret(done, U.failRej, U.failRes)();
         setTimeout(done, 20);
       });
 
       it('ensures no rejection happens after cancel', function(done){
         var actual = tryP(function(){ return Promise.reject(1) });
-        actual.fork(U.failRej, U.failRes)();
+        actual._interpret(done, U.failRej, U.failRes)();
         setTimeout(done, 20);
+      });
+
+      it('crashes with errors that occur in rejection continuation', function(){
+        var m = tryP(function(){ return Promise.resolve(1) }).map(function(){ throw U.error });
+        return U.assertCrashed(m, new Error(
+          'Error came up while interpreting a Future:\n' +
+          '  Intentional error for unit testing\n\n' +
+          '  In: Future.tryP(function (){ return Promise.resolve(1) }).map(function (){ throw U.error })\n'
+        ));
+      });
+
+      it('crashes with errors that occur in resolution continuation', function(){
+        var m = tryP(function(){ return Promise.reject(1) }).mapRej(function(){ throw U.error });
+        return U.assertCrashed(m, new Error(
+          'Error came up while interpreting a Future:\n' +
+          '  Intentional error for unit testing\n\n' +
+          '  In: Future.tryP(function (){ return Promise.reject(1) }).mapRej(function (){ throw U.error })\n'
+        ));
       });
 
     });
 
     describe('(unary)', function(){
 
-      it('throws TypeError when the function does not return a Promise', function(){
-        var f = function(){ return encaseP(U.noop, 1).fork(U.noop, U.noop) };
-        expect(f).to.throw(TypeError, /Future.*Promise/);
+      it('crashes when the Promise generator throws', function(){
+        var m = encaseP(function(){ throw U.error }, 1);
+        return U.assertCrashed(m, new Error(
+          'Error came up while Future.encaseP was generating its Promise:\n' +
+          '  Intentional error for unit testing\n'
+        ));
+      });
+
+      it('crashes when the Promise generator does not return a Promise', function(){
+        var m = encaseP(U.noop, 1);
+        return U.assertCrashed(m, new Error(
+          'TypeError came up while Future.encaseP was generating its Promise:\n' +
+          '  Future.encaseP expects the function it\'s given to return a Promise/Thenable\n' +
+          '    Actual: undefined\n' +
+          '    From calling: function (){}\n' +
+          '    With: 1\n'
+        ));
       });
 
       it('resolves with the resolution value of the returned Promise', function(){
@@ -154,13 +199,13 @@ describe('EncaseP', function(){
 
       it('ensures no resolution happens after cancel', function(done){
         var actual = encaseP(function(x){ return Promise.resolve(x + 1) }, 1);
-        actual.fork(U.failRej, U.failRes)();
+        actual._interpret(done, U.failRej, U.failRes)();
         setTimeout(done, 20);
       });
 
       it('ensures no rejection happens after cancel', function(done){
         var actual = encaseP(function(x){ return Promise.reject(x + 1) }, 1);
-        actual.fork(U.failRej, U.failRes)();
+        actual._interpret(done, U.failRej, U.failRes)();
         setTimeout(done, 20);
       });
 
@@ -168,9 +213,24 @@ describe('EncaseP', function(){
 
     describe('(binary)', function(){
 
-      it('throws TypeError when the function does not return a Promise', function(){
-        var f = function(){ return encaseP2(U.noop, 1, 1).fork(U.noop, U.noop) };
-        expect(f).to.throw(TypeError, /Future.*Promise/);
+      it('crashes when the Promise generator throws', function(){
+        var m = encaseP2(function(){ throw U.error }, 1, 1);
+        return U.assertCrashed(m, new Error(
+          'Error came up while Future.encaseP2 was generating its Promise:\n' +
+          '  Intentional error for unit testing\n'
+        ));
+      });
+
+      it('crashes when the Promise generator does not return a Promise', function(){
+        var m = encaseP2(U.noop, 1, 1);
+        return U.assertCrashed(m, new Error(
+          'TypeError came up while Future.encaseP2 was generating its Promise:\n' +
+          '  Future.encaseP2 expects the function it\'s given to return a Promise/Thenable\n' +
+          '    Actual: undefined\n' +
+          '    From calling: function (){}\n' +
+          '    With 1: 1\n' +
+          '    With 2: 1\n'
+        ));
       });
 
       it('resolves with the resolution value of the returned Promise', function(){
@@ -185,13 +245,13 @@ describe('EncaseP', function(){
 
       it('ensures no resolution happens after cancel', function(done){
         var actual = encaseP2(function(x, y){ return Promise.resolve(y + 1) }, 1, 1);
-        actual.fork(U.failRej, U.failRes)();
+        actual._interpret(done, U.failRej, U.failRes)();
         setTimeout(done, 20);
       });
 
       it('ensures no rejection happens after cancel', function(done){
         var actual = encaseP2(function(x, y){ return Promise.reject(y + 1) }, 1, 1);
-        actual.fork(U.failRej, U.failRes)();
+        actual._interpret(done, U.failRej, U.failRes)();
         setTimeout(done, 20);
       });
 
@@ -199,9 +259,25 @@ describe('EncaseP', function(){
 
     describe('(ternary)', function(){
 
-      it('throws TypeError when the function does not return a Promise', function(){
-        var f = function(){ return encaseP3(U.noop, 1, 1, 1).fork(U.noop, U.noop) };
-        expect(f).to.throw(TypeError, /Future.*Promise/);
+      it('crashes when the Promise generator throws', function(){
+        var m = encaseP3(function(){ throw U.error }, 1, 1, 1);
+        return U.assertCrashed(m, new Error(
+          'Error came up while Future.encaseP3 was generating its Promise:\n' +
+          '  Intentional error for unit testing\n'
+        ));
+      });
+
+      it('crashes when the Promise generator does not return a Promise', function(){
+        var m = encaseP3(U.noop, 1, 1, 1);
+        return U.assertCrashed(m, new Error(
+          'TypeError came up while Future.encaseP3 was generating its Promise:\n' +
+          '  Future.encaseP3 expects the function it\'s given to return a Promise/Thenable\n' +
+          '    Actual: undefined\n' +
+          '    From calling: function (){}\n' +
+          '    With 1: 1\n' +
+          '    With 2: 1\n' +
+          '    With 3: 1\n'
+        ));
       });
 
       it('resolves with the resolution value of the returned Promise', function(){
@@ -216,13 +292,13 @@ describe('EncaseP', function(){
 
       it('ensures no resolution happens after cancel', function(done){
         var actual = encaseP3(function(x, y, z){ return Promise.resolve(z + 1) }, 1, 1, 1);
-        actual.fork(U.failRej, U.failRes)();
+        actual._interpret(done, U.failRej, U.failRes)();
         setTimeout(done, 20);
       });
 
       it('ensures no rejection happens after cancel', function(done){
         var actual = encaseP3(function(x, y, z){ return Promise.reject(z + 1) }, 1, 1, 1);
-        actual.fork(U.failRej, U.failRes)();
+        actual._interpret(done, U.failRej, U.failRes)();
         setTimeout(done, 20);
       });
 
