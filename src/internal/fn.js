@@ -1,10 +1,6 @@
 import Z from 'sanctuary-type-classes';
 import inspectf from 'inspect-f';
-import * as bc from './bc';
-
-var setImmediate = typeof global.setImmediate === 'function'
-  ? global.setImmediate
-  : /* istanbul ignore next: environment-specific */ bc.setImmediate;
+import {setImmediate} from './bc';
 
 export function noop(){}
 export function moop(){ return this }

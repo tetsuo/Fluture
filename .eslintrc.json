@@ -1,19 +1,14 @@
 {
+  "root": true,
   "extends": ["warp"],
   "plugins": ["markdown"],
-  "env": {
-    "browser": true
-  },
   "parserOptions": {
     "ecmaVersion": 5,
     "sourceType": "module"
   },
   "globals": {
-    "module": false,
-    "require": false,
-    "global": false,
-    "Future": false,
-    "S": false,
+    "setTimeout": false,
+    "clearTimeout": false,
     "Promise": false
   },
   "rules": {
@@ -29,8 +24,24 @@
     "prefer-rest-params": 0,
     "class-methods-use-this": 0,
     "camelcase": 0,
-    "no-console": 0,
     "indent": 0,
     "func-name-matching": 0
-  }
+  },
+  "overrides": [
+    {
+      "files": ["README.md"],
+      "env": {
+        "browser": true,
+        "node": true
+      },
+      "globals": {
+        "Future": false,
+        "S": false,
+        "Promise": false
+      },
+      "rules": {
+        "no-console": 0
+      }
+    }
+  ]
 }

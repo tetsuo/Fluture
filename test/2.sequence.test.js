@@ -346,7 +346,7 @@ describe('Sequence', function(){
       });
 
       it('does not run actions unnecessarily when one early-terminates synchronously', function(done){
-        var broken = new Sequence(Future(function(){ console.log('broken'); done(error) }));
+        var broken = new Sequence(Future(function(){ done(error) }));
         var m = resolvedSlow.race(broken).race(broken).race(resolved);
         m.fork(noop, function(){ return done() });
       });
