@@ -1,8 +1,10 @@
 {
   "env": {
     "node": true,
-    "mocha": true,
-    "browser": false
+    "mocha": true
+  },
+  "globals": {
+    "Promise": false
   },
   "rules": {
     "arrow-body-style": 0,
