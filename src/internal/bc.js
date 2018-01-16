@@ -4,7 +4,7 @@
 export const scope = typeof self === 'object' ? self :
                      typeof global === 'object' ? global :
                      typeof window === 'object' ? window :
-                     this;
+                     {};
 /* eslint-enable no-undef */
 
 export const setImmediate = typeof scope.setImmediate === 'function' ?

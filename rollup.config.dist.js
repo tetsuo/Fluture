@@ -1,4 +1,4 @@
-/* global process */
+/* global process require */
 
 import node from 'rollup-plugin-node-resolve';
 import commonjs from 'rollup-plugin-commonjs';
@@ -13,8 +13,8 @@ var banner = `/**
 export default {
   input: 'index.cjs.js',
   plugins: [node(), commonjs({include: 'node_modules/**'})],
-  banner: banner,
   output: {
+    banner: banner,
     format: 'iife',
     name: 'Fluture',
     file: 'dist/bundle.js'
