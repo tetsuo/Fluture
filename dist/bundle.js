@@ -1,15 +1,9 @@
 /**
- * Fluture bundled; version 8.0.0
+ * Fluture bundled; version 8.0.1
  */
 
 var Fluture = (function () {
 'use strict';
-
-var commonjsGlobal = typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
-
-
-
-
 
 function createCommonjsModule(fn, module) {
 	return module = { exports: {} }, fn(module, module.exports), module.exports;
@@ -178,8 +172,8 @@ var sanctuaryTypeClasses = createCommonjsModule(function (module) {
 //.
 /* eslint-disable max-len */
 //. <pre>
-//.  Setoid   Semigroupoid  Semigroup   Foldable        Functor      Contravariant
-//. (equals)    (compose)    (concat)   (reduce)         (map)        (contramap)
+//.  Setoid   Semigroupoid  Semigroup   Foldable        Functor      Contravariant  Filterable
+//. (equals)    (compose)    (concat)   (reduce)         (map)        (contramap)    (filter)
 //.     |           |           |           \         / | | | | \
 //.     |           |           |            \       /  | | | |  \
 //.     |           |           |             \     /   | | | |   \
@@ -387,7 +381,7 @@ var sanctuaryTypeClasses = createCommonjsModule(function (module) {
         };
     }
 
-    var version = '7.1.1';  // updated programmatically
+    var version = '8.0.0';  // updated programmatically
     var keys = Object.keys(requirements);
 
     var typeClass = TypeClass(
@@ -498,6 +492,19 @@ var sanctuaryTypeClasses = createCommonjsModule(function (module) {
   //. false
   //. ```
   var Group = $('Group', [Monoid], {invert: Value});
+
+  //# Filterable :: TypeClass
+  //.
+  //. `TypeClass` value for [Filterable][].
+  //.
+  //. ```javascript
+  //. > Filterable.test({})
+  //. true
+  //.
+  //. > Filterable.test('')
+  //. false
+  //. ```
+  var Filterable = $('Filterable', [], {filter: Value});
 
   //# Functor :: TypeClass
   //.
@@ -902,6 +909,11 @@ var sanctuaryTypeClasses = createCommonjsModule(function (module) {
     return this.concat(other);
   }
 
+  //  Array$prototype$filter :: Array a ~> (a -> Boolean) -> Array a
+  function Array$prototype$filter(pred) {
+    return this.filter(function(x) { return pred(x); });
+  }
+
   //  Array$prototype$map :: Array a ~> (a -> b) -> Array b
   function Array$prototype$map(f) {
     return this.map(function(x) { return f(x); });
@@ -1035,6 +1047,13 @@ var sanctuaryTypeClasses = createCommonjsModule(function (module) {
     return result;
   }
 
+  //  Object$prototype$filter :: StrMap a ~> (a -> Boolean) -> StrMap a
+  function Object$prototype$filter(pred) {
+    var result = {};
+    forEachKey(this, function(k) { if (pred(this[k])) result[k] = this[k]; });
+    return result;
+  }
+
   //  Object$prototype$map :: StrMap a ~> (a -> b) -> StrMap b
   function Object$prototype$map(f) {
     var result = {};
@@ -1131,6 +1150,14 @@ var sanctuaryTypeClasses = createCommonjsModule(function (module) {
     return function(x) { return f(chain(x))(x); };
   }
 
+  //  Function$prototype$extend :: Semigroup a => (a -> b) ~> ((a -> b) -> c) -> (a -> c)
+  function Function$prototype$extend(f) {
+    var extend = this;
+    return function(x) {
+      return f(function(y) { return extend(concat(x, y)); });
+    };
+  }
+
   //  Function$prototype$contramap :: (b -> c) ~> (a -> b) -> (a -> c)
   function Function$prototype$contramap(f) {
     var contravariant = this;
@@ -1198,6 +1225,7 @@ var sanctuaryTypeClasses = createCommonjsModule(function (module) {
         'fantasy-land/equals':      Array$prototype$equals,
         'fantasy-land/lte':         Array$prototype$lte,
         'fantasy-land/concat':      Array$prototype$concat,
+        'fantasy-land/filter':      Array$prototype$filter,
         'fantasy-land/map':         Array$prototype$map,
         'fantasy-land/ap':          Array$prototype$ap,
         'fantasy-land/chain':       Array$prototype$chain,
@@ -1228,6 +1256,7 @@ var sanctuaryTypeClasses = createCommonjsModule(function (module) {
         'fantasy-land/equals':      Object$prototype$equals,
         'fantasy-land/lte':         Object$prototype$lte,
         'fantasy-land/concat':      Object$prototype$concat,
+        'fantasy-land/filter':      Object$prototype$filter,
         'fantasy-land/map':         Object$prototype$map,
         'fantasy-land/ap':          Object$prototype$ap,
         'fantasy-land/alt':         Object$prototype$alt,
@@ -1246,6 +1275,7 @@ var sanctuaryTypeClasses = createCommonjsModule(function (module) {
         'fantasy-land/promap':      Function$prototype$promap,
         'fantasy-land/ap':          Function$prototype$ap,
         'fantasy-land/chain':       Function$prototype$chain,
+        'fantasy-land/extend':      Function$prototype$extend,
         'fantasy-land/contramap':   Function$prototype$contramap
       }
     }
@@ -1596,11 +1626,74 @@ var sanctuaryTypeClasses = createCommonjsModule(function (module) {
   //. Function wrapper for [`fantasy-land/invert`][].
   //.
   //. ```javascript
-  //. invert(Sum(5))
+  //. > invert(Sum(5))
   //. Sum(-5)
   //. ```
   function invert(group) {
     return Group.methods.invert(group)();
+  }
+
+  //# filter :: Filterable f => (a -> Boolean, f a) -> f a
+  //.
+  //. Function wrapper for [`fantasy-land/filter`][]. Discards every element
+  //. of the given structure which does not satisfy the predicate.
+  //.
+  //. `fantasy-land/filter` implementations are provided for the following
+  //. built-in types: Array and Object.
+  //.
+  //. See also [`reject`](#reject).
+  //.
+  //. ```javascript
+  //. > filter(x => x % 2 == 1, [1, 2, 3])
+  //. [1, 3]
+  //.
+  //. > filter(x => x % 2 == 1, {x: 1, y: 2, z: 3})
+  //. {x: 1, z: 3}
+  //.
+  //. > filter(x => x % 2 == 1, Cons(1, Cons(2, Cons(3, Nil))))
+  //. Cons(1, Cons(3, Nil))
+  //.
+  //. > filter(x => x % 2 == 1, Nothing)
+  //. Nothing
+  //.
+  //. > filter(x => x % 2 == 1, Just(0))
+  //. Nothing
+  //.
+  //. > filter(x => x % 2 == 1, Just(1))
+  //. Just(1)
+  //. ```
+  function filter(pred, filterable) {
+    return Filterable.methods.filter(filterable)(pred);
+  }
+
+  //# reject :: Filterable f => (a -> Boolean, f a) -> f a
+  //.
+  //. Discards every element of the given structure which satisfies the
+  //. predicate.
+  //.
+  //. This function is derived from [`filter`](#filter).
+  //.
+  //. ```javascript
+  //. > reject(x => x % 2 == 1, [1, 2, 3])
+  //. [2]
+  //.
+  //. > reject(x => x % 2 == 1, {x: 1, y: 2, z: 3})
+  //. {y: 2}
+  //.
+  //. > reject(x => x % 2 == 1, Cons(1, Cons(2, Cons(3, Nil))))
+  //. Cons(2, Nil)
+  //.
+  //. > reject(x => x % 2 == 1, Nothing)
+  //. Nothing
+  //.
+  //. > reject(x => x % 2 == 1, Just(0))
+  //. Just(0)
+  //.
+  //. > reject(x => x % 2 == 1, Just(1))
+  //. Nothing
+  //. ```
+  function reject(pred, filterable) {
+    return filter(function(x) { return !pred(x); }, filterable);
   }
 
   //# map :: Functor f => (a -> b, f a) -> f b
@@ -1885,62 +1978,6 @@ var sanctuaryTypeClasses = createCommonjsModule(function (module) {
   //. ```
   function chainRec(typeRep, f, x) {
     return ChainRec.methods.chainRec(typeRep)(f, x);
-  }
-
-  //# filter :: (Applicative f, Foldable f, Monoid (f a)) => (a -> Boolean, f a) -> f a
-  //.
-  //. Filters its second argument in accordance with the given predicate.
-  //.
-  //. This function is derived from [`concat`](#concat), [`empty`](#empty),
-  //. [`of`](#of), and [`reduce`](#reduce).
-  //.
-  //. See also [`filterM`](#filterM).
-  //.
-  //. ```javascript
-  //. > filter(x => x % 2 == 1, [1, 2, 3])
-  //. [1, 3]
-  //.
-  //. > filter(x => x % 2 == 1, Cons(1, Cons(2, Cons(3, Nil))))
-  //. Cons(1, Cons(3, Nil))
-  //. ```
-  function filter(pred, m) {
-    //  Fast path for arrays.
-    if (Array.isArray(m)) return m.filter(function(x) { return pred(x); });
-    var M = m.constructor;
-    return reduce(function(m, x) { return pred(x) ? concat(m, of(M, x)) : m; },
-                  empty(M),
-                  m);
-  }
-
-  //# filterM :: (Alternative m, Monad m) => (a -> Boolean, m a) -> m a
-  //.
-  //. Filters its second argument in accordance with the given predicate.
-  //.
-  //. This function is derived from [`of`](#of), [`chain`](#chain), and
-  //. [`zero`](#zero).
-  //.
-  //. See also [`filter`](#filter).
-  //.
-  //. ```javascript
-  //. > filterM(x => x % 2 == 1, [1, 2, 3])
-  //. [1, 3]
-  //.
-  //. > filterM(x => x % 2 == 1, Cons(1, Cons(2, Cons(3, Nil))))
-  //. Cons(1, Cons(3, Nil))
-  //.
-  //. > filterM(x => x % 2 == 1, Nothing)
-  //. Nothing
-  //.
-  //. > filterM(x => x % 2 == 1, Just(0))
-  //. Nothing
-  //.
-  //. > filterM(x => x % 2 == 1, Just(1))
-  //. Just(1)
-  //. ```
-  function filterM(pred, m) {
-    var M = m.constructor;
-    var z = zero(M);
-    return chain(function(x) { return pred(x) ? of(M, x) : z; }, m);
   }
 
   //# alt :: Alt f => (f a, f a) -> f a
@@ -2251,14 +2288,40 @@ var sanctuaryTypeClasses = createCommonjsModule(function (module) {
   //. Function wrapper for [`fantasy-land/extend`][].
   //.
   //. `fantasy-land/extend` implementations are provided for the following
-  //. built-in types: Array.
+  //. built-in types: Array and Function.
   //.
   //. ```javascript
   //. > extend(ss => ss.join(''), ['x', 'y', 'z'])
   //. ['xyz', 'yz', 'z']
+  //.
+  //. > extend(f => f([3, 4]), reverse)([1, 2])
+  //. [4, 3, 2, 1]
   //. ```
   function extend(f, extend_) {
     return Extend.methods.extend(extend_)(f);
+  }
+
+  //# duplicate :: Extend w => w a -> w (w a)
+  //.
+  //. Adds one level of nesting to a comonadic structure.
+  //.
+  //. This function is derived from [`extend`](#extend).
+  //.
+  //. ```javascript
+  //. > duplicate(Identity(1))
+  //. Identity(Identity(1))
+  //.
+  //. > duplicate([1])
+  //. [[1]]
+  //.
+  //. > duplicate([1, 2, 3])
+  //. [[1, 2, 3], [2, 3], [3]]
+  //.
+  //. > duplicate(reverse)([1, 2])([3, 4])
+  //. [4, 3, 2, 1]
+  //. ```
+  function duplicate(extend_) {
+    return extend(identity, extend_);
   }
 
   //# extract :: Comonad w => w a -> a
@@ -2297,6 +2360,7 @@ var sanctuaryTypeClasses = createCommonjsModule(function (module) {
     Semigroup: Semigroup,
     Monoid: Monoid,
     Group: Group,
+    Filterable: Filterable,
     Functor: Functor,
     Bifunctor: Bifunctor,
     Profunctor: Profunctor,
@@ -2326,6 +2390,8 @@ var sanctuaryTypeClasses = createCommonjsModule(function (module) {
     concat: concat,
     empty: empty,
     invert: invert,
+    filter: filter,
+    reject: reject,
     map: map,
     bimap: bimap,
     promap: promap,
@@ -2340,8 +2406,6 @@ var sanctuaryTypeClasses = createCommonjsModule(function (module) {
     chain: chain,
     join: join,
     chainRec: chainRec,
-    filter: filter,
-    filterM: filterM,
     alt: alt,
     zero: zero,
     reduce: reduce,
@@ -2355,6 +2419,7 @@ var sanctuaryTypeClasses = createCommonjsModule(function (module) {
     traverse: traverse,
     sequence: sequence,
     extend: extend,
+    duplicate: duplicate,
     extract: extract,
     contramap: contramap
   };
@@ -2373,6 +2438,7 @@ var sanctuaryTypeClasses = createCommonjsModule(function (module) {
 //. [Contravariant]:            https://github.com/fantasyland/fantasy-land#contravariant
 //. [Extend]:                   https://github.com/fantasyland/fantasy-land#extend
 //. [FL]:                       https://github.com/fantasyland/fantasy-land
+//. [Filterable]:               https://github.com/fantasyland/fantasy-land#filterable
 //. [Foldable]:                 https://github.com/fantasyland/fantasy-land#foldable
 //. [Functor]:                  https://github.com/fantasyland/fantasy-land#functor
 //. [Group]:                    https://github.com/fantasyland/fantasy-land#group
@@ -2397,6 +2463,7 @@ var sanctuaryTypeClasses = createCommonjsModule(function (module) {
 //. [`fantasy-land/equals`]:    https://github.com/fantasyland/fantasy-land#equals-method
 //. [`fantasy-land/extend`]:    https://github.com/fantasyland/fantasy-land#extend-method
 //. [`fantasy-land/extract`]:   https://github.com/fantasyland/fantasy-land#extract-method
+//. [`fantasy-land/filter`]:    https://github.com/fantasyland/fantasy-land#filter-method
 //. [`fantasy-land/id`]:        https://github.com/fantasyland/fantasy-land#id-method
 //. [`fantasy-land/invert`]:    https://github.com/fantasyland/fantasy-land#invert-method
 //. [`fantasy-land/lte`]:       https://github.com/fantasyland/fantasy-land#lte-method
@@ -2411,13 +2478,13 @@ var sanctuaryTypeClasses = createCommonjsModule(function (module) {
 });
 
 var inspectF = createCommonjsModule(function (module) {
-(function(global, f) {
+(function(f) {
 
   {
     module.exports = f();
   }
 
-}(/*istanbul ignore next*/(commonjsGlobal || window || commonjsGlobal), function() {
+}(function() {
 
   function checkn(n) {
     if(typeof n !== 'number') {
@@ -2481,24 +2548,33 @@ var inspectF = createCommonjsModule(function (module) {
 
   return function inspectf(n, f) {
     checkn(n);
+
     if(arguments.length < 2) {
       return function inspectf$partial(f) { return inspectf(n, f); };
     }
+
     checkf(f);
-    if(f.toString !== Function.prototype.toString) {return f.toString();}
+    if(f.toString !== Function.prototype.toString) { return f.toString(); }
     var i = pad(n), shown = show(f, i), lines = toLines(shown, i);
-    if(lines.length < 2) {return shown;}
+    if(lines.length < 2) { return shown; }
     return fixIndentation(lines, i);
   };
 
 }));
 });
 
-function setImmediate$1(f, x){ return setTimeout(f, 0, x) }
+/* istanbul ignore file: environment-specific */
 
-var setImmediate = typeof global.setImmediate === 'function'
-  ? global.setImmediate
-  : /* istanbul ignore next: environment-specific */ setImmediate$1;
+/* eslint-disable no-undef */
+const scope = typeof self === 'object' ? self :
+                     typeof global === 'object' ? global :
+                     typeof window === 'object' ? window :
+                     {};
+/* eslint-enable no-undef */
+
+const setImmediate = typeof scope.setImmediate === 'function' ?
+                            scope.setImmediate :
+                            function setImmediate(f, x){ return setTimeout(f, 0, x) };
 
 function noop(){}
 function moop(){ return this }
@@ -2797,15 +2873,13 @@ function invalidFuture(it, at, m, s){
 }
 
 var concurrify = createCommonjsModule(function (module) {
-(function(global, f){
+(function(f){
 
-  if(module && 'object' !== 'undefined'){
+  {
     module.exports = f(sanctuaryTypeClasses, sanctuaryTypeIdentifiers$2);
-  }else{
-    global.concurrify = f(global.sanctuaryTypeClasses, global.sanctuaryTypeIdentifiers);
   }
 
-}(/*istanbul ignore next*/(commonjsGlobal || window || commonjsGlobal), function(Z, type){
+}(function(Z, type){
 
   var $alt = 'fantasy-land/alt';
   var $ap = 'fantasy-land/ap';
