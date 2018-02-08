@@ -238,7 +238,7 @@ Computation.prototype = Object.create(Core);
 
 Computation.prototype._fork = function Computation$_fork(rej, res){
   var open = true;
-  var f = this._computation(function Computation$rej(x){
+  var cancel = this._computation(function Computation$rej(x){
     if(open){
       open = false;
       rej(x);
@@ -249,11 +249,13 @@ Computation.prototype._fork = function Computation$_fork(rej, res){
       res(x);
     }
   });
-  check$fork(f, this._computation);
+  check$fork(cancel, this._computation);
 
   return function Computation$cancel(){
-    open && f && f();
-    open = false;
+    if(open){
+      open = false;
+      cancel && cancel();
+    }
   };
 };
 
