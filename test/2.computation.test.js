@@ -81,6 +81,16 @@ describe('Computation', function(){
       setTimeout(done, 25);
     });
 
+    it('cannot continue during cancellation (#216)', function(){
+      Future(function(rej, res){
+        return function(){
+          rej();
+          res();
+        };
+      })
+      .fork(U.failRej, U.failRes)();
+    });
+
     it('stops cancellation from being called after continuations', function(){
       var m = Future(function(rej, res){
         res(1);
