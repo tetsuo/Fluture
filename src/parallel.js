@@ -27,6 +27,7 @@ Parallel.prototype._fork = function Parallel$_fork(rej, res){
   var cursor = 0, running = 0, blocked = false;
 
   function Parallel$cancel(){
+    cursor = _length;
     for(var n = 0; n < _length; n++) cancels[n] && cancels[n]();
   }
 
