@@ -97,11 +97,11 @@ describe('Parallel', function(){
       var ns = Array.from({length: 10}, function(_, i){ return i });
       var xs = [];
       var ms = ns.map(function(i){
- return Future(function(rej, res){
-        xs.push(i);
-        res(i);
+        return Future(function(rej, res){
+          xs.push(i);
+          res(i);
+        });
       });
-});
       parallel(5, ms).fork(U.noop, function(out){
         expect(out).to.deep.equal(ns);
         expect(xs).to.deep.equal(ns);
@@ -113,11 +113,11 @@ describe('Parallel', function(){
       var ns = Array.from({length: 10}, function(_, i){ return i });
       var xs = [];
       var ms = ns.map(function(i){
- return Future(function(rej, res){
-        xs.push(i);
-        setTimeout(res, 10, i);
+        return Future(function(rej, res){
+          xs.push(i);
+          setTimeout(res, 10, i);
+        });
       });
-});
       parallel(5, ms).fork(U.noop, function(out){
         expect(out).to.deep.equal(ns);
         expect(xs).to.deep.equal(ns);
@@ -174,6 +174,17 @@ describe('Parallel', function(){
         expect(j).to.equal(2);
         done();
       }, 30);
+    });
+
+    it('does not fork any computations after one rejects', function(done){
+      var m = Future(function(){ done(U.error) });
+      parallel(2, [F.rejected, m]).fork(U.noop, U.failRes);
+      done();
+    });
+
+    it('automatically cancels running computations when one rejects', function(done){
+      var m = Future(function(){ return function(){ done() } });
+      parallel(2, [m, F.rejected]).fork(U.noop, U.failRes);
     });
 
     it('[GH #123] does not cancel settled computations', function(done){
