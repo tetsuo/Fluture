@@ -1031,8 +1031,8 @@ Future.prototype.value :: Future a b ~> (b -> x)               -> Cancel
 
 Extracts the value from a resolved Future by forking it. Only use this function
 if you are sure the Future is going to be resolved, for example; after using
-`.fold()`. If the Future rejects and `value` was used, an (likely uncatchable)
-`Error` will be thrown.
+`.fold()`. If the Future rejects and `value` was used, an uncatchable `Error`
+will be thrown.
 
 ```js
 Future.reject(new Error('It broke'))

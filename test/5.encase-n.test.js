@@ -99,9 +99,17 @@ describe('EncaseN', function(){
     expect(type(encaseN(U.noop, 1))).to.equal(Future['@@type']);
   });
 
-  describe('#fork()', function(){
+  describe('#_interpret()', function(){
 
     describe('(nullary)', function(){
+
+      it('crashes when the function throws', function(){
+        var m = node(function(){ throw U.error });
+        return U.assertCrashed(m, new Error(
+          'Error came up while Future.node was executing its operation:\n' +
+          '  Intentional error for unit testing\n'
+        ));
+      });
 
       it('rejects when the callback is called with (err)', function(){
         var f = function(done){ return done(U.error) };
@@ -115,23 +123,31 @@ describe('EncaseN', function(){
 
       it('ensures no continuations are called after the first resolve', function(done){
         var f = function(done){ done(null, 'a'); done(null, 'b'); done(U.error) };
-        node(f).fork(U.failRej, function(){ return done() });
+        node(f)._interpret(done, U.failRej, function(){ return done() });
       });
 
       it('ensures no continuations are called after the first reject', function(done){
         var f = function(done){ done(U.error); done(null, 'b'); done(U.error) };
-        node(f).fork(function(){ return done() }, U.failRes);
+        node(f)._interpret(done, function(){ return done() }, U.failRes);
       });
 
       it('ensures no continuations are called after cancel', function(done){
         var f = function(done){ return setTimeout(done, 5) };
-        node(f).fork(U.failRej, U.failRes)();
+        node(f)._interpret(done, U.failRej, U.failRes)();
         setTimeout(done, 20);
       });
 
     });
 
     describe('(unary)', function(){
+
+      it('crashes when the function throws', function(){
+        var m = encaseN(function(){ throw U.error }, 1);
+        return U.assertCrashed(m, new Error(
+          'Error came up while Future.encaseN was executing its operation:\n' +
+          '  Intentional error for unit testing\n'
+        ));
+      });
 
       it('rejects when the callback is called with (err)', function(){
         var f = function(a, done){ return done(U.error) };
@@ -145,23 +161,31 @@ describe('EncaseN', function(){
 
       it('ensures no continuations are called after the first resolve', function(done){
         var f = function(a, done){ done(null, 'a'); done(null, 'b'); done(U.error) };
-        encaseN(f, 'a').fork(U.failRej, function(){ return done() });
+        encaseN(f, 'a')._interpret(done, U.failRej, function(){ return done() });
       });
 
       it('ensures no continuations are called after the first reject', function(done){
         var f = function(a, done){ done(U.error); done(null, 'b'); done(U.error) };
-        encaseN(f, 'a').fork(function(){ return done() }, U.failRes);
+        encaseN(f, 'a')._interpret(done, function(){ return done() }, U.failRes);
       });
 
       it('ensures no continuations are called after cancel', function(done){
         var f = function(a, done){ return setTimeout(done, 5) };
-        encaseN(f, 'a').fork(U.failRej, U.failRes)();
+        encaseN(f, 'a')._interpret(done, U.failRej, U.failRes)();
         setTimeout(done, 20);
       });
 
     });
 
     describe('(binary)', function(){
+
+      it('crashes when the function throws', function(){
+        var m = encaseN2(function(){ throw U.error }, 1, 1);
+        return U.assertCrashed(m, new Error(
+          'Error came up while Future.encaseN2 was executing its operation:\n' +
+          '  Intentional error for unit testing\n'
+        ));
+      });
 
       it('rejects when the callback is called with (err)', function(){
         var f = function(a, b, done){ return done(U.error) };
@@ -175,23 +199,31 @@ describe('EncaseN', function(){
 
       it('ensures no continuations are called after the first resolve', function(done){
         var f = function(a, b, done){ done(null, 'a'); done(null, 'b'); done(U.error) };
-        encaseN2(f, 'a', 'b').fork(U.failRej, function(){ return done() });
+        encaseN2(f, 'a', 'b')._interpret(done, U.failRej, function(){ return done() });
       });
 
       it('ensures no continuations are called after the first reject', function(done){
         var f = function(a, b, done){ done(U.error); done(null, 'b'); done(U.error) };
-        encaseN2(f, 'a', 'b').fork(function(){ return done() }, U.failRes);
+        encaseN2(f, 'a', 'b')._interpret(done, function(){ return done() }, U.failRes);
       });
 
       it('ensures no continuations are called after cancel', function(done){
         var f = function(a, b, done){ return setTimeout(done, 5) };
-        encaseN2(f, 'a', 'b').fork(U.failRej, U.failRes)();
+        encaseN2(f, 'a', 'b')._interpret(done, U.failRej, U.failRes)();
         setTimeout(done, 20);
       });
 
     });
 
     describe('(ternary)', function(){
+
+      it('crashes when the function throws', function(){
+        var m = encaseN3(function(){ throw U.error }, 1, 1, 1);
+        return U.assertCrashed(m, new Error(
+          'Error came up while Future.encaseN3 was executing its operation:\n' +
+          '  Intentional error for unit testing\n'
+        ));
+      });
 
       it('rejects when the callback is called with (err)', function(){
         var f = function(a, b, c, done){ return done(U.error) };
@@ -205,17 +237,17 @@ describe('EncaseN', function(){
 
       it('ensures no continuations are called after the first resolve', function(done){
         var f = function(a, b, c, done){ done(null, 'a'); done(null, 'b'); done(U.error) };
-        encaseN3(f, 'a', 'b', 'c').fork(U.failRej, function(){ return done() });
+        encaseN3(f, 'a', 'b', 'c')._interpret(done, U.failRej, function(){ return done() });
       });
 
       it('ensures no continuations are called after the first reject', function(done){
         var f = function(a, b, c, done){ done(U.error); done(null, 'b'); done(U.error) };
-        encaseN3(f, 'a', 'b', 'c').fork(function(){ return done() }, U.failRes);
+        encaseN3(f, 'a', 'b', 'c')._interpret(done, function(){ return done() }, U.failRes);
       });
 
       it('ensures no continuations are called after cancel', function(done){
         var f = function(a, b, c, done){ return setTimeout(done, 5) };
-        encaseN3(f, 'a', 'b', 'c').fork(U.failRej, U.failRes)();
+        encaseN3(f, 'a', 'b', 'c')._interpret(done, U.failRej, U.failRes)();
         setTimeout(done, 20);
       });
 

@@ -1,7 +1,7 @@
 import {Core, isNever, never} from './core';
 import {show, partial1} from './internal/fn';
 import {isUnsigned} from './internal/is';
-import {invalidArgument} from './internal/throw';
+import {throwInvalidArgument} from './internal/throw';
 
 function After$race(other){
   return other.isSettled()
@@ -26,7 +26,7 @@ After.prototype._swap = function After$swap(){
   return new RejectAfter(this._time, this._value);
 };
 
-After.prototype._fork = function After$_fork(rej, res){
+After.prototype._interpret = function After$interpret(rec, rej, res){
   var id = setTimeout(res, this._time, this._value);
   return function After$cancel(){ clearTimeout(id) };
 };
@@ -52,7 +52,7 @@ RejectAfter.prototype._swap = function RejectAfter$swap(){
   return new After(this._time, this._value);
 };
 
-RejectAfter.prototype._fork = function RejectAfter$_fork(rej){
+RejectAfter.prototype._interpret = function RejectAfter$interpret(rec, rej){
   var id = setTimeout(rej, this._time, this._value);
   return function RejectAfter$cancel(){ clearTimeout(id) };
 };
@@ -70,7 +70,7 @@ function after$time(time, value){
 }
 
 export function after(time, value){
-  if(!isUnsigned(time)) invalidArgument('Future.after', 0, 'be a positive integer', time);
+  if(!isUnsigned(time)) throwInvalidArgument('Future.after', 0, 'be a positive integer', time);
   if(arguments.length === 1) return partial1(after$time, time);
   return after$time(time, value);
 }
@@ -80,7 +80,9 @@ function rejectAfter$time(time, reason){
 }
 
 export function rejectAfter(time, reason){
-  if(!isUnsigned(time)) invalidArgument('Future.rejectAfter', 0, 'be a positive integer', time);
+  if(!isUnsigned(time)){
+    throwInvalidArgument('Future.rejectAfter', 0, 'be a positive integer', time);
+  }
   if(arguments.length === 1) return partial1(rejectAfter$time, time);
   return rejectAfter$time(time, reason);
 }

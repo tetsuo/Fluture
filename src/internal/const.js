@@ -12,6 +12,6 @@ export var ordinal = ['first', 'second', 'third', 'fourth', 'fifth'];
 
 export var namespace = 'fluture';
 export var name = 'Future';
-export var version = 3;
+export var version = 4;
 
 export var $$type = namespace + '/' + name + '@' + version;

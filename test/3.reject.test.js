@@ -23,7 +23,7 @@ describe('Rejected', function(){
     expect(type(m)).to.equal(Future['@@type']);
   });
 
-  describe('#fork()', function(){
+  describe('#_interpret()', function(){
 
     it('calls failure callback with the reason', function(){
       return U.assertRejected(m, 1);

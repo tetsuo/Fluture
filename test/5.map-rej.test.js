@@ -10,7 +10,7 @@ var testInstance = function(mapRej){
     expect(type(mapRej(F.rejected, U.bang))).to.equal(Future['@@type']);
   });
 
-  describe('#fork()', function(){
+  describe('#_interpret()', function(){
 
     it('applies the given function to its rejection reason', function(){
       var actual = mapRej(F.rejected, U.bang);
@@ -23,12 +23,12 @@ var testInstance = function(mapRej){
     });
 
     it('does not resolve after being cancelled', function(done){
-      mapRej(F.resolvedSlow, U.failRej).fork(U.failRej, U.failRes)();
+      mapRej(F.resolvedSlow, U.failRej)._interpret(done, U.failRej, U.failRes)();
       setTimeout(done, 25);
     });
 
     it('does not reject after being cancelled', function(done){
-      mapRej(F.rejectedSlow, U.failRej).fork(U.failRej, U.failRes)();
+      mapRej(F.rejectedSlow, U.failRej)._interpret(done, U.failRej, U.failRes)();
       setTimeout(done, 25);
     });
 

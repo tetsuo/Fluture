@@ -1,10 +1,11 @@
 import {Core} from './core';
-import {show, showf, immediately, partial1, partial2, partial3} from './internal/fn';
+import {noop, show, showf, partial1, partial2, partial3} from './internal/fn';
 import {isThenable, isFunction} from './internal/is';
-import {invalidArgument, typeError} from './internal/throw';
+import {someError, typeError} from './internal/error';
+import {throwInvalidArgument} from './internal/throw';
 
-function check$promise(p, f, a, b, c){
-  return isThenable(p) ? p : typeError(
+function invalidPromise(p, f, a, b, c){
+  return typeError(
     'Future.encaseP3 expects the function it\'s given to return a Promise/Thenable'
     + '\n  Actual: ' + (show(p)) + '\n  From calling: ' + (showf(f))
     + '\n  With 1: ' + (show(a))
@@ -22,23 +23,28 @@ export function EncaseP3(fn, a, b, c){
 
 EncaseP3.prototype = Object.create(Core);
 
-EncaseP3.prototype._fork = function EncaseP3$fork(rej, res){
-  var _fn = this._fn;
-  var _a = this._a;
-  var _b = this._b;
-  var _c = this._c;
-  var open = true;
-  check$promise(_fn(_a, _b, _c), _fn, _a, _b, _c).then(immediately(function EncaseP3$res(x){
-    if(open){
-      open = false;
-      res(x);
+EncaseP3.prototype._interpret = function EncaseP3$interpret(rec, rej, res){
+  var open = true, fn = this._fn, a = this._a, b = this._b, c = this._c;
+  try{
+    var p = fn(a, b, c);
+    if(!isThenable(p)){
+      rec(someError('Future.encaseP3 was generating its Promise', invalidPromise(p, fn, a, b, c)));
+      return noop;
     }
-  }), immediately(function EncaseP3$rej(x){
-    if(open){
-      open = false;
-      rej(x);
-    }
-  }));
+    p.then(function EncaseP3$res(x){
+      if(open){
+        open = false;
+        res(x);
+      }
+    }, function EncaseP3$rej(x){
+      if(open){
+        open = false;
+        rej(x);
+      }
+    });
+  }catch(e){
+    rec(someError('Future.encaseP3 was generating its Promise', e));
+  }
   return function EncaseP3$cancel(){ open = false };
 };
 
@@ -55,7 +61,7 @@ EncaseP3.prototype.toString = function EncaseP3$toString(){
 };
 
 export function encaseP3(f, x, y, z){
-  if(!isFunction(f)) invalidArgument('Future.encaseP3', 0, 'be a function', f);
+  if(!isFunction(f)) throwInvalidArgument('Future.encaseP3', 0, 'be a function', f);
 
   switch(arguments.length){
     case 1: return partial1(encaseP3, f);

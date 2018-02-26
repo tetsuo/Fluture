@@ -2,16 +2,17 @@
 
 import Denque from 'denque';
 import {noop} from './fn';
+import {someError} from './error';
 
-export default function interpreter(rej, res){
+export default function interpretSequence(seq, rec, rej, res){
 
   //This is the primary queue of actions. All actions in here will be "cold",
   //meaning they haven't had the chance yet to run concurrent computations.
-  var cold = new Denque(this._actions.size);
+  var cold = new Denque(seq._actions.size);
 
   //This is the secondary queue of actions. All actions in here will be "hot",
   //meaning they have already had a chance to run a concurrent computation.
-  var queue = new Denque(this._actions.size);
+  var queue = new Denque(seq._actions.size);
 
   //These combined variables define our current state.
   // future  = the future we are currently forking
@@ -77,6 +78,19 @@ export default function interpreter(rej, res){
     settle(m);
   }
 
+  //This will cancel the current Future, the current action, and all queued hot actions.
+  function Sequence$cancel(){
+    cancel();
+    action && action.cancel();
+    while(it = queue.shift()) it.cancel();
+  }
+
+  //This function is called when an exception is caught.
+  function exception(e){
+    Sequence$cancel();
+    rec(someError('interpreting a Future', e, seq.toString()));
+  }
+
   //This function serves to kickstart concurrent computations.
   //Takes all actions from the cold queue *back-to-front*, and calls run() on
   //each of them, passing them the "early" function. If any of them settles (by
@@ -88,7 +102,6 @@ export default function interpreter(rej, res){
       if(settled) return;
       queue.unshift(it);
     }
-
     action = action.run(early);
   }
 
@@ -112,28 +125,23 @@ export default function interpreter(rej, res){
     while(true){
       settled = false;
       if(action = cold.shift()){
-        cancel = future._fork(rejected, resolved);
+        cancel = future._interpret(exception, rejected, resolved);
         if(!settled) warmupActions();
       }else if(action = queue.shift()){
-        cancel = future._fork(rejected, resolved);
+        cancel = future._interpret(exception, rejected, resolved);
       }else break;
       if(settled) continue;
       async = true;
       return;
     }
 
-    cancel = future._fork(rej, res);
+    cancel = future._interpret(exception, rej, res);
   }
 
   //Start the execution loop.
-  settle(this);
+  settle(seq);
 
-  //Return a cancellation function. It will cancel the current Future, the
-  //current action, and all queued hot actions.
-  return function Sequence$cancel(){
-    cancel();
-    action && action.cancel();
-    while(it = queue.shift()) it.cancel();
-  };
+  //Return the cancellation function.
+  return Sequence$cancel;
 
 }

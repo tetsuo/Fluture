@@ -2,7 +2,7 @@ import {expect} from 'chai';
 import {noop} from './util';
 import * as Fluture from '../index.mjs.js';
 
-const Future = require('../index.js');
+var Future = require('../index.js');
 
 describe('CommonJS build output', function(){
 
@@ -19,6 +19,10 @@ describe('CommonJS build output', function(){
     Object.keys(Fluture).forEach(key => {
       expect(typeof Future[key] === typeof Fluture[key]);
     });
+  });
+
+  it('exports Future with the correct name property', function(){
+    expect(Future.name).to.equal(Fluture.Future.name);
   });
 
 });

@@ -99,7 +99,7 @@ describe('Compliance', function(){
         var d = of;
         var n = B(of)(function(v){ return v + 1 });
         var a = Future[FL.chainRec](function(l, r, v){ return p(v) ? d(v)[FL.map](r) : n(v)[FL.map](l) }, 0);
-        expect(function(){ return a.fork(U.noop, U.noop) }).to.not.throw();
+        expect(function(){ return a._interpret(U.noop, U.noop, U.noop) }).to.not.throw();
       });
 
     });
@@ -212,7 +212,7 @@ describe('Compliance', function(){
         var d = of;
         var n = B(of)(function(v){ return v + 1 });
         var a = chainRec(function(l, r, v){ return p(v) ? map(r, d(v)) : map(l, n(v)) }, 0);
-        expect(function(){ return a.fork(U.noop, U.noop) }).to.not.throw();
+        expect(function(){ return a._interpret(U.noop, U.noop, U.noop) }).to.not.throw();
       });
 
     });

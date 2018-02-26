@@ -27,7 +27,15 @@ describe('ChainRec', function(){
     expect(type(Future.chainRec(U.noop, 1))).to.equal(Future['@@type']);
   });
 
-  describe('#fork()', function(){
+  describe('#_interpret()', function(){
+
+    it('crashes if the iterator throws', function(){
+      var m = Future.chainRec(function(){ throw U.error });
+      return U.assertCrashed(m, new Error(
+        'Error came up while Future.chainRec was calling its iterator:\n' +
+        '  Intentional error for unit testing\n'
+      ));
+    });
 
     it('does not break if the iteration does not contain a value key', function(){
       var actual = Future.chainRec(function(f, g, x){ return (x, of({done: true})) }, 0);
@@ -44,7 +52,7 @@ describe('ChainRec', function(){
         expect(done(x)).to.satisfy(isIteration);
         expect(x).to.equal(42);
         return of(done(x));
-      }, 42).fork(U.noop, U.noop);
+      }, 42)._interpret(U.noop, U.noop, U.noop);
     });
 
     it('calls the function with the value from the current iteration', function(){
@@ -52,7 +60,7 @@ describe('ChainRec', function(){
       Future.chainRec(function(f, g, x){
         expect(x).to.equal(i);
         return x < 5 ? of(f(++i)) : of(g(x));
-      }, i).fork(U.noop, U.noop);
+      }, i)._interpret(U.noop, U.noop, U.noop);
     });
 
     it('works asynchronously', function(){
@@ -73,13 +81,14 @@ describe('ChainRec', function(){
     });
 
     it('can be cancelled straight away', function(done){
-      Future.chainRec(function(f, g, x){ return after(10, g(x)) }, 1).fork(U.failRej, U.failRes)();
+      Future.chainRec(function(f, g, x){ return after(10, g(x)) }, 1)
+      ._interpret(done, U.failRej, U.failRes)();
       setTimeout(done, 20);
     });
 
     it('can be cancelled after some iterations', function(done){
       var m = Future.chainRec(function(f, g, x){ return after(10, x < 5 ? f(x + 1) : g(x)) }, 0);
-      var cancel = m.fork(U.failRej, U.failRes);
+      var cancel = m._interpret(done, U.failRej, U.failRes);
       setTimeout(cancel, 25);
       setTimeout(done, 70);
     });

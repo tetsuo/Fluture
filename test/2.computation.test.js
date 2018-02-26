@@ -38,20 +38,32 @@ describe('Computation', function(){
     expect(type(Future(U.noop))).to.equal(Future['@@type']);
   });
 
-  describe('#fork()', function(){
+  describe('#_interpret()', function(){
 
-    it('throws TypeError when the computation returns nonsense', function(){
-      var xs = [null, 1, function(a){ return a }, function(a, b){ return b }, 'hello'];
-      var ms = xs.map(function(x){ return Future(function(){ return x }) });
-      var fs = ms.map(function(m){ return function(){ return m.fork(U.noop, U.noop) } });
-      fs.forEach(function(f){ return expect(f).to.throw(TypeError, /Future/) });
+    it('crashes when the computation throws an error', function(){
+      var m = Future(function(){ throw U.error });
+      return U.assertCrashed(m, new Error(
+        'Error came up while Future was running its computation:\n' +
+        '  Intentional error for unit testing\n\n' +
+        '  In: Future(function (){ throw U.error })\n'
+      ));
+    });
+
+    it('crashes when the computation returns nonsense', function(){
+      var m = Future(function(){ return 1 });
+      return U.assertCrashed(m, new Error(
+        'TypeError came up while Future ran its computation:\n' +
+        '  The computation was expected to return a nullary function or void\n' +
+        '    Actual: 1\n\n' +
+        '  In: Future(function (){ return 1 })\n'
+      ));
     });
 
     it('does not throw when the computation returns a nullary function or void', function(){
       var xs = [undefined, function(){}];
       var ms = xs.map(function(x){ return Future(function(){ return x }) });
-      var fs = ms.map(function(m){ return function(){ return m.fork(U.noop, U.noop) } });
-      fs.forEach(function(f){ return expect(f).to.not.throw(TypeError, /Future/) });
+      var fs = ms.map(function(m){ return function(){ return m._interpret(U.throwit, U.noop, U.noop) } });
+      fs.forEach(function(f){ return expect(f).to.not.throw() });
     });
 
     it('ensures no continuations are called after the first resolve', function(done){
@@ -60,7 +72,7 @@ describe('Computation', function(){
         res(2);
         rej(3);
       });
-      actual.fork(U.failRej, function(){ return done() });
+      actual._interpret(done, U.failRej, function(){ return done() });
     });
 
     it('ensures no continuations are called after the first reject', function(done){
@@ -69,7 +81,7 @@ describe('Computation', function(){
         rej(2);
         res(3);
       });
-      actual.fork(function(){ return done() }, U.failRes);
+      actual._interpret(done, function(){ return done() }, U.failRes);
     });
 
     it('stops continuations from being called after cancellation', function(done){
@@ -77,7 +89,7 @@ describe('Computation', function(){
         setTimeout(res, 20, 1);
         setTimeout(rej, 20, 1);
       })
-      .fork(U.failRej, U.failRes)();
+      ._interpret(done, U.failRej, U.failRes)();
       setTimeout(done, 25);
     });
 
@@ -88,7 +100,7 @@ describe('Computation', function(){
           res();
         };
       })
-      .fork(U.failRej, U.failRes)();
+      ._interpret(U.throwit, U.failRej, U.failRes)();
     });
 
     it('stops cancellation from being called after continuations', function(){
@@ -96,7 +108,7 @@ describe('Computation', function(){
         res(1);
         return function(){ throw U.error };
       });
-      var cancel = m.fork(U.failRej, U.noop);
+      var cancel = m._interpret(U.throwit, U.failRej, U.noop);
       cancel();
     });
 

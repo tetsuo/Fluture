@@ -40,14 +40,14 @@ describe('After', function(){
     expect(type(m)).to.equal(Future['@@type']);
   });
 
-  describe('#fork()', function(){
+  describe('#_interpret()', function(){
 
     it('calls success callback with the value', function(){
       return U.assertResolved(m, 1);
     });
 
     it('clears its internal timeout when cancelled', function(done){
-      after(20, 1).fork(U.failRej, U.failRes)();
+      after(20, 1)._interpret(done, U.failRej, U.failRes)();
       setTimeout(done, 25);
     });
 

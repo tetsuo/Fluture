@@ -1,10 +1,11 @@
 import {Core} from './core';
-import {show, showf, immediately, partial1} from './internal/fn';
+import {noop, show, showf, partial1} from './internal/fn';
 import {isThenable, isFunction} from './internal/is';
-import {invalidArgument, typeError} from './internal/throw';
+import {someError, typeError} from './internal/error';
+import {throwInvalidArgument} from './internal/throw';
 
-function check$promise(p, f, a){
-  return isThenable(p) ? p : typeError(
+function invalidPromise(p, f, a){
+  return typeError(
     'Future.encaseP expects the function it\'s given to return a Promise/Thenable'
     + '\n  Actual: ' + (show(p)) + '\n  From calling: ' + (showf(f))
     + '\n  With: ' + (show(a))
@@ -18,21 +19,28 @@ export function EncaseP(fn, a){
 
 EncaseP.prototype = Object.create(Core);
 
-EncaseP.prototype._fork = function EncaseP$fork(rej, res){
-  var _fn = this._fn;
-  var _a = this._a;
-  var open = true;
-  check$promise(_fn(_a), _fn, _a).then(immediately(function EncaseP$res(x){
-    if(open){
-      open = false;
-      res(x);
+EncaseP.prototype._interpret = function EncaseP$interpret(rec, rej, res){
+  var open = true, fn = this._fn, a = this._a;
+  try{
+    var p = fn(a);
+    if(!isThenable(p)){
+      rec(someError('Future.encaseP was generating its Promise', invalidPromise(p, fn, a)));
+      return noop;
     }
-  }), immediately(function EncaseP$rej(x){
-    if(open){
-      open = false;
-      rej(x);
-    }
-  }));
+    p.then(function EncaseP$res(x){
+      if(open){
+        open = false;
+        res(x);
+      }
+    }, function EncaseP$rej(x){
+      if(open){
+        open = false;
+        rej(x);
+      }
+    });
+  }catch(e){
+    rec(someError('Future.encaseP was generating its Promise', e));
+  }
   return function EncaseP$cancel(){ open = false };
 };
 
@@ -41,7 +49,7 @@ EncaseP.prototype.toString = function EncaseP$toString(){
 };
 
 export function encaseP(f, x){
-  if(!isFunction(f)) invalidArgument('Future.encaseP', 0, 'be a function', f);
+  if(!isFunction(f)) throwInvalidArgument('Future.encaseP', 0, 'be a function', f);
   if(arguments.length === 1) return partial1(encaseP, f);
   return new EncaseP(f, x);
 }

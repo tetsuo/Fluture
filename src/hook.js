@@ -1,10 +1,11 @@
 import {Core, isFuture} from './core';
 import {noop, show, showf, partial1, partial2} from './internal/fn';
 import {isFunction} from './internal/is';
-import {invalidArgument, invalidFuture} from './internal/throw';
+import {invalidFuture, someError} from './internal/error';
+import {throwInvalidArgument, throwInvalidFuture} from './internal/throw';
 
-function check$dispose(m, f, x){
-  if(!isFuture(m)) invalidFuture(
+function invalidDisposal(m, f, x){
+  return invalidFuture(
     'Future.hook',
     'the first function it\'s given to return a Future',
     m,
@@ -12,8 +13,8 @@ function check$dispose(m, f, x){
   );
 }
 
-function check$consume(m, f, x){
-  if(!isFuture(m)) invalidFuture(
+function invalidConsumption(m, f, x){
+  return invalidFuture(
     'Future.hook',
     'the second function it\'s given to return a Future',
     m,
@@ -29,25 +30,41 @@ export function Hook(acquire, dispose, consume){
 
 Hook.prototype = Object.create(Core);
 
-Hook.prototype._fork = function Hook$fork(rej, res){
+Hook.prototype._interpret = function Hook$interpret(rec, rej, res){
 
-  var _acquire = this._acquire, _dispose = this._dispose, _consume = this._consume;
+  var _this = this, _acquire = this._acquire, _dispose = this._dispose, _consume = this._consume;
   var cancel, cancelAcquire = noop, cancelConsume = noop, resource, value, cont = noop;
 
   function Hook$done(){
     cont(value);
   }
 
+  function Hook$consumptionException(e){
+    rec(someError('trying to consume resources for a hooked Future', e, _this.toString()));
+  }
+
+  function Hook$disposalException(e){
+    rec(someError('trying to dispose resources for a hooked Future', e, _this.toString()));
+  }
+
   function Hook$dispose(){
-    var disposal = _dispose(resource);
-    check$dispose(disposal, _dispose, resource);
-    cancel = disposal._fork(rej, Hook$done);
-    return cancel;
+    cancel = noop;
+    var disposal;
+    try{
+      disposal = _dispose(resource);
+    }catch(e){
+      return Hook$disposalException(e);
+    }
+    if(!isFuture(disposal)){
+      return Hook$disposalException(invalidDisposal(disposal, _dispose, resource));
+    }
+    cancel = disposal._interpret(Hook$disposalException, rej, Hook$done);
   }
 
   function Hook$cancelConsuption(){
     cancelConsume();
-    Hook$dispose()();
+    Hook$dispose();
+    cancel();
   }
 
   function Hook$consumptionRejected(x){
@@ -62,15 +79,26 @@ Hook.prototype._fork = function Hook$fork(rej, res){
     Hook$dispose();
   }
 
-  function Hook$acquireResolved(x){
+  function Hook$consume(x){
     resource = x;
-    var consumption = _consume(resource);
-    check$consume(consumption, _consume, resource);
     cancel = Hook$cancelConsuption;
-    cancelConsume = consumption._fork(Hook$consumptionRejected, Hook$consumptionResolved);
+    var consumption;
+    try{
+      consumption = _consume(resource);
+    }catch(e){
+      return Hook$consumptionException(e);
+    }
+    if(!isFuture(consumption)){
+      return Hook$consumptionException(invalidConsumption(consumption, _consume, resource));
+    }
+    cancelConsume = consumption._interpret(
+      Hook$consumptionException,
+      Hook$consumptionRejected,
+      Hook$consumptionResolved
+    );
   }
 
-  cancelAcquire = _acquire._fork(rej, Hook$acquireResolved);
+  cancelAcquire = _acquire._interpret(rec, rej, Hook$consume);
 
   cancel = cancel || cancelAcquire;
 
@@ -89,18 +117,18 @@ Hook.prototype.toString = function Hook$toString(){
 };
 
 function hook$acquire$cleanup(acquire, cleanup, consume){
-  if(!isFunction(consume)) invalidArgument('Future.hook', 2, 'be a Future', consume);
+  if(!isFunction(consume)) throwInvalidArgument('Future.hook', 2, 'be a Future', consume);
   return new Hook(acquire, cleanup, consume);
 }
 
 function hook$acquire(acquire, cleanup, consume){
-  if(!isFunction(cleanup)) invalidArgument('Future.hook', 1, 'be a function', cleanup);
+  if(!isFunction(cleanup)) throwInvalidArgument('Future.hook', 1, 'be a function', cleanup);
   if(arguments.length === 2) return partial2(hook$acquire$cleanup, acquire, cleanup);
   return hook$acquire$cleanup(acquire, cleanup, consume);
 }
 
 export function hook(acquire, cleanup, consume){
-  if(!isFuture(acquire)) invalidFuture('Future.hook', 0, acquire);
+  if(!isFuture(acquire)) throwInvalidFuture('Future.hook', 0, acquire);
   if(arguments.length === 1) return partial1(hook$acquire, acquire);
   if(arguments.length === 2) return hook$acquire(acquire, cleanup);
   return hook$acquire(acquire, cleanup, consume);

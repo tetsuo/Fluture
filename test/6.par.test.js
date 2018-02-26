@@ -63,8 +63,13 @@ describe('Par()', function(){
     var mf = of(U.bang);
 
     it('throws TypeError when the Future does not resolve to a Function', function(){
-      var f = function(){ return seq(ap(Par(of(1)), Par(F.resolved))).fork(U.noop, U.noop) };
-      expect(f).to.throw(TypeError, /Future#ap/);
+      var m = seq(ap(Par(of(1)), Par(F.resolved)));
+      return U.assertCrashed(m, new Error(
+        'TypeError came up while interpreting a Future:\n' +
+        '  Future#ap expects its first argument to be a Future of a Function\n' +
+        '    Actual: Future.of(1)\n\n' +
+        '  In: Future.of(1)._parallelAp(Future.of("resolved"))\n'
+      ));
     });
 
     it('calls the function contained in the given Future to its contained value', function(){
@@ -95,7 +100,7 @@ describe('Par()', function(){
       return U.assertRejected(seq(actual), 'rejected');
     });
 
-    it('forks in parallel', function(){
+    it('interprets in parallel', function(){
       this.slow(40);
       this.timeout(30);
       var actual = ap(Par(F.resolvedSlow.and(mf)), Par(F.resolvedSlow));
@@ -105,13 +110,13 @@ describe('Par()', function(){
     it('creates a cancel function which cancels both Futures', function(done){
       var cancelled = false;
       var m = Par(Future(function(){ return function(){ return (cancelled ? done() : (cancelled = true)) } }));
-      var cancel = seq(ap(m, m)).fork(U.noop, U.noop);
+      var cancel = seq(ap(m, m))._interpret(done, U.noop, U.noop);
       cancel();
     });
 
     it('shows a reasonable representation when cast to string', function(){
       var m = ap(Par(of(1)), Par(reject(0)));
-      var s = 'ConcurrentFuture(new ParallelAp(Future.reject(0), Future.of(1)))';
+      var s = 'ConcurrentFuture(Future.of(1)._parallelAp(Future.reject(0)))';
       expect(m.toString()).to.equal(s);
     });
 
