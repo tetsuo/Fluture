@@ -24,27 +24,28 @@ export function EncaseP3(fn, a, b, c){
 EncaseP3.prototype = Object.create(Core);
 
 EncaseP3.prototype._interpret = function EncaseP3$interpret(rec, rej, res){
-  var open = true, fn = this._fn, a = this._a, b = this._b, c = this._c;
+  var open = true, fn = this._fn, a = this._a, b = this._b, c = this._c, p;
   try{
-    var p = fn(a, b, c);
-    if(!isThenable(p)){
-      rec(someError('Future.encaseP3 was generating its Promise', invalidPromise(p, fn, a, b, c)));
-      return noop;
-    }
-    p.then(function EncaseP3$res(x){
-      if(open){
-        open = false;
-        res(x);
-      }
-    }, function EncaseP3$rej(x){
-      if(open){
-        open = false;
-        rej(x);
-      }
-    });
+    p = fn(a, b, c);
   }catch(e){
     rec(someError('Future.encaseP3 was generating its Promise', e));
+    return noop;
   }
+  if(!isThenable(p)){
+    rec(someError('Future.encaseP3 was generating its Promise', invalidPromise(p, fn, a, b, c)));
+    return noop;
+  }
+  p.then(function EncaseP3$res(x){
+    if(open){
+      open = false;
+      res(x);
+    }
+  }, function EncaseP3$rej(x){
+    if(open){
+      open = false;
+      rej(x);
+    }
+  });
   return function EncaseP3$cancel(){ open = false };
 };
 

@@ -103,6 +103,10 @@ module.exports = require('sanctuary-benchmark')(Old, New, config, {
     {}, ({Future, parallel}) => run(parallel(2, arr(Future, 100)))
   ],
 
+  'run.construct.go': [
+    {}, ({go, of}) => run(go(function*() { return (yield of(1)) + (yield of(2)); }))
+  ],
+
   'run.transform.sync.ap': [
     {}, ({of, ap}) => run(ap(of(plus1), of(1)))
   ],

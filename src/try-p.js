@@ -18,27 +18,28 @@ export function TryP(fn){
 TryP.prototype = Object.create(Core);
 
 TryP.prototype._interpret = function TryP$interpret(rec, rej, res){
-  var open = true, fn = this._fn;
+  var open = true, fn = this._fn, p;
   try{
-    var p = fn();
-    if(!isThenable(p)){
-      rec(someError('Future.tryP was generating its Promise', invalidPromise(p, fn)));
-      return noop;
-    }
-    p.then(function TryP$res(x){
-      if(open){
-        open = false;
-        res(x);
-      }
-    }, function TryP$rej(x){
-      if(open){
-        open = false;
-        rej(x);
-      }
-    });
+    p = fn();
   }catch(e){
     rec(someError('Future.tryP was generating its Promise', e));
+    return noop;
   }
+  if(!isThenable(p)){
+    rec(someError('Future.tryP was generating its Promise', invalidPromise(p, fn)));
+    return noop;
+  }
+  p.then(function TryP$res(x){
+    if(open){
+      open = false;
+      res(x);
+    }
+  }, function TryP$rej(x){
+    if(open){
+      open = false;
+      rej(x);
+    }
+  });
   return function TryP$cancel(){ open = false };
 };
 

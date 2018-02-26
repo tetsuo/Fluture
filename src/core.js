@@ -252,14 +252,16 @@ Computation.prototype._interpret = function Computation$interpret(rec, rej, res)
         res(x);
       }
     }) || noop;
-    if(!(isFunction(cancel) && cancel.length === 0)){
-      rec(someError('Future ran its computation', typeError(
-        'The computation was expected to return a nullary function or void\n' +
-        '  Actual: ' + show(cancel)
-      ), show(this)));
-    }
   }catch(e){
+    open = false;
     rec(someError('Future was running its computation', e, show(this)));
+    return noop;
+  }
+  if(!(isFunction(cancel) && cancel.length === 0)){
+    rec(someError('Future ran its computation', typeError(
+      'The computation was expected to return a nullary function or void\n' +
+      '  Actual: ' + show(cancel)
+    ), show(this)));
   }
   return function Computation$cancel(){
     if(open){

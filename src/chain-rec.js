@@ -23,22 +23,25 @@ ChainRec.prototype._interpret = function ChainRec$interpret(rec, rej, res){
   }
 
   function drain(){
-    try{
-      while(!state.done){
-        timing = Undetermined;
-        var m = _step(Next, Done, state.value);
-        cancel = m._interpret(rec, rej, resolved);
+    while(!state.done){
+      timing = Undetermined;
 
-        if(timing !== Synchronous){
-          timing = Asynchronous;
-          return;
-        }
+      try{
+        var m = _step(Next, Done, state.value);
+      }catch(e){
+        rec(someError('Future.chainRec was calling its iterator', e));
+        return;
       }
 
-      res(state.value);
-    }catch(e){
-      rec(someError('Future.chainRec was calling its iterator', e));
+      cancel = m._interpret(rec, rej, resolved);
+
+      if(timing !== Synchronous){
+        timing = Asynchronous;
+        return;
+      }
     }
+
+    res(state.value);
   }
 
   drain();

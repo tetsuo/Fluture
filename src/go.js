@@ -59,27 +59,30 @@ Go.prototype._interpret = function Go$interpret(rec, rej, res){
   }
 
   function drain(){
-    try{
-      //eslint-disable-next-line no-constant-condition
-      while(true){
+    //eslint-disable-next-line no-constant-condition
+    while(true){
+      try{
         state = iterator.next(value);
-        if(!isIteration(state)) return rec(someError(
-          'Future.do was obtaining the next Future',
-          invalidIteration(state))
-        );
-        if(state.done) break;
-        if(!isFuture(state.value)) return rec(someError(
-          'Future.do was about to consume the next Future',
-          invalidState(state.value)
+      }catch(e){
+        return rec(someError(
+          'Future.do was passing control to the iterator',
+          e, showf(iterator.next)
         ));
-        timing = Undetermined;
-        cancel = state.value._interpret(exception, rej, resolved);
-        if(timing === Undetermined) return timing = Asynchronous;
       }
-      res(state.value);
-    }catch(e){
-      rec(someError('Future.do was passing control to the iterator', e, showf(iterator.next)));
+      if(!isIteration(state)) return rec(someError(
+        'Future.do was obtaining the next Future',
+        invalidIteration(state)
+      ));
+      if(state.done) break;
+      if(!isFuture(state.value)) return rec(someError(
+        'Future.do was about to consume the next Future',
+        invalidState(state.value)
+      ));
+      timing = Undetermined;
+      cancel = state.value._interpret(exception, rej, resolved);
+      if(timing === Undetermined) return timing = Asynchronous;
     }
+    res(state.value);
   }
 
   drain();

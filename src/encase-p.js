@@ -20,27 +20,28 @@ export function EncaseP(fn, a){
 EncaseP.prototype = Object.create(Core);
 
 EncaseP.prototype._interpret = function EncaseP$interpret(rec, rej, res){
-  var open = true, fn = this._fn, a = this._a;
+  var open = true, fn = this._fn, a = this._a, p;
   try{
-    var p = fn(a);
-    if(!isThenable(p)){
-      rec(someError('Future.encaseP was generating its Promise', invalidPromise(p, fn, a)));
-      return noop;
-    }
-    p.then(function EncaseP$res(x){
-      if(open){
-        open = false;
-        res(x);
-      }
-    }, function EncaseP$rej(x){
-      if(open){
-        open = false;
-        rej(x);
-      }
-    });
+    p = fn(a);
   }catch(e){
     rec(someError('Future.encaseP was generating its Promise', e));
+    return noop;
   }
+  if(!isThenable(p)){
+    rec(someError('Future.encaseP was generating its Promise', invalidPromise(p, fn, a)));
+    return noop;
+  }
+  p.then(function EncaseP$res(x){
+    if(open){
+      open = false;
+      res(x);
+    }
+  }, function EncaseP$rej(x){
+    if(open){
+      open = false;
+      rej(x);
+    }
+  });
   return function EncaseP$cancel(){ open = false };
 };
 
