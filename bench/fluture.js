@@ -147,7 +147,7 @@ module.exports = require('sanctuary-benchmark')(Old, New, config, {
     {defer: true}, ({Future, chain}, [d]) => {
       const f = x => fast(Future, plus1(x));
       let m = fast(Future, 1);
-      for(let i = 0; i < 1000; i++) { m = chain(f, m); }
+      for(let i = 0; i < 100; i++) { m = chain(f, m); }
       m.value(() => d.resolve());
     }
   ],

@@ -3,16 +3,13 @@
 import Denque from 'denque';
 import {noop} from './fn';
 import {someError} from './error';
+import {nil, cons} from './list';
 
 export default function interpretSequence(seq, rec, rej, res){
 
   //This is the primary queue of actions. All actions in here will be "cold",
   //meaning they haven't had the chance yet to run concurrent computations.
-  var cold = new Denque(seq._actions.size);
-
-  //This is the secondary queue of actions. All actions in here will be "hot",
-  //meaning they have already had a chance to run a concurrent computation.
-  var queue = new Denque(seq._actions.size);
+  var queue = new Denque();
 
   //These combined variables define our current state.
   // future  = the future we are currently forking
@@ -20,7 +17,21 @@ export default function interpretSequence(seq, rec, rej, res){
   // cancel  = the cancel function of the current future
   // settled = a boolean indicating whether a new tick should start
   // async   = a boolean indicating whether we are awaiting a result asynchronously
-  var future, action, cancel = noop, settled, async = true, it;
+  var future, action, cancel = noop, stack = nil, settled, async = true, it;
+
+  //Pushes a new action onto the stack. The stack is used to keep "hot"
+  //actions. The last one added is the first one to process, because actions
+  //are pushed right-to-left (see warmupActions).
+  function pushStack(x){
+    stack = cons(x, stack);
+  }
+
+  //Takes the leftmost action from the stack and returns it.
+  function popStack(){
+    var x = stack.head;
+    stack = stack.tail;
+    return x;
+  }
 
   //This function is called with a future to use in the next tick.
   //Here we "flatten" the actions of another Sequence into our own actions,
@@ -34,8 +45,8 @@ export default function interpretSequence(seq, rec, rej, res){
     if(future._spawn){
       var tail = future._actions;
 
-      while(!tail.isEmpty){
-        cold.unshift(tail.head);
+      while(tail !== nil){
+        queue.unshift(tail.head);
         tail = tail.tail;
       }
 
@@ -68,11 +79,11 @@ export default function interpretSequence(seq, rec, rej, res){
   //their results are no longer needed.
   function early(m, terminator){
     cancel();
-    cold.clear();
+    queue.clear();
 
     if(async && action !== terminator){
       action.cancel();
-      while((it = queue.shift()) && it !== terminator) it.cancel();
+      while((it = popStack()) && it !== terminator) it.cancel();
     }
 
     settle(m);
@@ -82,7 +93,7 @@ export default function interpretSequence(seq, rec, rej, res){
   function Sequence$cancel(){
     cancel();
     action && action.cancel();
-    while(it = queue.shift()) it.cancel();
+    while(it = popStack()) it.cancel();
   }
 
   //This function is called when an exception is caught.
@@ -97,10 +108,10 @@ export default function interpretSequence(seq, rec, rej, res){
   //calling early()), we abort. After warming up all actions in the cold queue,
   //we warm up the current action as well.
   function warmupActions(){
-    while(it = cold.pop()){
+    while(it = queue.pop()){
       it = it.run(early);
       if(settled) return;
-      queue.unshift(it);
+      pushStack(it);
     }
     action = action.run(early);
   }
@@ -124,10 +135,10 @@ export default function interpretSequence(seq, rec, rej, res){
 
     while(true){
       settled = false;
-      if(action = cold.shift()){
+      if(action = queue.shift()){
         cancel = future._interpret(exception, rejected, resolved);
         if(!settled) warmupActions();
-      }else if(action = queue.shift()){
+      }else if(action = popStack()){
         cancel = future._interpret(exception, rejected, resolved);
       }else break;
       if(settled) continue;

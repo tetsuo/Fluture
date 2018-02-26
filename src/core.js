@@ -2,7 +2,7 @@ import {show, showf, noop, moop, raise} from './internal/fn';
 import {isFunction} from './internal/is';
 import {FL, $$type} from './internal/const';
 import interpret from './internal/interpreter';
-import {empty as emptyList, cons} from './internal/list';
+import {nil, cons} from './internal/list';
 import type from 'sanctuary-type-identifiers';
 import {error, typeError, invalidFuture, someError} from './internal/error';
 import {throwInvalidArgument, throwInvalidContext, throwInvalidFuture} from './internal/throw';
@@ -734,7 +734,7 @@ BothActionState.prototype = Object.create(BothAction.prototype);
 
 export function Sequence(spawn, actions){
   this._spawn = spawn;
-  this._actions = actions || emptyList;
+  this._actions = actions || nil;
 }
 
 Sequence.prototype = Object.create(Future.prototype);
@@ -806,7 +806,7 @@ Sequence.prototype._interpret = function Sequence$interpret(rec, rej, res){
 Sequence.prototype.toString = function Sequence$toString(){
   var str = '', tail = this._actions;
 
-  while(!tail.isEmpty){
+  while(tail !== nil){
     str = '.' + tail.head.toString() + str;
     tail = tail.tail;
   }

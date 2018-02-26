@@ -1,5 +1,8 @@
-export var empty = ({isEmpty: true, size: 0, head: null, tail: null});
+/* eslint no-param-reassign:0 */
+
+export var nil = {head: null};
+nil.tail = nil;
 
 export function cons(head, tail){
-  return {isEmpty: false, size: tail.size + 1, head: head, tail: tail};
+  return {head: head, tail: tail};
 }
