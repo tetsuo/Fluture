@@ -360,10 +360,10 @@ compatible.both(Future.of('world')).value(console.log);
 
 #### Future
 
-<details><summary><code>Future :: ((a -> x, b -> x) -> Cancel) -> Future a b</code></summary>
+<details><summary><code>Future :: ((a -> Undefined, b -> Undefined) -> Cancel) -> Future a b</code></summary>
 
 ```hs
-Future :: ((a -> x, b -> x) -> Cancel) -> Future a b
+Future :: ((a -> Undefined, b -> Undefined) -> Cancel) -> Future a b
 ```
 
 </details>
@@ -978,11 +978,11 @@ any([Future.reject(1), Future.after(20, 2), Future.of(3)]).value(console.log);
 
 #### fork
 
-<details><summary><code>fork :: (a -> x) -> (b -> x) -> Future a b -> Cancel</code></summary>
+<details><summary><code>fork :: (a -> Any) -> (b -> Any) -> Future a b -> Cancel</code></summary>
 
 ```hs
-fork                  ::               (a -> x) -> (b -> x) -> Future a b -> Cancel
-Future.prototype.fork :: Future a b ~> (a -> x,     b -> x)               -> Cancel
+fork                  ::               (a -> Any) -> (b -> Any) -> Future a b -> Cancel
+Future.prototype.fork :: Future a b ~> (a -> Any,     b -> Any)               -> Cancel
 ```
 
 </details>
