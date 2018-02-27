@@ -121,14 +121,17 @@ describe('EncaseN', function(){
         return U.assertResolved(node(f), 'a');
       });
 
-      it('ensures no continuations are called after the first resolve', function(done){
-        var f = function(done){ done(null, 'a'); done(null, 'b'); done(U.error) };
-        node(f)._interpret(done, U.failRej, function(){ return done() });
+      it('settles with the last synchronous call to done', function(){
+        var f = function(done){ done(null, 'a'); done(U.error); done(null, 'b') };
+        return U.assertResolved(node(f), 'b');
       });
 
-      it('ensures no continuations are called after the first reject', function(done){
-        var f = function(done){ done(U.error); done(null, 'b'); done(U.error) };
-        node(f)._interpret(done, function(){ return done() }, U.failRes);
+      it('settles with the first asynchronous call to done', function(){
+        var f = function(done){
+          setTimeout(done, 10, null, 'a');
+          setTimeout(done, 50, null, 'b');
+        };
+        return U.assertResolved(node(f), 'a');
       });
 
       it('ensures no continuations are called after cancel', function(done){
@@ -159,14 +162,17 @@ describe('EncaseN', function(){
         return U.assertResolved(encaseN(f, 'a'), 'a');
       });
 
-      it('ensures no continuations are called after the first resolve', function(done){
-        var f = function(a, done){ done(null, 'a'); done(null, 'b'); done(U.error) };
-        encaseN(f, 'a')._interpret(done, U.failRej, function(){ return done() });
+      it('settles with the last synchronous call to done', function(){
+        var f = function(a, done){ done(null, 'a'); done(U.error); done(null, a) };
+        return U.assertResolved(encaseN(f, 'b'), 'b');
       });
 
-      it('ensures no continuations are called after the first reject', function(done){
-        var f = function(a, done){ done(U.error); done(null, 'b'); done(U.error) };
-        encaseN(f, 'a')._interpret(done, function(){ return done() }, U.failRes);
+      it('settles with the first asynchronous call to done', function(){
+        var f = function(a, done){
+          setTimeout(done, 10, null, a);
+          setTimeout(done, 50, null, 'b');
+        };
+        return U.assertResolved(encaseN(f, 'a'), 'a');
       });
 
       it('ensures no continuations are called after cancel', function(done){
@@ -197,14 +203,17 @@ describe('EncaseN', function(){
         return U.assertResolved(encaseN2(f, 'a', 'b'), 'a');
       });
 
-      it('ensures no continuations are called after the first resolve', function(done){
-        var f = function(a, b, done){ done(null, 'a'); done(null, 'b'); done(U.error) };
-        encaseN2(f, 'a', 'b')._interpret(done, U.failRej, function(){ return done() });
+      it('settles with the last synchronous call to done', function(){
+        var f = function(a, b, done){ done(null, a); done(U.error); done(null, b) };
+        return U.assertResolved(encaseN2(f, 'a', 'b'), 'b');
       });
 
-      it('ensures no continuations are called after the first reject', function(done){
-        var f = function(a, b, done){ done(U.error); done(null, 'b'); done(U.error) };
-        encaseN2(f, 'a', 'b')._interpret(done, function(){ return done() }, U.failRes);
+      it('settles with the first asynchronous call to done', function(){
+        var f = function(a, b, done){
+          setTimeout(done, 10, null, a);
+          setTimeout(done, 50, null, b);
+        };
+        return U.assertResolved(encaseN2(f, 'a', 'b'), 'a');
       });
 
       it('ensures no continuations are called after cancel', function(done){
@@ -235,14 +244,17 @@ describe('EncaseN', function(){
         return U.assertResolved(encaseN3(f, 'a', 'b', 'c'), 'a');
       });
 
-      it('ensures no continuations are called after the first resolve', function(done){
-        var f = function(a, b, c, done){ done(null, 'a'); done(null, 'b'); done(U.error) };
-        encaseN3(f, 'a', 'b', 'c')._interpret(done, U.failRej, function(){ return done() });
+      it('settles with the last synchronous call to done', function(){
+        var f = function(a, b, c, done){ done(null, a); done(U.error); done(null, c) };
+        return U.assertResolved(encaseN3(f, 'a', 'b', 'c'), 'c');
       });
 
-      it('ensures no continuations are called after the first reject', function(done){
-        var f = function(a, b, c, done){ done(U.error); done(null, 'b'); done(U.error) };
-        encaseN3(f, 'a', 'b', 'c')._interpret(done, function(){ return done() }, U.failRes);
+      it('settles with the first asynchronous call to done', function(){
+        var f = function(a, b, c, done){
+          setTimeout(done, 10, null, a);
+          setTimeout(done, 50, null, c);
+        };
+        return U.assertResolved(encaseN3(f, 'a', 'b', 'c'), 'a');
       });
 
       it('ensures no continuations are called after cancel', function(done){

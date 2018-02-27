@@ -1,5 +1,5 @@
 import {Core} from './core';
-import {show, showf, partial1} from './internal/fn';
+import {show, showf, partial1, noop} from './internal/fn';
 import {isFunction} from './internal/is';
 import {throwInvalidArgument} from './internal/throw';
 import {someError} from './internal/error';
@@ -12,17 +12,26 @@ export function EncaseN(fn, a){
 EncaseN.prototype = Object.create(Core);
 
 EncaseN.prototype._interpret = function EncaseN$interpret(rec, rej, res){
-  var open = true;
+  var open = false, cont = function(){ open = true };
   try{
     this._fn(this._a, function EncaseN$done(err, val){
-      if(open){
+      cont = err ? function EncaseN3$rej(){
         open = false;
-        err ? rej(err) : res(val);
+        rej(err);
+      } : function EncaseN3$res(){
+        open = false;
+        res(val);
+      };
+      if(open){
+        cont();
       }
     });
   }catch(e){
     rec(someError('Future.encaseN was executing its operation', e));
+    open = false;
+    return noop;
   }
+  cont();
   return function EncaseN$cancel(){ open = false };
 };
 

@@ -1,5 +1,5 @@
 import {Core} from './core';
-import {showf} from './internal/fn';
+import {showf, noop} from './internal/fn';
 import {isFunction} from './internal/is';
 import {throwInvalidArgument} from './internal/throw';
 import {someError} from './internal/error';
@@ -11,17 +11,26 @@ export function Node(fn){
 Node.prototype = Object.create(Core);
 
 Node.prototype._interpret = function Node$interpret(rec, rej, res){
-  var open = true;
+  var open = false, cont = function(){ open = true };
   try{
     this._fn(function Node$done(err, val){
-      if(open){
+      cont = err ? function Node$rej(){
         open = false;
-        err ? rej(err) : res(val);
+        rej(err);
+      } : function Node$res(){
+        open = false;
+        res(val);
+      };
+      if(open){
+        cont();
       }
     });
   }catch(e){
     rec(someError('Future.node was executing its operation', e));
+    open = false;
+    return noop;
   }
+  cont();
   return function Node$cancel(){ open = false };
 };
 

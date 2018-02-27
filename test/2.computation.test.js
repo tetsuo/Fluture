@@ -66,22 +66,21 @@ describe('Computation', function(){
       fs.forEach(function(f){ return expect(f).to.not.throw() });
     });
 
-    it('ensures no continuations are called after the first resolve', function(done){
+    it('settles using the last synchronously called continuation', function(){
       var actual = Future(function(rej, res){
         res(1);
-        res(2);
-        rej(3);
-      });
-      actual._interpret(done, U.failRej, function(){ return done() });
-    });
-
-    it('ensures no continuations are called after the first reject', function(done){
-      var actual = Future(function(rej, res){
-        rej(1);
         rej(2);
         res(3);
       });
-      actual._interpret(done, function(){ return done() }, U.failRes);
+      return U.assertResolved(actual, 3);
+    });
+
+    it('settles using the first asynchronously called continuation', function(){
+      var actual = Future(function(rej, res){
+        setTimeout(res, 10, 1);
+        setTimeout(res, 50, 2);
+      });
+      return U.assertResolved(actual, 1);
     });
 
     it('stops continuations from being called after cancellation', function(done){

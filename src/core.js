@@ -239,17 +239,23 @@ export function Computation(computation){
 Computation.prototype = Object.create(Core);
 
 Computation.prototype._interpret = function Computation$interpret(rec, rej, res){
-  var open = true, cancel = noop;
+  var open = false, cancel = noop, cont = function(){ open = true };
   try{
     cancel = this._computation(function Computation$rej(x){
-      if(open){
+      cont = function Computation$rej$cont(){
         open = false;
         rej(x);
+      };
+      if(open){
+        cont();
       }
     }, function Computation$res(x){
-      if(open){
+      cont = function Computation$res$cont(){
         open = false;
         res(x);
+      };
+      if(open){
+        cont();
       }
     }) || noop;
   }catch(e){
@@ -263,6 +269,7 @@ Computation.prototype._interpret = function Computation$interpret(rec, rej, res)
       '  Actual: ' + show(cancel)
     ), show(this)));
   }
+  cont();
   return function Computation$cancel(){
     if(open){
       open = false;
