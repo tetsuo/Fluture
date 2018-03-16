@@ -323,7 +323,7 @@ S.I(Future.of(1));
 This happens because Sanctuary Def needs to know about the types created by
 Fluture to determine whether the type-variables are consistent.
 
-To var Sanctuary know about these types, we can obtain the type definitions from
+To let Sanctuary know about these types, we can obtain the type definitions from
 [`fluture-sanctuary-types`][FST] and pass them to [`S.create`][S:create]:
 
 ```js
