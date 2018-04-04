@@ -1430,9 +1430,9 @@ cache :: Future a b -> Future a b
 
 </details>
 
-Returns a Future which caches the resolution value of the given Future so that
-whenever it's forked, it can load the value from cache rather than reexecuting
-the chain.
+Returns a Future which caches the resolution value or rejection reason of the
+given Future so that whenever it's forked, it can load the value from cache
+rather than reexecuting the chain.
 
 ```js
 var {readFile} = require('fs');
