@@ -758,7 +758,7 @@ Future.of(1)
 Future.reject('error')
 .bimap(x => x + '!', x => x + 1)
 .fork(console.error, console.log);
-//> "error!"
+//! "error!"
 ```
 
 #### chain
@@ -1001,7 +1001,7 @@ Future.reject(new Error('It broke!')).fork(
   err => console.log(`Oh no! ${err.message}`),
   thing => console.log(`Hello ${thing}!`)
 );
-//> "Oh no! It broke!"
+//! "Oh no! It broke!"
 
 var consoleFork = Future.fork(console.error, console.log);
 consoleFork(Future.of('Hello'));
