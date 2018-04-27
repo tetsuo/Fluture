@@ -3,8 +3,8 @@ import {Core, Crashed} from '../src/core';
 import {error} from './util';
 
 export var mock = Object.create(Core);
-mock._interpret = function(){ throw new Error('Override _interpret on mock Future') };
-mock.toString = function(){ return '(util.mock)' };
+mock._interpret = function (){ throw new Error('Override _interpret on mock Future') };
+mock.toString = function (){ return '(util.mock)' };
 
 export var resolved = of('resolved');
 export var rejected = reject('rejected');

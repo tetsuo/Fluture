@@ -3,20 +3,20 @@ import {Future, swap, of, reject} from '../index.mjs.js';
 import * as U from './util';
 import type from 'sanctuary-type-identifiers';
 
-var testInstance = function(swap){
+var testInstance = function (swap){
 
-  it('is considered a member of fluture/Fluture', function(){
+  it('is considered a member of fluture/Fluture', function (){
     expect(type(swap(of(1)))).to.equal(Future['@@type']);
   });
 
-  describe('#_interpret()', function(){
+  describe('#_interpret()', function (){
 
-    it('rejects with the resolution value', function(){
+    it('rejects with the resolution value', function (){
       var actual = swap(of(1));
       return U.assertRejected(actual, 1);
     });
 
-    it('resolves with the rejection reason', function(){
+    it('resolves with the rejection reason', function (){
       var actual = swap(reject(1));
       return U.assertResolved(actual, 1);
     });
@@ -25,29 +25,29 @@ var testInstance = function(swap){
 
 };
 
-describe('swap()', function(){
+describe('swap()', function (){
 
-  it('throws when not given a Future', function(){
-    var f = function(){ return swap(1) };
+  it('throws when not given a Future', function (){
+    var f = function (){ return swap(1) };
     expect(f).to.throw(TypeError, /Future/);
   });
 
-  testInstance(function(m){ return swap(m) });
+  testInstance(function (m){ return swap(m) });
 
 });
 
-describe('Future#swap()', function(){
+describe('Future#swap()', function (){
 
-  it('throws when invoked out of context', function(){
-    var f = function(){ return of(1).swap.call(null) };
+  it('throws when invoked out of context', function (){
+    var f = function (){ return of(1).swap.call(null) };
     expect(f).to.throw(TypeError, /Future/);
   });
 
-  it('swaps Computation', function(){
-    var m = Future(function(rej){ return rej(1) });
+  it('swaps Computation', function (){
+    var m = Future(function (rej){ return rej(1) });
     return U.assertResolved(m.swap(), 1);
   });
 
-  testInstance(function(m){ return m.swap() });
+  testInstance(function (m){ return m.swap() });
 
 });
