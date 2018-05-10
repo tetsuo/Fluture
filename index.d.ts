@@ -87,7 +87,7 @@ declare module 'fluture' {
     finally(cleanup: Future<L, any>): Future<L, R>
 
     /** Fold both branches into the resolution branch. See https://github.com/fluture-js/Fluture#fold */
-    fold<RB>(lmapper: (reason: L) => RB, rmapper: (value: R) => RB): Future<never, RB>
+    fold<L, RB>(lmapper: (reason: L) => RB, rmapper: (value: R) => RB): Future<L, RB>
 
     /** Fork the Future into the two given continuations. See https://github.com/fluture-js/Fluture#fork */
     fork(reject: RejectFunction<L>, resolve: ResolveFunction<R>): Cancel
@@ -119,8 +119,8 @@ declare module 'fluture' {
   }
 
   /** Creates a Future which resolves after the given duration with the given value. See https://github.com/fluture-js/Fluture#after */
-  export function after<R>(duration: number, value: R): Future<never, R>
-  export function after<R>(duration: number): (value: R) => Future<never, R>
+  export function after<L, R>(duration: number, value: R): Future<L, R>
+  export function after<L, R>(duration: number): (value: R) => Future<L, R>
 
   /** Logical and for Futures. See https://github.com/fluture-js/Fluture#and */
   export function and<L, R>(left: Future<L, any>, right: Future<L, R>): Future<L, R>
@@ -218,9 +218,9 @@ declare module 'fluture' {
   export function extractRight<L, R>(source: Future<L, R>): Array<R>
 
   /** Fold both branches into the resolution branch. See https://github.com/fluture-js/Fluture#fold */
-  export function fold<LA, RA, RB>(lmapper: (left: LA) => RA, rmapper: (right: RA) => RB, source: Future<LA, RA>): Future<never, RB>
-  export function fold<LA, RA, RB>(lmapper: (left: LA) => RA, rmapper: (right: RA) => RB): (source: Future<LA, RA>) => Future<never, RB>
-  export function fold<LA, RA, RB>(lmapper: (left: LA) => RA): AwaitingTwo<(right: RA) => RB, Future<LA, RA>, Future<never, RB>>
+  export function fold<LA, RA, LB, RB>(lmapper: (left: LA) => RA, rmapper: (right: RA) => RB, source: Future<LA, RA>): Future<LB, RB>
+  export function fold<LA, RA, LB, RB>(lmapper: (left: LA) => RA, rmapper: (right: RA) => RB): (source: Future<LA, RA>) => Future<LB, RB>
+  export function fold<LA, RA, LB, RB>(lmapper: (left: LA) => RA): AwaitingTwo<(right: RA) => RB, Future<LA, RA>, Future<LB, RB>>
 
   /** Fork the given Future into the given continuations. See https://github.com/fluture-js/Fluture#fork */
   export function fork<L, R>(reject: RejectFunction<L>, resolve: ResolveFunction<R>, source: Future<L, R>): Cancel
@@ -264,7 +264,7 @@ declare module 'fluture' {
   export function node<L, R>(fn: (done: Nodeback<L, R>) => void): Future<L, R>
 
   /** Create a Future with the given resolution value. See https://github.com/fluture-js/Fluture#of */
-  export function of<R>(value: R): Future<never, R>
+  export function of<L, R>(value: R): Future<L, R>
 
   /** Logical or for Futures. See https://github.com/fluture-js/Fluture#or */
   export function or<L, R>(left: Future<L, R>, right: Future<L, R>): Future<L, R>
@@ -282,11 +282,11 @@ declare module 'fluture' {
   export function race<L, R>(left: Future<L, R>): (right: Future<L, R>) => Future<L, R>
 
   /** Create a Future with the given rejection reason. See https://github.com/fluture-js/Fluture#reject */
-  export function reject<L>(reason: L): Future<L, never>
+  export function reject<L, R>(reason: L): Future<L, R>
 
   /** Creates a Future which rejects after the given duration with the given reason. See https://github.com/fluture-js/Fluture#rejectafter */
-  export function rejectAfter<L>(duration: number, reason: L): Future<L, never>
-  export function rejectAfter<L>(duration: number): (reason: L) => Future<L, never>
+  export function rejectAfter<L, R>(duration: number, reason: L): Future<L, R>
+  export function rejectAfter<L, R>(duration: number): (reason: L) => Future<L, R>
 
   /** Convert a ConcurrentFuture to a regular Future. See https://github.com/fluture-js/Fluture#concurrentfuture */
   export function seq<L, R>(source: ConcurrentFuture<L, R>): Future<L, R>
@@ -337,8 +337,8 @@ declare module 'fluture' {
     /** Create a ConcurrentFuture using a Future. See https://github.com/fluture-js/Fluture#concurrentfuture */
     <L, R>(source: Future<L, R>): ConcurrentFuture<L, R>
 
-    of<R>(value: R): ConcurrentFuture<never, R>
-    zero(): ConcurrentFuture<never, never>
+    of<L, R>(value: R): ConcurrentFuture<L, R>
+    zero<L, R>(): ConcurrentFuture<L, R>
 
     ap: typeof ap
     map: typeof map

@@ -25,7 +25,7 @@
     "test:coverage": "npm run clean && nyc --include src mocha --require @std/esm --ui bdd --reporter dot test/**.test.js || true",
     "coverage:upload": "nyc report --reporter=text-lcov > coverage.lcov && codecov",
     "coverage:report": "nyc report --reporter=html",
-    "test:types": "tsc index.d.ts"
+    "test:types": "tsc --lib es6 index.d.ts"
   },
   "author": "Aldwin Vlasblom <aldwin.vlasblom@gmail.com> (https://github.com/Avaq)",
   "homepage": "https://github.com/fluture-js/Fluture",
@@ -84,7 +84,7 @@
     "rollup-plugin-commonjs": "^9.0.0",
     "rollup-plugin-node-resolve": "^3.0.0",
     "sanctuary-benchmark": "^1.0.0",
-    "typescript": "^2.6.1",
+    "typescript": "^2.8.3",
     "xyz": "^3.0.0"
   }
 }
