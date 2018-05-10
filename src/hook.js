@@ -1,3 +1,5 @@
+/* eslint no-param-reassign:0 */
+
 import {Core, isFuture} from './core';
 import {noop, show, showf, partial1, partial2} from './internal/fn';
 import {isFunction} from './internal/is';
@@ -33,14 +35,23 @@ Hook.prototype = Object.create(Core);
 Hook.prototype._interpret = function Hook$interpret(rec, rej, res){
 
   var _this = this, _acquire = this._acquire, _dispose = this._dispose, _consume = this._consume;
-  var cancel, cancelAcquire = noop, cancelConsume = noop, resource, value, cont = noop;
+  var cancel, cancelConsume = noop, resource, value, cont = noop;
 
   function Hook$done(){
     cont(value);
   }
 
+  function Hook$reject(x){
+    rej(x);
+  }
+
   function Hook$consumptionException(e){
-    rec(someError('trying to consume resources for a hooked Future', e, _this.toString()));
+    var rec_ = rec;
+    cont = noop;
+    rej = noop;
+    rec = noop;
+    Hook$dispose();
+    rec_(someError('trying to consume resources for a hooked Future', e, _this.toString()));
   }
 
   function Hook$disposalException(e){
@@ -48,7 +59,6 @@ Hook.prototype._interpret = function Hook$interpret(rec, rej, res){
   }
 
   function Hook$dispose(){
-    cancel = noop;
     var disposal;
     try{
       disposal = _dispose(resource);
@@ -58,13 +68,20 @@ Hook.prototype._interpret = function Hook$interpret(rec, rej, res){
     if(!isFuture(disposal)){
       return Hook$disposalException(invalidDisposal(disposal, _dispose, resource));
     }
-    cancel = disposal._interpret(Hook$disposalException, rej, Hook$done);
+    disposal._interpret(Hook$disposalException, Hook$reject, Hook$done);
+    cancel = Hook$cancelDisposal;
   }
 
-  function Hook$cancelConsuption(){
+  function Hook$cancelConsumption(){
     cancelConsume();
     Hook$dispose();
-    cancel();
+    Hook$cancelDisposal();
+  }
+
+  function Hook$cancelDisposal(){
+    cont = noop;
+    rec = noop;
+    rej = noop;
   }
 
   function Hook$consumptionRejected(x){
@@ -81,7 +98,6 @@ Hook.prototype._interpret = function Hook$interpret(rec, rej, res){
 
   function Hook$consume(x){
     resource = x;
-    cancel = Hook$cancelConsuption;
     var consumption;
     try{
       consumption = _consume(resource);
@@ -91,6 +107,7 @@ Hook.prototype._interpret = function Hook$interpret(rec, rej, res){
     if(!isFuture(consumption)){
       return Hook$consumptionException(invalidConsumption(consumption, _consume, resource));
     }
+    cancel = Hook$cancelConsumption;
     cancelConsume = consumption._interpret(
       Hook$consumptionException,
       Hook$consumptionRejected,
@@ -98,8 +115,7 @@ Hook.prototype._interpret = function Hook$interpret(rec, rej, res){
     );
   }
 
-  cancelAcquire = _acquire._interpret(rec, rej, Hook$consume);
-
+  var cancelAcquire = _acquire._interpret(rec, Hook$reject, Hook$consume);
   cancel = cancel || cancelAcquire;
 
   return function Hook$fork$cancel(){ cancel() };

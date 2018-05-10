@@ -1347,31 +1347,21 @@ withConnection(
 .fork(console.error, console.log);
 ```
 
-In the case that a hooked Future is *cancelled* after the resource was acquired,
-`dispose` will be executed and immediately cancelled. This means that rejections
-which may happen during this disposal are **silently ignored**. To ensure that
-resources are disposed during cancellation, you might synchronously dispose
-resources in the `cancel` function of the disposal Future:
+When a hooked Future is cancelled while acquiring its resource, nothing else
+will happen. However, once the resource has been acquired, the `dispose`
+Future is guaranteed to run.
 
-<!-- eslint-disable no-unused-vars -->
-```js
-var closeConnection = conn => Future((rej, res) => {
+In the case where the consumption Future settles, the disposal is forked and
+awaited. If the disposal Future rejects or encounters an exception, it will
+replace the state of the consumption Future. Otherwise the rejection reason or
+resolution value of the consumption Future will determine the final outcome.
 
-  //We try to dispose gracefully.
-  conn.flushGracefully(err => {
-    if(err === null){
-      conn.close();
-      res();
-    }else{
-      rej(err);
-    }
-  });
+In the case where an exception is encountered during consumption, the disposal
+Future will run, but its results are ignored.
 
-  //On cancel, we force dispose.
-  return () => conn.close();
-
-});
-```
+In the case where the consumption or disposal Future is cancelled from outside,
+the disposal Future will start and/or finish its computation, but the results
+will be ignored.
 
 #### finally
 

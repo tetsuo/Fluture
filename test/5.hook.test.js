@@ -70,11 +70,11 @@ describe('hook()', function(){
     });
 
     it('crashes when the second function throws', function(){
-      var m = hook(F.resolved, function(){ throw F.resolved }, function(){ throw U.error });
+      var m = hook(F.resolved, function(){ return F.resolved }, function(){ throw U.error });
       return U.assertCrashed(m, new Error(
         'Error came up while trying to consume resources for a hooked Future:\n' +
         '  Intentional error for unit testing\n\n' +
-        '  In: Future.hook(Future.of("resolved"), function (){ throw F.resolved }, function (){ throw U.error })\n'
+        '  In: Future.hook(Future.of("resolved"), function (){ return F.resolved }, function (){ throw U.error })\n'
       ));
     });
 
@@ -152,25 +152,27 @@ describe('hook()', function(){
       setTimeout(cancel, 25);
     });
 
-    it('cancels dispose appropriately', function(done){
-      var dispose = Future(function(){ return function(){ return done() } });
+    it('does not cancel disposal', function(done){
+      var dispose = Future(function(){ return function(){ return done(U.error) } });
       var cancel =
         hook(F.resolved, function(){ return dispose }, function(){ return of('consume') })
         ._interpret(done, U.failRej, U.failRes);
       setTimeout(cancel, 10);
+      setTimeout(done, 50);
     });
 
-    it('cancels delayed dispose appropriately', function(done){
-      var dispose = Future(function(){ return function(){ return done() } });
+    it('does not cancel delayed dispose', function(done){
+      var dispose = Future(function(){ return function(){ return done(U.error) } });
       var cancel =
         hook(F.resolved, function(){ return dispose }, function(){ return F.resolvedSlow })
         ._interpret(done, U.failRej, U.failRes);
-      setTimeout(cancel, 25);
+      setTimeout(cancel, 50);
+      setTimeout(done, 100);
     });
 
-    it('immediately runs and cancels the disposal Future when cancelled after acquire', function(done){
+    it('runs the disposal Future when cancelled after acquire', function(done){
       var cancel =
-        hook(F.resolved, function(){ return Future(function(){ return function(){ return done() } }) }, function(){ return F.resolvedSlow })
+        hook(F.resolved, function(){ return Future(function(){ done() }) }, function(){ return F.resolvedSlow })
         ._interpret(done, U.failRej, U.failRes);
       setTimeout(cancel, 10);
     });
