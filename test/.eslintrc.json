@@ -9,6 +9,7 @@
   "rules": {
     "arrow-body-style": 0,
     "no-sequences": 0,
-    "max-len": 0
+    "max-len": 0,
+    "space-before-function-paren": ["error", "always"]
   }
 }

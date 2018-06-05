@@ -9,27 +9,27 @@ import {
   someError
 } from '../src/internal/error';
 
-describe('error', function(){
+describe('error', function (){
 
-  describe('error', function(){
+  describe('error', function (){
 
-    it('constructs an Error', function(){
+    it('constructs an Error', function (){
       eq(error('hello'), new Error('hello'));
     });
 
   });
 
-  describe('typeError', function(){
+  describe('typeError', function (){
 
-    it('constructs a TypeError', function(){
+    it('constructs a TypeError', function (){
       eq(typeError('hello'), new TypeError('hello'));
     });
 
   });
 
-  describe('invalidArgument', function(){
+  describe('invalidArgument', function (){
 
-    it('constructs a TypeError', function(){
+    it('constructs a TypeError', function (){
       eq(invalidArgument('Test', 1, 'foo', 'bar'), new TypeError(
         'Test expects its second argument to foo\n  Actual: "bar"'
       ));
@@ -37,9 +37,9 @@ describe('error', function(){
 
   });
 
-  describe('invalidContext', function(){
+  describe('invalidContext', function (){
 
-    it('constructs a TypeError', function(){
+    it('constructs a TypeError', function (){
       eq(invalidContext('Test', 'foo'), new TypeError(
         'Test was invoked outside the context of a Future. You might want ' +
         'to use a dispatcher instead\n  Called on: "foo"'
@@ -48,15 +48,15 @@ describe('error', function(){
 
   });
 
-  describe('invalidFuture', function(){
+  describe('invalidFuture', function (){
 
-    var mockType = function(identifier){
-      return {constructor: {'@@type': identifier}, toString: function(){
+    var mockType = function (identifier){
+      return {constructor: {'@@type': identifier}, toString: function (){
         return 'mockType("' + identifier + '")';
       }};
     };
 
-    it('creates a TypeError with a computed message', function(){
+    it('creates a TypeError with a computed message', function (){
       var actual = invalidFuture(
         'Deep Thought', 'the answer to be 42', 43,
         '\n  See: https://en.wikipedia.org/wiki/Off-by-one_error'
@@ -67,7 +67,7 @@ describe('error', function(){
       ));
     });
 
-    it('Warns us when nothing seems wrong', function(){
+    it('Warns us when nothing seems wrong', function (){
       var actual = invalidFuture('Foo', 0, mockType(namespace + '/' + name + '@' + version));
       eq(actual, new TypeError(
         'Foo expects its first argument to be a valid Future.\n' +
@@ -76,7 +76,7 @@ describe('error', function(){
       ));
     });
 
-    it('Warns us about Futures from other sources', function(){
+    it('Warns us about Futures from other sources', function (){
       var actual = invalidFuture('Foo', 0, mockType('bobs-tinkershop/' + name + '@' + version));
       eq(actual, new TypeError(
         'Foo expects its first argument to be a valid Future.\n' +
@@ -88,7 +88,7 @@ describe('error', function(){
       ));
     });
 
-    it('Warns us about Futures from unnamed sources', function(){
+    it('Warns us about Futures from unnamed sources', function (){
       var actual = invalidFuture('Foo', 0, mockType(name));
       eq(actual, new TypeError(
         'Foo expects its first argument to be a valid Future.\n' +
@@ -100,7 +100,7 @@ describe('error', function(){
       ));
     });
 
-    it('Warns about older versions', function(){
+    it('Warns about older versions', function (){
       var actual = invalidFuture('Foo', 0, mockType(namespace + '/' + name + '@' + (version - 1)));
       eq(actual, new TypeError(
         'Foo expects its first argument to be a valid Future.\n' +
@@ -112,7 +112,7 @@ describe('error', function(){
       ));
     });
 
-    it('Warns about newer versions', function(){
+    it('Warns about newer versions', function (){
       var actual = invalidFuture('Foo', 0, mockType(namespace + '/' + name + '@' + (version + 1)));
       eq(actual, new TypeError(
         'Foo expects its first argument to be a valid Future.\n' +
@@ -126,9 +126,9 @@ describe('error', function(){
 
   });
 
-  describe('someError', function(){
+  describe('someError', function (){
 
-    it('produces an error', function(){
+    it('produces an error', function (){
       eq(someError('testing', new Error('It broke')), new Error('Error came up while testing:\n  It broke\n'));
       eq(someError('testing', new TypeError('It broke')), new Error('TypeError came up while testing:\n  It broke\n'));
 
