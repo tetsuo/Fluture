@@ -1,11 +1,10 @@
-import Z from 'sanctuary-type-classes';
-import inspectf from 'inspect-f';
+import show from 'sanctuary-show';
 
+export {show};
 export function noop(){}
 export function moop(){ return this }
-export var show = Z.toString;
 export function padf(sf, s){ return s.replace(/^/gm, sf).replace(sf, '') }
-export function showf(f){ return padf('  ', inspectf(2, f)) }
+export function showf(f){ return padf('  ', show(f)) }
 
 export function partial1(f, a){
   return function bound1(b, c, d){

@@ -22,7 +22,7 @@ var testInstance = function (pap){
           '  Intentional error for unit testing\n\n' +
           '  In: Future.after(20, "resolvedSlow")' +
           '.map(function (x){ return function (y){ return [x, y] } })' +
-          '._parallelAp(Future(function(){ throw new Error("Intentional error for unit testing") }))\n'
+          '._parallelAp(Future(function(){ throw new Error ("Intentional error for unit testing") }))\n'
         ));
       });
 
@@ -32,7 +32,7 @@ var testInstance = function (pap){
           '  Intentional error for unit testing\n\n' +
           '  In: Future.of("resolved")' +
           '.map(function (x){ return function (y){ return [x, y] } })' +
-          '._parallelAp(Future.after(20, null).and(Future(function(){ throw new Error("Intentional error for unit testing") })))\n'
+          '._parallelAp(Future.after(20, null).and(Future(function(){ throw new Error ("Intentional error for unit testing") })))\n'
         ));
       });
 
@@ -46,7 +46,7 @@ var testInstance = function (pap){
           '  Intentional error for unit testing\n\n' +
           '  In: Future.rejectAfter(20, "rejectedSlow")' +
           '.map(function (x){ return function (y){ return [x, y] } })' +
-          '._parallelAp(Future(function(){ throw new Error("Intentional error for unit testing") }))\n'
+          '._parallelAp(Future(function(){ throw new Error ("Intentional error for unit testing") }))\n'
         ));
       });
 
@@ -63,7 +63,7 @@ var testInstance = function (pap){
           'Error came up while interpreting a Future:\n' +
           '  Intentional error for unit testing\n\n' +
           '  In: Future.after(20, null)' +
-          '.and(Future(function(){ throw new Error("Intentional error for unit testing") }))' +
+          '.and(Future(function(){ throw new Error ("Intentional error for unit testing") }))' +
           '.map(function (x){ return function (y){ return [x, y] } })' +
           '._parallelAp(Future.of("resolved"))\n'
         ));

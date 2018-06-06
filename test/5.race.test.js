@@ -53,7 +53,7 @@ var testInstance = function (race){
           'Error came up while interpreting a Future:\n' +
           '  Intentional error for unit testing\n\n' +
           '  In: Future.after(20, "resolvedSlow")' +
-          '.race(Future(function(){ throw new Error("Intentional error for unit testing") }))\n'
+          '.race(Future(function(){ throw new Error ("Intentional error for unit testing") }))\n'
         ));
       });
 
@@ -70,7 +70,7 @@ var testInstance = function (race){
           'Error came up while interpreting a Future:\n' +
           '  Intentional error for unit testing\n\n' +
           '  In: Future.rejectAfter(20, "rejectedSlow")' +
-          '.race(Future(function(){ throw new Error("Intentional error for unit testing") }))\n'
+          '.race(Future(function(){ throw new Error ("Intentional error for unit testing") }))\n'
         ));
       });
 
