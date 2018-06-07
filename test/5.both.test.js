@@ -24,7 +24,7 @@ var testInstance = function (both){
         return U.assertCrashed(both(F.crashedSlow, F.resolved), new Error(
           'Error came up while interpreting a Future:\n' +
           '  Intentional error for unit testing\n\n' +
-          '  In: Future.after(20, null).and(Future(function(){ throw new Error("Intentional error for unit testing") })).both(Future.of("resolved"))\n'
+          '  In: Future.after(20, null).and(Future(function(){ throw new Error ("Intentional error for unit testing") })).both(Future.of("resolved"))\n'
         ));
       });
 
@@ -51,7 +51,7 @@ var testInstance = function (both){
           'Error came up while interpreting a Future:\n' +
           '  Intentional error for unit testing\n\n' +
           '  In: Future.after(20, null)' +
-          '.and(Future(function(){ throw new Error("Intentional error for unit testing") }))' +
+          '.and(Future(function(){ throw new Error ("Intentional error for unit testing") }))' +
           '.map(function Resolved$both$mapper(right){\n      return [left, right];\n    })\n'
         ));
       });
@@ -61,7 +61,7 @@ var testInstance = function (both){
           'Error came up while interpreting a Future:\n' +
           '  Intentional error for unit testing\n\n' +
           '  In: Future.after(20, "resolvedSlow")' +
-          '.both(Future(function(){ throw new Error("Intentional error for unit testing") }))\n'
+          '.both(Future(function(){ throw new Error ("Intentional error for unit testing") }))\n'
         ));
       });
 
@@ -78,7 +78,7 @@ var testInstance = function (both){
           'Error came up while interpreting a Future:\n' +
           '  Intentional error for unit testing\n\n' +
           '  In: Future.rejectAfter(20, "rejectedSlow")' +
-          '.both(Future(function(){ throw new Error("Intentional error for unit testing") }))\n'
+          '.both(Future(function(){ throw new Error ("Intentional error for unit testing") }))\n'
         ));
       });
 

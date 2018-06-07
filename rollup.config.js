@@ -3,7 +3,7 @@ var pkg = require('./package.json');
 var dependencies = {
   'concurrify': 'concurrify',
   'denque': 'Denque',
-  'inspect-f': 'inspectf',
+  'sanctuary-show': 'sanctuaryShow',
   'sanctuary-type-classes': 'sanctuaryTypeClasses',
   'sanctuary-type-identifiers': 'sanctuaryTypeIdentifiers'
 };

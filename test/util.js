@@ -1,5 +1,6 @@
 import {expect} from 'chai';
 import {Future, isFuture} from '../index.mjs.js';
+import show from 'sanctuary-show';
 import Z from 'sanctuary-type-classes';
 import {AssertionError, strictEqual} from 'assert';
 
@@ -15,7 +16,7 @@ export var throwit = function (it){ throw it };
 
 export var eq = function eq (actual, expected){
   strictEqual(arguments.length, eq.length);
-  strictEqual(Z.toString(actual), Z.toString(expected));
+  strictEqual(show(actual), show(expected));
   strictEqual(Z.equals(actual, expected), true);
 };
 
@@ -48,30 +49,30 @@ export var assertEqual = function (a, b){
   if(astate === bstate && Z.equals(aval, bval)){ return true }
   throw new Error(
     '\n    ' + (a.toString()) +
-    ' :: Future({ <' + states[astate] + '> ' + Z.toString(aval) + ' })' +
+    ' :: Future({ <' + states[astate] + '> ' + show(aval) + ' })' +
     '\n    does not equal:\n    ' + b.toString() +
-    ' :: Future({ <' + states[bstate] + '> ' + Z.toString(bval) + ' })\n  '
+    ' :: Future({ <' + states[bstate] + '> ' + show(bval) + ' })\n  '
   );
 };
 
 export var interpertAndGuard = function (m, rec, rej, res){
   var rejected = false, resolved = false, crashed = false;
   m._interpret(function (e){
-    if(crashed){ throw new Error(m.toString() + ' crashed twice with: ' + Z.toString(e)) }
-    if(rejected){ throw new Error(m.toString() + ' crashed after rejecting: ' + Z.toString(e)) }
-    if(resolved){ throw new Error(m.toString() + ' crashed after resolving: ' + Z.toString(e)) }
+    if(crashed){ throw new Error(m.toString() + ' crashed twice with: ' + show(e)) }
+    if(rejected){ throw new Error(m.toString() + ' crashed after rejecting: ' + show(e)) }
+    if(resolved){ throw new Error(m.toString() + ' crashed after resolving: ' + show(e)) }
     crashed = true;
     rec(e);
   }, function (e){
-    if(crashed){ throw new Error(m.toString() + ' rejected after crashing: ' + Z.toString(e)) }
-    if(rejected){ throw new Error(m.toString() + ' rejected twice with: ' + Z.toString(e)) }
-    if(resolved){ throw new Error(m.toString() + ' rejected after resolving: ' + Z.toString(e)) }
+    if(crashed){ throw new Error(m.toString() + ' rejected after crashing: ' + show(e)) }
+    if(rejected){ throw new Error(m.toString() + ' rejected twice with: ' + show(e)) }
+    if(resolved){ throw new Error(m.toString() + ' rejected after resolving: ' + show(e)) }
     rejected = true;
     rej(e);
   }, function (x){
-    if(crashed){ throw new Error(m.toString() + ' resolved after crashing: ' + Z.toString(x)) }
-    if(rejected){ throw new Error(m.toString() + ' resolved twice with: ' + Z.toString(x)) }
-    if(resolved){ throw new Error(m.toString() + ' resolved after rejecting: ' + Z.toString(x)) }
+    if(crashed){ throw new Error(m.toString() + ' resolved after crashing: ' + show(x)) }
+    if(rejected){ throw new Error(m.toString() + ' resolved twice with: ' + show(x)) }
+    if(resolved){ throw new Error(m.toString() + ' resolved after rejecting: ' + show(x)) }
     resolved = true;
     res(x);
   });
@@ -85,12 +86,12 @@ export var assertCrashed = function (m, x){
       Z.equals(x, e) ? res() : rej(new AssertionError({
         expected: x,
         actual: e,
-        message: 'Expected the Future to crash with ' + Z.toString(x) + '; got: ' + Z.toString(e)
+        message: 'Expected the Future to crash with ' + show(x) + '; got: ' + show(e)
       }));
     }, function (e){
-      rej(new Error('Expected the Future to crash. Instead rejected with: ' + Z.toString(e)));
+      rej(new Error('Expected the Future to crash. Instead rejected with: ' + show(e)));
     }, function (x){
-      rej(new Error('Expected the Future to crash. Instead resolved with: ' + Z.toString(x)));
+      rej(new Error('Expected the Future to crash. Instead resolved with: ' + show(x)));
     });
   });
 };
@@ -100,15 +101,15 @@ export var assertRejected = function (m, x){
   assertIsFuture(m);
   interpertAndGuard(
     m, function (e){
-      rej(new Error('Expected the Future to reject. Instead crashed with: ' + Z.toString(e)));
+      rej(new Error('Expected the Future to reject. Instead crashed with: ' + show(e)));
     }, function (e){
       Z.equals(x, e) ? res() : rej(new AssertionError({
         expected: x,
         actual: e,
-        message: 'Expected the Future to reject with ' + Z.toString(x) + '; got: ' + Z.toString(e)
+        message: 'Expected the Future to reject with ' + show(x) + '; got: ' + show(e)
       }));
     }, function (x){
-      rej(new Error('Expected the Future to reject. Instead resolved with: ' + Z.toString(x)));
+      rej(new Error('Expected the Future to reject. Instead resolved with: ' + show(x)));
     });
   });
 };
@@ -118,14 +119,14 @@ export var assertResolved = function (m, x){
   assertIsFuture(m);
   interpertAndGuard(
     m, function (e){
-      rej(new Error('Expected the Future to resolve. Instead crashed with: ' + Z.toString(e)));
+      rej(new Error('Expected the Future to resolve. Instead crashed with: ' + show(e)));
     }, function (e){
-      rej(new Error('Expected the Future to resolve. Instead rejected with: ' + Z.toString(e)));
+      rej(new Error('Expected the Future to resolve. Instead rejected with: ' + show(e)));
     }, function (y){
       Z.equals(x, y) ? res() : rej(new AssertionError({
         expected: x,
         actual: y,
-        message: 'Expected the Future to resolve with ' + Z.toString(x) + '; got: ' + Z.toString(y)
+        message: 'Expected the Future to resolve with ' + show(x) + '; got: ' + show(y)
       }));
     });
   });
@@ -134,7 +135,7 @@ export var assertResolved = function (m, x){
 export var onceOrError = function (f){
   var called = false;
   return function (){
-    if(called){ throw new Error('Function ' + Z.toString(f) + ' was called twice') }
+    if(called){ throw new Error('Function ' + show(f) + ' was called twice') }
     called = true;
     f.apply(null, arguments);
   };

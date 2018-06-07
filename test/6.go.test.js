@@ -68,7 +68,7 @@ describe('Go', function (){
       return U.assertCrashed(m, new Error(
         'Error came up while Future.do was consuming a generated Future:\n' +
         '  Intentional error for unit testing\n\n' +
-        '  In: Future(function(){ throw new Error("Intentional error for unit testing") })\n'
+        '  In: Future(function(){ throw new Error ("Intentional error for unit testing") })\n'
       ));
     });
 

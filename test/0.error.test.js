@@ -51,7 +51,7 @@ describe('error', function (){
   describe('invalidFuture', function (){
 
     var mockType = function (identifier){
-      return {constructor: {'@@type': identifier}, toString: function (){
+      return {'constructor': {'@@type': identifier}, '@@show': function (){
         return 'mockType("' + identifier + '")';
       }};
     };
@@ -67,7 +67,7 @@ describe('error', function (){
       ));
     });
 
-    it('Warns us when nothing seems wrong', function (){
+    it('warns us when nothing seems wrong', function (){
       var actual = invalidFuture('Foo', 0, mockType(namespace + '/' + name + '@' + version));
       eq(actual, new TypeError(
         'Foo expects its first argument to be a valid Future.\n' +

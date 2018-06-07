@@ -46,7 +46,7 @@ describe('Parallel', function (){
       return U.assertCrashed(parallel(2, [F.resolved, F.crashed]), new Error(
         'Error came up while Future.parallel was running the second future:\n' +
         '  Intentional error for unit testing\n\n' +
-        '  In: Future(function(){ throw new Error("Intentional error for unit testing") })\n'
+        '  In: Future(function(){ throw new Error ("Intentional error for unit testing") })\n'
       ));
     });
 
@@ -54,7 +54,7 @@ describe('Parallel', function (){
       return U.assertCrashed(parallel(2, [F.resolved, F.resolved, F.resolved, F.resolved, F.resolved, F.crashed]), new Error(
         'Error came up while Future.parallel was running future 6:\n' +
         '  Intentional error for unit testing\n\n' +
-        '  In: Future(function(){ throw new Error("Intentional error for unit testing") })\n'
+        '  In: Future(function(){ throw new Error ("Intentional error for unit testing") })\n'
       ));
     });
 

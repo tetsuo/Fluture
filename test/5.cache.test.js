@@ -22,7 +22,7 @@ describe('cache()', function (){
       return U.assertCrashed(cache(F.crashed), new Error(
         'Error came up while Future.cache was running the cached Future:\n' +
         '  Intentional error for unit testing\n\n' +
-        '  In: Future(function(){ throw new Error("Intentional error for unit testing") })\n'
+        '  In: Future(function(){ throw new Error ("Intentional error for unit testing") })\n'
       ));
     });
 
@@ -49,9 +49,9 @@ describe('cache()', function (){
         '    Intentional error for unit testing\n' +
         '  \n' +
         '    In: Future.after(20, null)' +
-        '.and(Future(function(){ throw new Error("Intentional error for unit testing") }))\n\n' +
+        '.and(Future(function(){ throw new Error ("Intentional error for unit testing") }))\n\n' +
         '  In: Future.after(20, null)' +
-        '.and(Future(function(){ throw new Error("Intentional error for unit testing") }))\n'
+        '.and(Future(function(){ throw new Error ("Intentional error for unit testing") }))\n'
       );
       var a = U.assertCrashed(m, e);
       var b = U.assertCrashed(m, e);
@@ -81,7 +81,7 @@ describe('cache()', function (){
       return U.assertCrashed(m, new Error(
         'Error came up while Future.cache was running the cached Future:\n' +
         '  Intentional error for unit testing\n\n' +
-        '  In: Future(function(){ throw new Error("Intentional error for unit testing") })\n'
+        '  In: Future(function(){ throw new Error ("Intentional error for unit testing") })\n'
       ));
     });
 

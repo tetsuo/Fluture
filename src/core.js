@@ -25,6 +25,10 @@ export function isFuture(x){
 
 Future['@@type'] = $$type;
 
+Future.prototype['@@show'] = function Future$show(){
+  return this.toString();
+};
+
 Future.prototype[FL.ap] = function Future$FL$ap(other){
   return other._ap(this);
 };
