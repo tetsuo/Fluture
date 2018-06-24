@@ -1,4 +1,4 @@
-import {show} from './fn';
+import {show, indent} from './fn';
 import {ordinal, namespace, name, version} from './const';
 import type from 'sanctuary-type-identifiers';
 
@@ -52,4 +52,30 @@ export function invalidFuture(it, at, m, s){
     it + ' expects ' + (ordinal[at] ? 'its ' + ordinal[at] + ' argument to be a valid Future' : at)
   + '.' + info + '\n  Actual: ' + show(m) + ' :: ' + id.name + (s || '')
   );
+}
+
+export function valueToError(x){
+  var name, message;
+  try{
+    if(x && typeof x.name === 'string' && typeof x.message === 'string'){
+      name = x.name;
+      message = x.message;
+    }else{
+      name = 'Non-Error';
+      message = show(x);
+    }
+  }catch (_){
+    name = 'Something';
+    message = '<The value which was thrown could not be converted to string>';
+  }
+  var e = error(
+    name + ' occurred while running a computation for a Future:\n\n' +
+    message.split('\n').map(indent).join('\n')
+  );
+  try{
+    if(typeof x.stack === 'string'){
+      e.stack = x.stack;
+    }
+  }catch(_){/*ignore*/}
+  return e;
 }

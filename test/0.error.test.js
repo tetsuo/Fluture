@@ -5,7 +5,8 @@ import {
   typeError,
   invalidArgument,
   invalidContext,
-  invalidFuture
+  invalidFuture,
+  valueToError
 } from '../src/internal/error';
 
 describe('error', function (){
@@ -121,6 +122,43 @@ describe('error', function (){
         '  See: https://github.com/fluture-js/Fluture#casting-futures\n' +
         '  Actual: mockType("fluture/Future@5") :: Future'
       ));
+    });
+
+  });
+
+  describe('valueToError', function (){
+
+    it('Converts any value to an Error object', function (){
+
+      eq(valueToError(new Error('test')), new Error(
+        'Error occurred while running a computation for a Future:\n\n' +
+        '  test'
+      ));
+
+      eq(valueToError(new TypeError('test')), new Error(
+        'TypeError occurred while running a computation for a Future:\n\n' +
+        '  test'
+      ));
+
+      eq(valueToError('test'), new Error(
+        'Non-Error occurred while running a computation for a Future:\n\n' +
+        '  "test"'
+      ));
+
+      eq(valueToError({foo: 'bar'}), new Error(
+        'Non-Error occurred while running a computation for a Future:\n\n' +
+        '  {"foo": "bar"}'
+      ));
+
+      const evilValue = {};
+      evilValue.__defineGetter__('name', () => { throw new Error });
+      evilValue.__defineGetter__('stack', () => { throw new Error });
+
+      eq(valueToError(evilValue), new Error(
+        'Something occurred while running a computation for a Future:\n\n' +
+        '  <The value which was thrown could not be converted to string>'
+      ));
+
     });
 
   });
