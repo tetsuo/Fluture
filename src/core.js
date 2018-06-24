@@ -4,7 +4,7 @@ import {FL, $$type} from './internal/const';
 import interpret from './internal/interpreter';
 import {nil, cons} from './internal/list';
 import type from 'sanctuary-type-identifiers';
-import {error, typeError, invalidFuture, someError} from './internal/error';
+import {error, typeError, invalidFuture} from './internal/error';
 import {throwInvalidArgument, throwInvalidContext, throwInvalidFuture} from './internal/throw';
 
 function Future$value$rej(x){
@@ -264,14 +264,14 @@ Computation.prototype._interpret = function Computation$interpret(rec, rej, res)
     }) || noop;
   }catch(e){
     open = false;
-    rec(someError('Future was running its computation', e, show(this)));
+    rec(e);
     return noop;
   }
   if(!(isFunction(cancel) && cancel.length === 0)){
-    rec(someError('Future ran its computation', typeError(
+    rec(typeError(
       'The computation was expected to return a nullary function or void\n' +
       '  Actual: ' + show(cancel)
-    ), show(this)));
+    ));
   }
   cont();
   return function Computation$cancel(){
@@ -446,10 +446,6 @@ Crashed.prototype._race = moop;
 Crashed.prototype._interpret = function Crashed$interpret(rec){
   rec(this._error);
   return noop;
-};
-
-Crashed.prototype.toString = function Crashed$toString(){
-  return 'Future(function(){ throw ' + show(this._error) + ' })';
 };
 
 function Eager(future){

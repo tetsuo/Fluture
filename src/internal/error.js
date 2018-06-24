@@ -53,24 +53,3 @@ export function invalidFuture(it, at, m, s){
   + '.' + info + '\n  Actual: ' + show(m) + ' :: ' + id.name + (s || '')
   );
 }
-
-function indent(s){
-  return '  ' + s;
-}
-
-export function someError(action, e, s){
-  var context = typeof s === 'string' ? '\n\n  In: ' + s : '';
-  try{
-    var name = e && e.name ? String(e.name) : 'An error';
-    var errorMessage = (
-      e && e.message ? String(e.message) :
-      e && typeof e.toString === 'function' ? e.toString() :
-      String(e)
-    );
-    var message = errorMessage.trim().split('\n').map(indent).join('\n');
-    return error(name + ' came up while ' + action + ':\n' + message + context + '\n');
-  }catch(_){
-    return error('Something came up while ' + action + ', ' +
-                 'but it could not be converted to string' + context + '\n');
-  }
-}
