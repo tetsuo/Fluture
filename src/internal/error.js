@@ -72,10 +72,5 @@ export function valueToError(x){
     name + ' occurred while running a computation for a Future:\n\n' +
     message.split('\n').map(indent).join('\n')
   );
-  try{
-    if(typeof x.stack === 'string'){
-      e.stack = x.stack;
-    }
-  }catch(_){/*ignore*/}
   return e;
 }
