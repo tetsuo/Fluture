@@ -5,6 +5,10 @@ const {task} = require('folktale/concurrency/task');
 
 const noop = () => {};
 const plus1 = x => x + 1;
+const repeat = (n, f) => x => Array.from({length: n}).reduce(f, x);
+
+const map1000 = repeat(1000, m => m.map(plus1));
+const chain1000 = repeat(1000, m => m.chain(plus1));
 
 const createTask = x => task(resolver => resolver.resolve(x));
 const createFuture = x => Future((rej, res) => res(x));
@@ -16,35 +20,41 @@ const config = {leftHeader: 'Folktale', rightHeader: 'Fluture'};
 const left = {
   create: createTask,
   consume: consumeTask,
-  one: createTask(1)
+  one: createTask(1),
+  mapped: map1000(createTask(1))
 };
 
 const right = {
   create: createFuture,
   consume: consumeFuture,
-  one: createFuture(1)
+  one: createFuture(1),
+  mapped: map1000(createFuture(1))
 };
 
 module.exports = require('sanctuary-benchmark')(left, right, config, {
 
   'create.construct': [
-    {}, ({create}) => create(1)
+    {}, ({create}) => repeat(1000, x => create(x))(1)
   ],
 
   'create.map': [
-    {}, ({one}) => one.map(plus1)
+    {}, ({one}) => map1000(one)
   ],
 
   'create.chain': [
-    {}, ({one}) => one.chain(plus1)
+    {}, ({one}) => chain1000(one)
   ],
 
   'consume.noop': [
     {}, ({one, consume}) => consume(one)
   ],
 
-  'consume.map': [
+  'consume.map.1': [
     {}, ({one, consume}) => consume(one.map(plus1))
+  ],
+
+  'consume.map.1000': [
+    {}, ({mapped, consume}) => consume(mapped)
   ],
 
   'consume.chain': [
