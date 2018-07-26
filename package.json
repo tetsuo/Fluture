@@ -5,7 +5,7 @@
   "main": "index.js",
   "types": "index.d.ts",
   "module": "index.mjs.js",
-  "@std/esm": "cjs",
+  "esm": {"mode": "all", "cjs": true},
   "files": [
     "src",
     "index.es.js",
@@ -20,9 +20,9 @@
     "lint:readme": "remark --no-stdout --frail -u remark-validate-links README.md",
     "release": "npm outdated --long; xyz --edit --repo git@github.com:fluture-js/Fluture.git --tag 'X.Y.Z' --script scripts/distribute --increment",
     "test": "npm run lint && npm run lint:readme && npm run test:unit && npm run test:types && npm run test:build",
-    "test:unit": "npm run clean && mocha --require @std/esm --ui bdd --reporter list --full-trace --check-leaks --bail test/**.test.js",
-    "test:build": "npm run clean && npm run build && es-check es5 index.js && mocha --require @std/esm --ui bdd --reporter dot --bail test/**.buildtest.js",
-    "test:coverage": "npm run clean && nyc --include src mocha --require @std/esm --ui bdd --reporter dot test/**.test.js || true",
+    "test:unit": "npm run clean && mocha --require esm --ui bdd --reporter list --full-trace --check-leaks --bail test/**.test.js",
+    "test:build": "npm run clean && npm run build && es-check es5 index.js && mocha --require esm --ui bdd --reporter dot --bail test/**.buildtest.js",
+    "test:coverage": "npm run clean && nyc --include src mocha --require esm --ui bdd --reporter dot test/**.test.js || true",
     "coverage:upload": "nyc report --reporter=text-lcov > coverage.lcov && codecov",
     "coverage:report": "nyc report --reporter=html",
     "test:types": "tsc --lib es6 index.d.ts"
@@ -63,13 +63,13 @@
     "sanctuary-type-identifiers": "^2.0.0"
   },
   "devDependencies": {
-    "@std/esm": "^0.26.0",
     "chai": "^4.1.2",
     "codecov": "^3.0.0",
     "es-check": "^2.0.2",
     "eslint": "^5.0.1",
     "eslint-config-warp": "^3.0.0",
     "eslint-plugin-markdown": "^1.0.0-beta.7",
+    "esm": "^3.0.72",
     "fantasy-land": "^3.0.0",
     "fantasy-laws": "^1.0.1",
     "fantasy-states": "^0.2.1",
