@@ -288,6 +288,31 @@ Computation.prototype.toString = function Computation$toString(){
   return 'Future(' + showf(this._computation) + ')';
 };
 
+export function Crashed(error){
+  this._error = error;
+}
+
+Crashed.prototype = Object.create(Future.prototype);
+
+Crashed.prototype._ap = moop;
+Crashed.prototype._parallelAp = moop;
+Crashed.prototype._map = moop;
+Crashed.prototype._bimap = moop;
+Crashed.prototype._chain = moop;
+Crashed.prototype._mapRej = moop;
+Crashed.prototype._chainRej = moop;
+Crashed.prototype._both = moop;
+Crashed.prototype._or = moop;
+Crashed.prototype._swap = moop;
+Crashed.prototype._fold = moop;
+Crashed.prototype._finally = moop;
+Crashed.prototype._race = moop;
+
+Crashed.prototype._interpret = function Crashed$interpret(rec){
+  rec(this._error);
+  return noop;
+};
+
 export function Rejected(value){
   this._value = value;
 }
@@ -416,31 +441,6 @@ export var never = new Never();
 export function isNever(x){
   return isFuture(x) && x._isNever === true;
 }
-
-export function Crashed(error){
-  this._error = error;
-}
-
-Crashed.prototype = Object.create(Future.prototype);
-
-Crashed.prototype._ap = moop;
-Crashed.prototype._parallelAp = moop;
-Crashed.prototype._map = moop;
-Crashed.prototype._bimap = moop;
-Crashed.prototype._chain = moop;
-Crashed.prototype._mapRej = moop;
-Crashed.prototype._chainRej = moop;
-Crashed.prototype._both = moop;
-Crashed.prototype._or = moop;
-Crashed.prototype._swap = moop;
-Crashed.prototype._fold = moop;
-Crashed.prototype._finally = moop;
-Crashed.prototype._race = moop;
-
-Crashed.prototype._interpret = function Crashed$interpret(rec){
-  rec(this._error);
-  return noop;
-};
 
 function Eager(future){
   var _this = this;
