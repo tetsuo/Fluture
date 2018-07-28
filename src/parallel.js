@@ -1,4 +1,4 @@
-import {Core, Resolved, isFuture} from './core';
+import {Future, Resolved, isFuture} from './core';
 import {throwInvalidFuture, throwInvalidArgument} from './internal/throw';
 import {noop, show, partial1} from './internal/fn';
 import {isUnsigned, isArray} from './internal/is';
@@ -9,7 +9,7 @@ export function Parallel(max, futures){
   this._max = Math.min(this._length, max);
 }
 
-Parallel.prototype = Object.create(Core);
+Parallel.prototype = Object.create(Future.prototype);
 
 Parallel.prototype._interpret = function Parallel$interpret(rec, rej, res){
 

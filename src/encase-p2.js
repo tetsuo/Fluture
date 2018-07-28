@@ -1,4 +1,4 @@
-import {Core} from './core';
+import {Future} from './core';
 import {noop, show, showf, partial1, partial2} from './internal/fn';
 import {isThenable, isFunction} from './internal/is';
 import {typeError} from './internal/error';
@@ -19,7 +19,7 @@ export function EncaseP2(fn, a, b){
   this._b = b;
 }
 
-EncaseP2.prototype = Object.create(Core);
+EncaseP2.prototype = Object.create(Future.prototype);
 
 EncaseP2.prototype._interpret = function EncaseP2$interpret(rec, rej, res){
   var open = true, fn = this._fn, a = this._a, b = this._b, p;

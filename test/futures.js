@@ -1,8 +1,8 @@
 import {of, reject, after, rejectAfter} from '../index.mjs.js';
-import {Core, Crashed} from '../src/core';
+import {Future, Crashed} from '../src/core';
 import {error} from './util';
 
-export var mock = Object.create(Core);
+export var mock = Object.create(Future.prototype);
 mock._interpret = function (){ throw new Error('Override _interpret on mock Future') };
 mock.toString = function (){ return '(util.mock)' };
 

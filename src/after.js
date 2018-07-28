@@ -1,4 +1,4 @@
-import {Core, isNever, never} from './core';
+import {Future, isNever, never} from './core';
 import {show, partial1} from './internal/fn';
 import {isUnsigned} from './internal/is';
 import {throwInvalidArgument} from './internal/throw';
@@ -8,7 +8,7 @@ function After$race(other){
        ? this
        : typeof other._time === 'number'
        ? other._time < this._time ? other : this
-       : Core._race.call(this, other);
+       : Future.prototype._race.call(this, other);
 }
 
 export function After(time, value){
@@ -16,7 +16,7 @@ export function After(time, value){
   this._value = value;
 }
 
-After.prototype = Object.create(Core);
+After.prototype = Object.create(Future.prototype);
 
 After.prototype._race = After$race;
 
@@ -42,7 +42,7 @@ export function RejectAfter(time, value){
   this._value = value;
 }
 
-RejectAfter.prototype = Object.create(Core);
+RejectAfter.prototype = Object.create(Future.prototype);
 
 RejectAfter.prototype._race = After$race;
 

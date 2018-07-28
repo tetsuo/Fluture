@@ -1,4 +1,4 @@
-import {Core} from './core';
+import {Future} from './core';
 import {noop, show, showf} from './internal/fn';
 import {isThenable, isFunction} from './internal/is';
 import {typeError} from './internal/error';
@@ -15,7 +15,7 @@ export function TryP(fn){
   this._fn = fn;
 }
 
-TryP.prototype = Object.create(Core);
+TryP.prototype = Object.create(Future.prototype);
 
 TryP.prototype._interpret = function TryP$interpret(rec, rej, res){
   var open = true, fn = this._fn, p;

@@ -178,65 +178,63 @@ Future.prototype.extractRight = function Future$extractRight(){
   return [];
 };
 
-export var Core = Object.create(Future.prototype);
-
-Core._transform = function Core$transform(action){
+Future.prototype._transform = function Future$transform(action){
   return new Sequence(this, cons(action, nil));
 };
 
-Core._ap = function Core$ap(other){
+Future.prototype._ap = function Future$ap(other){
   return this._transform(new ApAction(other));
 };
 
-Core._parallelAp = function Core$pap(other){
+Future.prototype._parallelAp = function Future$pap(other){
   return this._transform(new ParallelApAction(other));
 };
 
-Core._map = function Core$map(mapper){
+Future.prototype._map = function Future$map(mapper){
   return this._transform(new MapAction(mapper));
 };
 
-Core._bimap = function Core$bimap(lmapper, rmapper){
+Future.prototype._bimap = function Future$bimap(lmapper, rmapper){
   return this._transform(new BimapAction(lmapper, rmapper));
 };
 
-Core._chain = function Core$chain(mapper){
+Future.prototype._chain = function Future$chain(mapper){
   return this._transform(new ChainAction(mapper));
 };
 
-Core._mapRej = function Core$mapRej(mapper){
+Future.prototype._mapRej = function Future$mapRej(mapper){
   return this._transform(new MapRejAction(mapper));
 };
 
-Core._chainRej = function Core$chainRej(mapper){
+Future.prototype._chainRej = function Future$chainRej(mapper){
   return this._transform(new ChainRejAction(mapper));
 };
 
-Core._race = function Core$race(other){
+Future.prototype._race = function Future$race(other){
   return isNever(other) ? this : this._transform(new RaceAction(other));
 };
 
-Core._both = function Core$both(other){
+Future.prototype._both = function Future$both(other){
   return this._transform(new BothAction(other));
 };
 
-Core._and = function Core$and(other){
+Future.prototype._and = function Future$and(other){
   return this._transform(new AndAction(other));
 };
 
-Core._or = function Core$or(other){
+Future.prototype._or = function Future$or(other){
   return this._transform(new OrAction(other));
 };
 
-Core._swap = function Core$swap(){
+Future.prototype._swap = function Future$swap(){
   return this._transform(new SwapAction);
 };
 
-Core._fold = function Core$fold(lmapper, rmapper){
+Future.prototype._fold = function Future$fold(lmapper, rmapper){
   return this._transform(new FoldAction(lmapper, rmapper));
 };
 
-Core._finally = function Core$finally(other){
+Future.prototype._finally = function Future$finally(other){
   return this._transform(new FinallyAction(other));
 };
 
@@ -244,7 +242,7 @@ export function Computation(computation){
   this._computation = computation;
 }
 
-Computation.prototype = Object.create(Core);
+Computation.prototype = Object.create(Future.prototype);
 
 Computation.prototype._interpret = function Computation$interpret(rec, rej, res){
   var open = false, cancel = noop, cont = function(){ open = true };
@@ -294,7 +292,7 @@ export function Rejected(value){
   this._value = value;
 }
 
-Rejected.prototype = Object.create(Core);
+Rejected.prototype = Object.create(Future.prototype);
 
 Rejected.prototype._ap = moop;
 Rejected.prototype._parallelAp = moop;
@@ -337,7 +335,7 @@ export function Resolved(value){
   this._value = value;
 }
 
-Resolved.prototype = Object.create(Core);
+Resolved.prototype = Object.create(Future.prototype);
 
 Resolved.prototype._race = moop;
 Resolved.prototype._mapRej = moop;
@@ -471,7 +469,7 @@ function Eager(future){
   });
 }
 
-Eager.prototype = Object.create(Core);
+Eager.prototype = Object.create(Future.prototype);
 
 Eager.prototype._interpret = function Eager$interpret(rec, rej, res){
   if(this.crashed) rec(this.value);
@@ -742,7 +740,7 @@ export function Sequence(spawn, actions){
   this._actions = actions;
 }
 
-Sequence.prototype = Object.create(Core);
+Sequence.prototype = Object.create(Future.prototype);
 
 Sequence.prototype._transform = function Sequence$_transform(action){
   return new Sequence(this._spawn, cons(action, this._actions));

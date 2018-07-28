@@ -1,4 +1,4 @@
-import {Core} from './core';
+import {Future} from './core';
 import {noop, show, showf, partial1, partial2} from './internal/fn';
 import {isFunction} from './internal/is';
 import {throwInvalidArgument} from './internal/throw';
@@ -9,7 +9,7 @@ export function Encase2(fn, a, b){
   this._b = b;
 }
 
-Encase2.prototype = Object.create(Core);
+Encase2.prototype = Object.create(Future.prototype);
 
 Encase2.prototype._interpret = function Encase2$interpret(rec, rej, res){
   var r;

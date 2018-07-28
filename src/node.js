@@ -1,4 +1,4 @@
-import {Core} from './core';
+import {Future} from './core';
 import {showf, noop} from './internal/fn';
 import {isFunction} from './internal/is';
 import {throwInvalidArgument} from './internal/throw';
@@ -7,7 +7,7 @@ export function Node(fn){
   this._fn = fn;
 }
 
-Node.prototype = Object.create(Core);
+Node.prototype = Object.create(Future.prototype);
 
 Node.prototype._interpret = function Node$interpret(rec, rej, res){
   var open = false, cont = function(){ open = true };

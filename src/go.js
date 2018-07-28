@@ -1,6 +1,6 @@
 /*eslint consistent-return: 0, no-cond-assign: 0*/
 
-import {Core, isFuture} from './core';
+import {Future, isFuture} from './core';
 import {isFunction, isIterator} from './internal/is';
 import {isIteration} from './internal/iteration';
 import {show, showf, noop} from './internal/fn';
@@ -28,7 +28,7 @@ export function Go(generator){
   this._generator = generator;
 }
 
-Go.prototype = Object.create(Core);
+Go.prototype = Object.create(Future.prototype);
 
 Go.prototype._interpret = function Go$interpret(rec, rej, res){
 

@@ -2,7 +2,7 @@ import {Future, of, never, after} from '../index.mjs.js';
 import {expect} from 'chai';
 import {add, bang, noop, error, assertResolved, assertRejected, assertCrashed} from './util';
 import {resolved, rejected, resolvedSlow} from './futures';
-import {Sequence, Core} from '../src/core';
+import {Sequence} from '../src/core';
 import {nil} from '../src/internal/list';
 import {StateT} from 'fantasy-states';
 
@@ -422,7 +422,7 @@ describe('Sequence', function (){
       });
 
       it('does not run early terminating actions twice, or cancel them', function (done){
-        var mock = Object.create(Core);
+        var mock = Object.create(Future.prototype);
         mock._interpret = function (_, l, r){ return r(done()) || (function (){ return done(error) }) };
         var m = new Sequence(after(30, 'a'), nil).map(function (x){ return (x + 'b') }).race(mock);
         m._interpret(done, noop, noop);

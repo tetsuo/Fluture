@@ -1,4 +1,4 @@
-import {Core} from './core';
+import {Future} from './core';
 import {noop, showf} from './internal/fn';
 import {isFunction} from './internal/is';
 import {throwInvalidArgument} from './internal/throw';
@@ -7,7 +7,7 @@ export function Attempt(fn){
   this._fn = fn;
 }
 
-Attempt.prototype = Object.create(Core);
+Attempt.prototype = Object.create(Future.prototype);
 
 Attempt.prototype._interpret = function Attempt$interpret(rec, rej, res){
   var r;
