@@ -170,18 +170,6 @@ Future.prototype.promise = function Future$promise(){
   });
 };
 
-Future.prototype.isRejected = function Future$isRejected(){
-  return false;
-};
-
-Future.prototype.isResolved = function Future$isResolved(){
-  return false;
-};
-
-Future.prototype.isSettled = function Future$isSettled(){
-  return this.isRejected() || this.isResolved();
-};
-
 Future.prototype.extractLeft = function Future$extractLeft(){
   return [];
 };
@@ -329,10 +317,6 @@ Rejected.prototype._interpret = function Rejected$interpret(rec, rej){
   return noop;
 };
 
-Rejected.prototype.isRejected = function Rejected$isRejected(){
-  return true;
-};
-
 Rejected.prototype.extractLeft = function Rejected$extractLeft(){
   return [this._value];
 };
@@ -380,10 +364,6 @@ Resolved.prototype._finally = function Resolved$finally(other){
 Resolved.prototype._interpret = function Resolved$interpret(rec, rej, res){
   res(this._value);
   return noop;
-};
-
-Resolved.prototype.isResolved = function Resolved$isResolved(){
-  return true;
 };
 
 Resolved.prototype.extractRight = function Resolved$extractRight(){

@@ -4,9 +4,7 @@ import {isUnsigned} from './internal/is';
 import {throwInvalidArgument} from './internal/throw';
 
 function After$race(other){
-  return other.isSettled()
-       ? other
-       : isNever(other)
+  return isNever(other)
        ? this
        : typeof other._time === 'number'
        ? other._time < this._time ? other : this

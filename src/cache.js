@@ -21,20 +21,12 @@ export function Cached(pure){
 
 Cached.prototype = Object.create(Core);
 
-Cached.prototype.isRejected = function Cached$isRejected(){
-  return this._state === Rejected;
-};
-
-Cached.prototype.isResolved = function Cached$isResolved(){
-  return this._state === Resolved;
-};
-
 Cached.prototype.extractLeft = function Cached$extractLeft(){
-  return this.isRejected() ? [this._value] : [];
+  return this._state === Rejected ? [this._value] : [];
 };
 
 Cached.prototype.extractRight = function Cached$extractRight(){
-  return this.isResolved() ? [this._value] : [];
+  return this._state === Resolved ? [this._value] : [];
 };
 
 Cached.prototype._addToQueue = function Cached$addToQueue(rec, rej, res){
