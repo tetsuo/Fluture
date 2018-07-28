@@ -1,12 +1,10 @@
-import {Future, isNever, never} from './core';
+import {Future, never} from './core';
 import {show, partial1} from './internal/fn';
 import {isUnsigned} from './internal/is';
 import {throwInvalidArgument} from './internal/throw';
 
 function After$race(other){
-  return isNever(other)
-       ? this
-       : typeof other._time === 'number'
+  return typeof other._time === 'number'
        ? other._time < this._time ? other : this
        : Future.prototype._race.call(this, other);
 }
