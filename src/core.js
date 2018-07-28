@@ -677,7 +677,7 @@ export function RaceAction(other){ this.other = other }
 RaceAction.prototype = Object.create(Action);
 
 RaceAction.prototype.run = function RaceAction$run(early){
-  return new RaceActionState(early, new Eager(this.other));
+  return new RaceActionState(early, this.other);
 };
 
 RaceAction.prototype.toString = function RaceAction$toString(){
@@ -692,7 +692,7 @@ BothAction.prototype.resolved = function BothAction$resolved(x){
 };
 
 BothAction.prototype.run = function BothAction$run(early){
-  return new BothActionState(early, new Eager(this.other));
+  return new BothActionState(early, this.other);
 };
 
 BothAction.prototype.toString = function BothAction$toString(){
@@ -702,7 +702,7 @@ BothAction.prototype.toString = function BothAction$toString(){
 export function ParallelApActionState(early, other){
   var _this = this;
   _this.other = new Eager(other);
-  _this.cancel = this.other._interpret(
+  _this.cancel = _this.other._interpret(
     function ParallelApActionState$rec(x){ early(new Crashed(x), _this) },
     function ParallelApActionState$rej(x){ early(new Rejected(x), _this) },
     noop
@@ -713,8 +713,8 @@ ParallelApActionState.prototype = Object.create(ParallelApAction.prototype);
 
 export function RaceActionState(early, other){
   var _this = this;
-  _this.other = other;
-  _this.cancel = other._interpret(
+  _this.other = new Eager(other);
+  _this.cancel = _this.other._interpret(
     function RaceActionState$rec(x){ early(new Crashed(x), _this) },
     function RaceActionState$rej(x){ early(new Rejected(x), _this) },
     function RaceActionState$res(x){ early(new Resolved(x), _this) }
@@ -725,8 +725,8 @@ RaceActionState.prototype = Object.create(RaceAction.prototype);
 
 export function BothActionState(early, other){
   var _this = this;
-  _this.other = other;
-  _this.cancel = other._interpret(
+  _this.other = new Eager(other);
+  _this.cancel = _this.other._interpret(
     function BothActionState$rec(x){ early(new Crashed(x), _this) },
     function BothActionState$rej(x){ early(new Rejected(x), _this) },
     noop
