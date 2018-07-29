@@ -1,5 +1,5 @@
 /**
- * Fluture bundled; version 9.0.0
+ * Fluture bundled; version 9.0.1
  */
 
 var Fluture = (function () {
@@ -3977,12 +3977,12 @@ var Fluture = (function () {
 	  return this._interpret(Future$onCrash, rej, res);
 	};
 
-	Future.prototype.forkCatch = function Future$fork(rec, rej, res){
+	Future.prototype.forkCatch = function Future$forkCatch(rec, rej, res){
 	  if(!isFuture(this)) throwInvalidContext('Future#fork', this);
 	  if(!isFunction(rec)) throwInvalidArgument('Future#fork', 0, 'to be a Function', rec);
 	  if(!isFunction(rej)) throwInvalidArgument('Future#fork', 1, 'to be a Function', rej);
 	  if(!isFunction(res)) throwInvalidArgument('Future#fork', 2, 'to be a Function', res);
-	  return this._interpret(rec, rej, res);
+	  return this._interpret(function Future$forkCatch$recover(x){ rec(valueToError(x)); }, rej, res);
 	};
 
 	Future.prototype.value = function Future$value(res){
@@ -4006,18 +4006,6 @@ var Fluture = (function () {
 	  });
 	};
 
-	Future.prototype.isRejected = function Future$isRejected(){
-	  return false;
-	};
-
-	Future.prototype.isResolved = function Future$isResolved(){
-	  return false;
-	};
-
-	Future.prototype.isSettled = function Future$isSettled(){
-	  return this.isRejected() || this.isResolved();
-	};
-
 	Future.prototype.extractLeft = function Future$extractLeft(){
 	  return [];
 	};
@@ -4026,69 +4014,71 @@ var Fluture = (function () {
 	  return [];
 	};
 
-	var Core = Object.create(Future.prototype);
-
-	Core._ap = function Core$ap(other){
-	  return new Sequence(this)._ap(other);
+	Future.prototype._transform = function Future$transform(action){
+	  return new Sequence(this, cons(action, nil));
 	};
 
-	Core._parallelAp = function Core$parallelAp(other){
-	  return new Sequence(this)._parallelAp(other);
+	Future.prototype._ap = function Future$ap(other){
+	  return this._transform(new ApAction(other));
 	};
 
-	Core._map = function Core$map(mapper){
-	  return new Sequence(this)._map(mapper);
+	Future.prototype._parallelAp = function Future$pap(other){
+	  return this._transform(new ParallelApAction(other));
 	};
 
-	Core._bimap = function Core$bimap(lmapper, rmapper){
-	  return new Sequence(this)._bimap(lmapper, rmapper);
+	Future.prototype._map = function Future$map(mapper){
+	  return this._transform(new MapAction(mapper));
 	};
 
-	Core._chain = function Core$chain(mapper){
-	  return new Sequence(this)._chain(mapper);
+	Future.prototype._bimap = function Future$bimap(lmapper, rmapper){
+	  return this._transform(new BimapAction(lmapper, rmapper));
 	};
 
-	Core._mapRej = function Core$mapRej(mapper){
-	  return new Sequence(this)._mapRej(mapper);
+	Future.prototype._chain = function Future$chain(mapper){
+	  return this._transform(new ChainAction(mapper));
 	};
 
-	Core._chainRej = function Core$chainRej(mapper){
-	  return new Sequence(this)._chainRej(mapper);
+	Future.prototype._mapRej = function Future$mapRej(mapper){
+	  return this._transform(new MapRejAction(mapper));
 	};
 
-	Core._race = function Core$race(other){
-	  return new Sequence(this)._race(other);
+	Future.prototype._chainRej = function Future$chainRej(mapper){
+	  return this._transform(new ChainRejAction(mapper));
 	};
 
-	Core._both = function Core$both(other){
-	  return new Sequence(this)._both(other);
+	Future.prototype._race = function Future$race(other){
+	  return isNever(other) ? this : this._transform(new RaceAction(other));
 	};
 
-	Core._and = function Core$and(other){
-	  return new Sequence(this)._and(other);
+	Future.prototype._both = function Future$both(other){
+	  return this._transform(new BothAction(other));
 	};
 
-	Core._or = function Core$or(other){
-	  return new Sequence(this)._or(other);
+	Future.prototype._and = function Future$and(other){
+	  return this._transform(new AndAction(other));
 	};
 
-	Core._swap = function Core$swap(){
-	  return new Sequence(this)._swap();
+	Future.prototype._or = function Future$or(other){
+	  return this._transform(new OrAction(other));
 	};
 
-	Core._fold = function Core$fold(lmapper, rmapper){
-	  return new Sequence(this)._fold(lmapper, rmapper);
+	Future.prototype._swap = function Future$swap(){
+	  return this._transform(new SwapAction);
 	};
 
-	Core._finally = function Core$finally(other){
-	  return new Sequence(this)._finally(other);
+	Future.prototype._fold = function Future$fold(lmapper, rmapper){
+	  return this._transform(new FoldAction(lmapper, rmapper));
+	};
+
+	Future.prototype._finally = function Future$finally(other){
+	  return this._transform(new FinallyAction(other));
 	};
 
 	function Computation(computation){
 	  this._computation = computation;
 	}
 
-	Computation.prototype = Object.create(Core);
+	Computation.prototype = Object.create(Future.prototype);
 
 	Computation.prototype._interpret = function Computation$interpret(rec, rej, res){
 	  var open = false, cancel = noop, cont = function(){ open = true; };
@@ -4134,11 +4124,36 @@ var Fluture = (function () {
 	  return 'Future(' + showf(this._computation) + ')';
 	};
 
+	function Crashed(error$$1){
+	  this._error = error$$1;
+	}
+
+	Crashed.prototype = Object.create(Future.prototype);
+
+	Crashed.prototype._ap = moop;
+	Crashed.prototype._parallelAp = moop;
+	Crashed.prototype._map = moop;
+	Crashed.prototype._bimap = moop;
+	Crashed.prototype._chain = moop;
+	Crashed.prototype._mapRej = moop;
+	Crashed.prototype._chainRej = moop;
+	Crashed.prototype._both = moop;
+	Crashed.prototype._or = moop;
+	Crashed.prototype._swap = moop;
+	Crashed.prototype._fold = moop;
+	Crashed.prototype._finally = moop;
+	Crashed.prototype._race = moop;
+
+	Crashed.prototype._interpret = function Crashed$interpret(rec){
+	  rec(this._error);
+	  return noop;
+	};
+
 	function Rejected(value){
 	  this._value = value;
 	}
 
-	Rejected.prototype = Object.create(Core);
+	Rejected.prototype = Object.create(Future.prototype);
 
 	Rejected.prototype._ap = moop;
 	Rejected.prototype._parallelAp = moop;
@@ -4165,10 +4180,6 @@ var Fluture = (function () {
 	  return noop;
 	};
 
-	Rejected.prototype.isRejected = function Rejected$isRejected(){
-	  return true;
-	};
-
 	Rejected.prototype.extractLeft = function Rejected$extractLeft(){
 	  return [this._value];
 	};
@@ -4185,7 +4196,7 @@ var Fluture = (function () {
 	  this._value = value;
 	}
 
-	Resolved.prototype = Object.create(Core);
+	Resolved.prototype = Object.create(Future.prototype);
 
 	Resolved.prototype._race = moop;
 	Resolved.prototype._mapRej = moop;
@@ -4216,10 +4227,6 @@ var Fluture = (function () {
 	Resolved.prototype._interpret = function Resolved$interpret(rec, rej, res){
 	  res(this._value);
 	  return noop;
-	};
-
-	Resolved.prototype.isResolved = function Resolved$isResolved(){
-	  return true;
 	};
 
 	Resolved.prototype.extractRight = function Resolved$extractRight(){
@@ -4271,31 +4278,6 @@ var Fluture = (function () {
 	  return isFuture(x) && x._isNever === true;
 	}
 
-	function Crashed(error$$1){
-	  this._error = error$$1;
-	}
-
-	Crashed.prototype = Object.create(Future.prototype);
-
-	Crashed.prototype._ap = moop;
-	Crashed.prototype._parallelAp = moop;
-	Crashed.prototype._map = moop;
-	Crashed.prototype._bimap = moop;
-	Crashed.prototype._chain = moop;
-	Crashed.prototype._mapRej = moop;
-	Crashed.prototype._chainRej = moop;
-	Crashed.prototype._both = moop;
-	Crashed.prototype._or = moop;
-	Crashed.prototype._swap = moop;
-	Crashed.prototype._fold = moop;
-	Crashed.prototype._finally = moop;
-	Crashed.prototype._race = moop;
-
-	Crashed.prototype._interpret = function Crashed$interpret(rec){
-	  rec(this._error);
-	  return noop;
-	};
-
 	function Eager(future){
 	  var _this = this;
 	  _this.rec = noop;
@@ -4323,7 +4305,7 @@ var Fluture = (function () {
 	  });
 	}
 
-	Eager.prototype = Object.create(Core);
+	Eager.prototype = Object.create(Future.prototype);
 
 	Eager.prototype._interpret = function Eager$interpret(rec, rej, res){
 	  if(this.crashed) rec(this.value);
@@ -4531,7 +4513,7 @@ var Fluture = (function () {
 	RaceAction.prototype = Object.create(Action);
 
 	RaceAction.prototype.run = function RaceAction$run(early){
-	  return new RaceActionState(early, new Eager(this.other));
+	  return new RaceActionState(early, this.other);
 	};
 
 	RaceAction.prototype.toString = function RaceAction$toString(){
@@ -4546,7 +4528,7 @@ var Fluture = (function () {
 	};
 
 	BothAction.prototype.run = function BothAction$run(early){
-	  return new BothActionState(early, new Eager(this.other));
+	  return new BothActionState(early, this.other);
 	};
 
 	BothAction.prototype.toString = function BothAction$toString(){
@@ -4556,7 +4538,7 @@ var Fluture = (function () {
 	function ParallelApActionState(early, other){
 	  var _this = this;
 	  _this.other = new Eager(other);
-	  _this.cancel = this.other._interpret(
+	  _this.cancel = _this.other._interpret(
 	    function ParallelApActionState$rec(x){ early(new Crashed(x), _this); },
 	    function ParallelApActionState$rej(x){ early(new Rejected(x), _this); },
 	    noop
@@ -4567,8 +4549,8 @@ var Fluture = (function () {
 
 	function RaceActionState(early, other){
 	  var _this = this;
-	  _this.other = other;
-	  _this.cancel = other._interpret(
+	  _this.other = new Eager(other);
+	  _this.cancel = _this.other._interpret(
 	    function RaceActionState$rec(x){ early(new Crashed(x), _this); },
 	    function RaceActionState$rej(x){ early(new Rejected(x), _this); },
 	    function RaceActionState$res(x){ early(new Resolved(x), _this); }
@@ -4579,8 +4561,8 @@ var Fluture = (function () {
 
 	function BothActionState(early, other){
 	  var _this = this;
-	  _this.other = other;
-	  _this.cancel = other._interpret(
+	  _this.other = new Eager(other);
+	  _this.cancel = _this.other._interpret(
 	    function BothActionState$rec(x){ early(new Crashed(x), _this); },
 	    function BothActionState$rej(x){ early(new Rejected(x), _this); },
 	    noop
@@ -4591,69 +4573,13 @@ var Fluture = (function () {
 
 	function Sequence(spawn, actions){
 	  this._spawn = spawn;
-	  this._actions = actions || nil;
+	  this._actions = actions;
 	}
 
 	Sequence.prototype = Object.create(Future.prototype);
 
 	Sequence.prototype._transform = function Sequence$_transform(action){
 	  return new Sequence(this._spawn, cons(action, this._actions));
-	};
-
-	Sequence.prototype._ap = function Sequence$ap(other){
-	  return this._transform(new ApAction(other));
-	};
-
-	Sequence.prototype._parallelAp = function Sequence$pap(other){
-	  return this._transform(new ParallelApAction(other));
-	};
-
-	Sequence.prototype._map = function Sequence$map(mapper){
-	  return this._transform(new MapAction(mapper));
-	};
-
-	Sequence.prototype._bimap = function Sequence$bimap(lmapper, rmapper){
-	  return this._transform(new BimapAction(lmapper, rmapper));
-	};
-
-	Sequence.prototype._chain = function Sequence$chain(mapper){
-	  return this._transform(new ChainAction(mapper));
-	};
-
-	Sequence.prototype._mapRej = function Sequence$mapRej(mapper){
-	  return this._transform(new MapRejAction(mapper));
-	};
-
-	Sequence.prototype._chainRej = function Sequence$chainRej(mapper){
-	  return this._transform(new ChainRejAction(mapper));
-	};
-
-	Sequence.prototype._race = function Sequence$race(other){
-	  return isNever(other) ? this : this._transform(new RaceAction(other));
-	};
-
-	Sequence.prototype._both = function Sequence$both(other){
-	  return this._transform(new BothAction(other));
-	};
-
-	Sequence.prototype._and = function Sequence$and(other){
-	  return this._transform(new AndAction(other));
-	};
-
-	Sequence.prototype._or = function Sequence$or(other){
-	  return this._transform(new OrAction(other));
-	};
-
-	Sequence.prototype._swap = function Sequence$swap(){
-	  return this._transform(new SwapAction);
-	};
-
-	Sequence.prototype._fold = function Sequence$fold(lmapper, rmapper){
-	  return this._transform(new FoldAction(lmapper, rmapper));
-	};
-
-	Sequence.prototype._finally = function Sequence$finally(other){
-	  return this._transform(new FinallyAction(other));
 	};
 
 	Sequence.prototype._interpret = function Sequence$interpret(rec, rej, res){
@@ -4692,7 +4618,7 @@ var Fluture = (function () {
 	  this._init = init;
 	}
 
-	ChainRec.prototype = Object.create(Core);
+	ChainRec.prototype = Object.create(Future.prototype);
 
 	ChainRec.prototype._interpret = function ChainRec$interpret(rec, rej, res){
 
@@ -4940,7 +4866,7 @@ var Fluture = (function () {
 	  if(!isFunction(h)) throwInvalidArgument('Future.forkCatch', 2, 'be a function', h);
 	  if(arguments.length === 3) return partial3(forkCatch, f, g, h);
 	  if(!isFuture(m)) throwInvalidFuture('Future.forkCatch', 3, m);
-	  return m._interpret(f, g, h);
+	  return m._interpret(function forkCatch$recover(x){ f(valueToError(x)); }, g, h);
 	}
 
 	function promise(m){
@@ -4970,13 +4896,9 @@ var Fluture = (function () {
 	}
 
 	function After$race(other){
-	  return other.isSettled()
-	       ? other
-	       : isNever(other)
-	       ? this
-	       : typeof other._time === 'number'
+	  return typeof other._time === 'number'
 	       ? other._time < this._time ? other : this
-	       : Core._race.call(this, other);
+	       : Future.prototype._race.call(this, other);
 	}
 
 	function After(time, value){
@@ -4984,7 +4906,7 @@ var Fluture = (function () {
 	  this._value = value;
 	}
 
-	After.prototype = Object.create(Core);
+	After.prototype = Object.create(Future.prototype);
 
 	After.prototype._race = After$race;
 
@@ -5010,7 +4932,7 @@ var Fluture = (function () {
 	  this._value = value;
 	}
 
-	RejectAfter.prototype = Object.create(Core);
+	RejectAfter.prototype = Object.create(Future.prototype);
 
 	RejectAfter.prototype._race = After$race;
 
@@ -5057,7 +4979,7 @@ var Fluture = (function () {
 	  this._fn = fn;
 	}
 
-	Attempt.prototype = Object.create(Core);
+	Attempt.prototype = Object.create(Future.prototype);
 
 	Attempt.prototype._interpret = function Attempt$interpret(rec, rej, res){
 	  var r;
@@ -5092,22 +5014,14 @@ var Fluture = (function () {
 	  this.reset();
 	}
 
-	Cached.prototype = Object.create(Core);
-
-	Cached.prototype.isRejected = function Cached$isRejected(){
-	  return this._state === Rejected$1;
-	};
-
-	Cached.prototype.isResolved = function Cached$isResolved(){
-	  return this._state === Resolved$1;
-	};
+	Cached.prototype = Object.create(Future.prototype);
 
 	Cached.prototype.extractLeft = function Cached$extractLeft(){
-	  return this.isRejected() ? [this._value] : [];
+	  return this._state === Rejected$1 ? [this._value] : [];
 	};
 
 	Cached.prototype.extractRight = function Cached$extractRight(){
-	  return this.isResolved() ? [this._value] : [];
+	  return this._state === Resolved$1 ? [this._value] : [];
 	};
 
 	Cached.prototype._addToQueue = function Cached$addToQueue(rec, rej, res){
@@ -5211,7 +5125,7 @@ var Fluture = (function () {
 	  this._a = a;
 	}
 
-	Encase.prototype = Object.create(Core);
+	Encase.prototype = Object.create(Future.prototype);
 
 	Encase.prototype._interpret = function Encase$interpret(rec, rej, res){
 	  var r;
@@ -5236,7 +5150,7 @@ var Fluture = (function () {
 	  this._b = b;
 	}
 
-	Encase2.prototype = Object.create(Core);
+	Encase2.prototype = Object.create(Future.prototype);
 
 	Encase2.prototype._interpret = function Encase2$interpret(rec, rej, res){
 	  var r;
@@ -5266,7 +5180,7 @@ var Fluture = (function () {
 	  this._c = c;
 	}
 
-	Encase3.prototype = Object.create(Core);
+	Encase3.prototype = Object.create(Future.prototype);
 
 	Encase3.prototype._interpret = function Encase3$interpret(rec, rej, res){
 	  var r;
@@ -5303,7 +5217,7 @@ var Fluture = (function () {
 	  this._a = a;
 	}
 
-	EncaseN.prototype = Object.create(Core);
+	EncaseN.prototype = Object.create(Future.prototype);
 
 	EncaseN.prototype._interpret = function EncaseN$interpret(rec, rej, res){
 	  var open = false, cont = function(){ open = true; };
@@ -5345,7 +5259,7 @@ var Fluture = (function () {
 	  this._b = b;
 	}
 
-	EncaseN2.prototype = Object.create(Core);
+	EncaseN2.prototype = Object.create(Future.prototype);
 
 	EncaseN2.prototype._interpret = function EncaseN2$interpret(rec, rej, res){
 	  var open = false, cont = function(){ open = true; };
@@ -5392,7 +5306,7 @@ var Fluture = (function () {
 	  this._c = c;
 	}
 
-	EncaseN3.prototype = Object.create(Core);
+	EncaseN3.prototype = Object.create(Future.prototype);
 
 	EncaseN3.prototype._interpret = function EncaseN3$interpret(rec, rej, res){
 	  var open = false, cont = function(){ open = true; };
@@ -5454,7 +5368,7 @@ var Fluture = (function () {
 	  this._a = a;
 	}
 
-	EncaseP.prototype = Object.create(Core);
+	EncaseP.prototype = Object.create(Future.prototype);
 
 	EncaseP.prototype._interpret = function EncaseP$interpret(rec, rej, res){
 	  var open = true, fn = this._fn, a = this._a, p;
@@ -5507,7 +5421,7 @@ var Fluture = (function () {
 	  this._b = b;
 	}
 
-	EncaseP2.prototype = Object.create(Core);
+	EncaseP2.prototype = Object.create(Future.prototype);
 
 	EncaseP2.prototype._interpret = function EncaseP2$interpret(rec, rej, res){
 	  var open = true, fn = this._fn, a = this._a, b = this._b, p;
@@ -5566,7 +5480,7 @@ var Fluture = (function () {
 	  this._c = c;
 	}
 
-	EncaseP3.prototype = Object.create(Core);
+	EncaseP3.prototype = Object.create(Future.prototype);
 
 	EncaseP3.prototype._interpret = function EncaseP3$interpret(rec, rej, res){
 	  var open = true, fn = this._fn, a = this._a, b = this._b, c = this._c, p;
@@ -5639,7 +5553,7 @@ var Fluture = (function () {
 	  this._generator = generator;
 	}
 
-	Go.prototype = Object.create(Core);
+	Go.prototype = Object.create(Future.prototype);
 
 	Go.prototype._interpret = function Go$interpret(rec, rej, res){
 
@@ -5722,7 +5636,7 @@ var Fluture = (function () {
 	  this._consume = consume;
 	}
 
-	Hook.prototype = Object.create(Core);
+	Hook.prototype = Object.create(Future.prototype);
 
 	Hook.prototype._interpret = function Hook$interpret(rec, rej, res){
 
@@ -5842,7 +5756,7 @@ var Fluture = (function () {
 	  this._fn = fn;
 	}
 
-	Node.prototype = Object.create(Core);
+	Node.prototype = Object.create(Future.prototype);
 
 	Node.prototype._interpret = function Node$interpret(rec, rej, res){
 	  var open = false, cont = function(){ open = true; };
@@ -5883,7 +5797,7 @@ var Fluture = (function () {
 	  this._max = Math.min(this._length, max);
 	}
 
-	Parallel.prototype = Object.create(Core);
+	Parallel.prototype = Object.create(Future.prototype);
 
 	Parallel.prototype._interpret = function Parallel$interpret(rec, rej, res){
 
@@ -5965,7 +5879,7 @@ var Fluture = (function () {
 	  this._fn = fn;
 	}
 
-	TryP.prototype = Object.create(Core);
+	TryP.prototype = Object.create(Future.prototype);
 
 	TryP.prototype._interpret = function TryP$interpret(rec, rej, res){
 	  var open = true, fn = this._fn, p;
