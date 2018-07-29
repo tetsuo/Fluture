@@ -141,12 +141,12 @@ Future.prototype.fork = function Future$fork(rej, res){
   return this._interpret(Future$onCrash, rej, res);
 };
 
-Future.prototype.forkCatch = function Future$fork(rec, rej, res){
+Future.prototype.forkCatch = function Future$forkCatch(rec, rej, res){
   if(!isFuture(this)) throwInvalidContext('Future#fork', this);
   if(!isFunction(rec)) throwInvalidArgument('Future#fork', 0, 'to be a Function', rec);
   if(!isFunction(rej)) throwInvalidArgument('Future#fork', 1, 'to be a Function', rej);
   if(!isFunction(res)) throwInvalidArgument('Future#fork', 2, 'to be a Function', res);
-  return this._interpret(rec, rej, res);
+  return this._interpret(function Future$forkCatch$recover(x){ rec(valueToError(x)) }, rej, res);
 };
 
 Future.prototype.value = function Future$value(res){

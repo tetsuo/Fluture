@@ -118,13 +118,29 @@ describe('Future', function (){
       var mock = Object.create(F.mock);
 
       mock._interpret = function (rec, rej, res){
-        expect(rec).to.equal(a);
+        expect(rec).to.be.a('function');
         expect(rej).to.equal(b);
         expect(res).to.equal(c);
         done();
       };
 
       forkCatch(a, b, c, mock);
+    });
+
+    it('ensures the recovery value has a consistent type', function (done){
+      var mock = Object.create(F.mock);
+      mock._interpret = function (rec){
+        rec(42);
+      };
+      forkCatch(function (x){
+        expect(x).to.be.an.instanceof(Error);
+        expect(x.name).to.equal('Error');
+        expect(x.message).to.equal(
+          'Non-Error occurred while running a computation for a Future:\n\n' +
+          '  42'
+        );
+        done();
+      }, U.noop, U.noop, mock);
     });
 
   });
@@ -345,13 +361,29 @@ describe('Future', function (){
       var mock = Object.create(F.mock);
 
       mock._interpret = function (rec, rej, res){
-        expect(rec).to.equal(a);
+        expect(rec).to.be.a('function');
         expect(rej).to.equal(b);
         expect(res).to.equal(c);
         done();
       };
 
       mock.forkCatch(a, b, c);
+    });
+
+    it('ensures the recovery value has a consistent type', function (done){
+      var mock = Object.create(F.mock);
+      mock._interpret = function (rec){
+        rec(42);
+      };
+      mock.forkCatch(function (x){
+        expect(x).to.be.an.instanceof(Error);
+        expect(x.name).to.equal('Error');
+        expect(x.message).to.equal(
+          'Non-Error occurred while running a computation for a Future:\n\n' +
+          '  42'
+        );
+        done();
+      }, U.noop, U.noop);
     });
 
   });

@@ -1207,8 +1207,11 @@ Future.prototype.forkCatch :: Future a b ~> (Error -> Any,     a -> Any,     b -
 
 </details>
 
-An advanced version of [fork](#fork) that allows us to recover from exceptions
-that were thrown during the executation of the computation.
+An advanced version of [fork](#fork) that allows us to recover in the event
+that an error was `throw`n during the executation of the computation.
+
+The recovery function will always be called with an instance of Error,
+independent of what was thrown.
 
 **Using this function is a trade-off;**
 
@@ -1225,7 +1228,8 @@ computation was, the more certain we will be that recovery is safe.
 ```js
 var fut = Future.after(300, null).map(x => x.foo);
 fut.forkCatch(console.error, console.error, console.log);
-//! TypeError: Cannot read property 'foo' of null
+//! Error: TypeError occurred while running a computation for a Future:
+//!   Cannot read property 'foo' of null
 ```
 
 #### value
