@@ -1760,6 +1760,7 @@ it is **not** the correct way to [consume a Future](#consuming-futures).
 [S:is]:                 https://sanctuary.js.org/#is
 [S:create]:             https://sanctuary.js.org/#create
 
+[SS]:                   https://github.com/sanctuary-js/sanctuary-show
 [STI]:                  https://github.com/sanctuary-js/sanctuary-type-identifiers
 [FST]:                  https://github.com/fluture-js/fluture-sanctuary-types
 
