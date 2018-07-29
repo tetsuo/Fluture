@@ -170,18 +170,6 @@ Future.prototype.promise = function Future$promise(){
   });
 };
 
-Future.prototype.isRejected = function Future$isRejected(){
-  return false;
-};
-
-Future.prototype.isResolved = function Future$isResolved(){
-  return false;
-};
-
-Future.prototype.isSettled = function Future$isSettled(){
-  return this.isRejected() || this.isResolved();
-};
-
 Future.prototype.extractLeft = function Future$extractLeft(){
   return [];
 };
@@ -190,69 +178,71 @@ Future.prototype.extractRight = function Future$extractRight(){
   return [];
 };
 
-export var Core = Object.create(Future.prototype);
-
-Core._ap = function Core$ap(other){
-  return new Sequence(this)._ap(other);
+Future.prototype._transform = function Future$transform(action){
+  return new Sequence(this, cons(action, nil));
 };
 
-Core._parallelAp = function Core$parallelAp(other){
-  return new Sequence(this)._parallelAp(other);
+Future.prototype._ap = function Future$ap(other){
+  return this._transform(new ApAction(other));
 };
 
-Core._map = function Core$map(mapper){
-  return new Sequence(this)._map(mapper);
+Future.prototype._parallelAp = function Future$pap(other){
+  return this._transform(new ParallelApAction(other));
 };
 
-Core._bimap = function Core$bimap(lmapper, rmapper){
-  return new Sequence(this)._bimap(lmapper, rmapper);
+Future.prototype._map = function Future$map(mapper){
+  return this._transform(new MapAction(mapper));
 };
 
-Core._chain = function Core$chain(mapper){
-  return new Sequence(this)._chain(mapper);
+Future.prototype._bimap = function Future$bimap(lmapper, rmapper){
+  return this._transform(new BimapAction(lmapper, rmapper));
 };
 
-Core._mapRej = function Core$mapRej(mapper){
-  return new Sequence(this)._mapRej(mapper);
+Future.prototype._chain = function Future$chain(mapper){
+  return this._transform(new ChainAction(mapper));
 };
 
-Core._chainRej = function Core$chainRej(mapper){
-  return new Sequence(this)._chainRej(mapper);
+Future.prototype._mapRej = function Future$mapRej(mapper){
+  return this._transform(new MapRejAction(mapper));
 };
 
-Core._race = function Core$race(other){
-  return new Sequence(this)._race(other);
+Future.prototype._chainRej = function Future$chainRej(mapper){
+  return this._transform(new ChainRejAction(mapper));
 };
 
-Core._both = function Core$both(other){
-  return new Sequence(this)._both(other);
+Future.prototype._race = function Future$race(other){
+  return isNever(other) ? this : this._transform(new RaceAction(other));
 };
 
-Core._and = function Core$and(other){
-  return new Sequence(this)._and(other);
+Future.prototype._both = function Future$both(other){
+  return this._transform(new BothAction(other));
 };
 
-Core._or = function Core$or(other){
-  return new Sequence(this)._or(other);
+Future.prototype._and = function Future$and(other){
+  return this._transform(new AndAction(other));
 };
 
-Core._swap = function Core$swap(){
-  return new Sequence(this)._swap();
+Future.prototype._or = function Future$or(other){
+  return this._transform(new OrAction(other));
 };
 
-Core._fold = function Core$fold(lmapper, rmapper){
-  return new Sequence(this)._fold(lmapper, rmapper);
+Future.prototype._swap = function Future$swap(){
+  return this._transform(new SwapAction);
 };
 
-Core._finally = function Core$finally(other){
-  return new Sequence(this)._finally(other);
+Future.prototype._fold = function Future$fold(lmapper, rmapper){
+  return this._transform(new FoldAction(lmapper, rmapper));
+};
+
+Future.prototype._finally = function Future$finally(other){
+  return this._transform(new FinallyAction(other));
 };
 
 export function Computation(computation){
   this._computation = computation;
 }
 
-Computation.prototype = Object.create(Core);
+Computation.prototype = Object.create(Future.prototype);
 
 Computation.prototype._interpret = function Computation$interpret(rec, rej, res){
   var open = false, cancel = noop, cont = function(){ open = true };
@@ -298,11 +288,36 @@ Computation.prototype.toString = function Computation$toString(){
   return 'Future(' + showf(this._computation) + ')';
 };
 
+export function Crashed(error){
+  this._error = error;
+}
+
+Crashed.prototype = Object.create(Future.prototype);
+
+Crashed.prototype._ap = moop;
+Crashed.prototype._parallelAp = moop;
+Crashed.prototype._map = moop;
+Crashed.prototype._bimap = moop;
+Crashed.prototype._chain = moop;
+Crashed.prototype._mapRej = moop;
+Crashed.prototype._chainRej = moop;
+Crashed.prototype._both = moop;
+Crashed.prototype._or = moop;
+Crashed.prototype._swap = moop;
+Crashed.prototype._fold = moop;
+Crashed.prototype._finally = moop;
+Crashed.prototype._race = moop;
+
+Crashed.prototype._interpret = function Crashed$interpret(rec){
+  rec(this._error);
+  return noop;
+};
+
 export function Rejected(value){
   this._value = value;
 }
 
-Rejected.prototype = Object.create(Core);
+Rejected.prototype = Object.create(Future.prototype);
 
 Rejected.prototype._ap = moop;
 Rejected.prototype._parallelAp = moop;
@@ -329,10 +344,6 @@ Rejected.prototype._interpret = function Rejected$interpret(rec, rej){
   return noop;
 };
 
-Rejected.prototype.isRejected = function Rejected$isRejected(){
-  return true;
-};
-
 Rejected.prototype.extractLeft = function Rejected$extractLeft(){
   return [this._value];
 };
@@ -349,7 +360,7 @@ export function Resolved(value){
   this._value = value;
 }
 
-Resolved.prototype = Object.create(Core);
+Resolved.prototype = Object.create(Future.prototype);
 
 Resolved.prototype._race = moop;
 Resolved.prototype._mapRej = moop;
@@ -380,10 +391,6 @@ Resolved.prototype._finally = function Resolved$finally(other){
 Resolved.prototype._interpret = function Resolved$interpret(rec, rej, res){
   res(this._value);
   return noop;
-};
-
-Resolved.prototype.isResolved = function Resolved$isResolved(){
-  return true;
 };
 
 Resolved.prototype.extractRight = function Resolved$extractRight(){
@@ -435,31 +442,6 @@ export function isNever(x){
   return isFuture(x) && x._isNever === true;
 }
 
-export function Crashed(error){
-  this._error = error;
-}
-
-Crashed.prototype = Object.create(Future.prototype);
-
-Crashed.prototype._ap = moop;
-Crashed.prototype._parallelAp = moop;
-Crashed.prototype._map = moop;
-Crashed.prototype._bimap = moop;
-Crashed.prototype._chain = moop;
-Crashed.prototype._mapRej = moop;
-Crashed.prototype._chainRej = moop;
-Crashed.prototype._both = moop;
-Crashed.prototype._or = moop;
-Crashed.prototype._swap = moop;
-Crashed.prototype._fold = moop;
-Crashed.prototype._finally = moop;
-Crashed.prototype._race = moop;
-
-Crashed.prototype._interpret = function Crashed$interpret(rec){
-  rec(this._error);
-  return noop;
-};
-
 function Eager(future){
   var _this = this;
   _this.rec = noop;
@@ -487,7 +469,7 @@ function Eager(future){
   });
 }
 
-Eager.prototype = Object.create(Core);
+Eager.prototype = Object.create(Future.prototype);
 
 Eager.prototype._interpret = function Eager$interpret(rec, rej, res){
   if(this.crashed) rec(this.value);
@@ -695,7 +677,7 @@ export function RaceAction(other){ this.other = other }
 RaceAction.prototype = Object.create(Action);
 
 RaceAction.prototype.run = function RaceAction$run(early){
-  return new RaceActionState(early, new Eager(this.other));
+  return new RaceActionState(early, this.other);
 };
 
 RaceAction.prototype.toString = function RaceAction$toString(){
@@ -710,7 +692,7 @@ BothAction.prototype.resolved = function BothAction$resolved(x){
 };
 
 BothAction.prototype.run = function BothAction$run(early){
-  return new BothActionState(early, new Eager(this.other));
+  return new BothActionState(early, this.other);
 };
 
 BothAction.prototype.toString = function BothAction$toString(){
@@ -720,7 +702,7 @@ BothAction.prototype.toString = function BothAction$toString(){
 export function ParallelApActionState(early, other){
   var _this = this;
   _this.other = new Eager(other);
-  _this.cancel = this.other._interpret(
+  _this.cancel = _this.other._interpret(
     function ParallelApActionState$rec(x){ early(new Crashed(x), _this) },
     function ParallelApActionState$rej(x){ early(new Rejected(x), _this) },
     noop
@@ -731,8 +713,8 @@ ParallelApActionState.prototype = Object.create(ParallelApAction.prototype);
 
 export function RaceActionState(early, other){
   var _this = this;
-  _this.other = other;
-  _this.cancel = other._interpret(
+  _this.other = new Eager(other);
+  _this.cancel = _this.other._interpret(
     function RaceActionState$rec(x){ early(new Crashed(x), _this) },
     function RaceActionState$rej(x){ early(new Rejected(x), _this) },
     function RaceActionState$res(x){ early(new Resolved(x), _this) }
@@ -743,8 +725,8 @@ RaceActionState.prototype = Object.create(RaceAction.prototype);
 
 export function BothActionState(early, other){
   var _this = this;
-  _this.other = other;
-  _this.cancel = other._interpret(
+  _this.other = new Eager(other);
+  _this.cancel = _this.other._interpret(
     function BothActionState$rec(x){ early(new Crashed(x), _this) },
     function BothActionState$rej(x){ early(new Rejected(x), _this) },
     noop
@@ -755,69 +737,13 @@ BothActionState.prototype = Object.create(BothAction.prototype);
 
 export function Sequence(spawn, actions){
   this._spawn = spawn;
-  this._actions = actions || nil;
+  this._actions = actions;
 }
 
 Sequence.prototype = Object.create(Future.prototype);
 
 Sequence.prototype._transform = function Sequence$_transform(action){
   return new Sequence(this._spawn, cons(action, this._actions));
-};
-
-Sequence.prototype._ap = function Sequence$ap(other){
-  return this._transform(new ApAction(other));
-};
-
-Sequence.prototype._parallelAp = function Sequence$pap(other){
-  return this._transform(new ParallelApAction(other));
-};
-
-Sequence.prototype._map = function Sequence$map(mapper){
-  return this._transform(new MapAction(mapper));
-};
-
-Sequence.prototype._bimap = function Sequence$bimap(lmapper, rmapper){
-  return this._transform(new BimapAction(lmapper, rmapper));
-};
-
-Sequence.prototype._chain = function Sequence$chain(mapper){
-  return this._transform(new ChainAction(mapper));
-};
-
-Sequence.prototype._mapRej = function Sequence$mapRej(mapper){
-  return this._transform(new MapRejAction(mapper));
-};
-
-Sequence.prototype._chainRej = function Sequence$chainRej(mapper){
-  return this._transform(new ChainRejAction(mapper));
-};
-
-Sequence.prototype._race = function Sequence$race(other){
-  return isNever(other) ? this : this._transform(new RaceAction(other));
-};
-
-Sequence.prototype._both = function Sequence$both(other){
-  return this._transform(new BothAction(other));
-};
-
-Sequence.prototype._and = function Sequence$and(other){
-  return this._transform(new AndAction(other));
-};
-
-Sequence.prototype._or = function Sequence$or(other){
-  return this._transform(new OrAction(other));
-};
-
-Sequence.prototype._swap = function Sequence$swap(){
-  return this._transform(new SwapAction);
-};
-
-Sequence.prototype._fold = function Sequence$fold(lmapper, rmapper){
-  return this._transform(new FoldAction(lmapper, rmapper));
-};
-
-Sequence.prototype._finally = function Sequence$finally(other){
-  return this._transform(new FinallyAction(other));
 };
 
 Sequence.prototype._interpret = function Sequence$interpret(rec, rej, res){

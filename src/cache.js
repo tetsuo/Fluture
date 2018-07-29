@@ -1,4 +1,4 @@
-import {Core, isFuture} from './core';
+import {Future, isFuture} from './core';
 import {noop} from './internal/fn';
 import {throwInvalidFuture} from './internal/throw';
 
@@ -19,22 +19,14 @@ export function Cached(pure){
   this.reset();
 }
 
-Cached.prototype = Object.create(Core);
-
-Cached.prototype.isRejected = function Cached$isRejected(){
-  return this._state === Rejected;
-};
-
-Cached.prototype.isResolved = function Cached$isResolved(){
-  return this._state === Resolved;
-};
+Cached.prototype = Object.create(Future.prototype);
 
 Cached.prototype.extractLeft = function Cached$extractLeft(){
-  return this.isRejected() ? [this._value] : [];
+  return this._state === Rejected ? [this._value] : [];
 };
 
 Cached.prototype.extractRight = function Cached$extractRight(){
-  return this.isResolved() ? [this._value] : [];
+  return this._state === Resolved ? [this._value] : [];
 };
 
 Cached.prototype._addToQueue = function Cached$addToQueue(rec, rej, res){

@@ -1,7 +1,6 @@
 import {expect} from 'chai';
 import {Future, after, rejectAfter, never} from '../index.mjs.js';
 import * as U from './util';
-import {rejected, resolved} from './futures';
 import type from 'sanctuary-type-identifiers';
 
 describe('rejectAfter()', function (){
@@ -54,12 +53,6 @@ describe('RejectAfter', function (){
   });
 
   describe('#race()', function (){
-
-    it('returns the other if the other has already settled', function (){
-      var m = rejectAfter(1, 1);
-      expect(m.race(rejected)).to.equal(rejected);
-      expect(m.race(resolved)).to.equal(resolved);
-    });
 
     it('returns itself if the other is Never', function (){
       var m = rejectAfter(1, 1);

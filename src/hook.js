@@ -1,6 +1,6 @@
 /* eslint no-param-reassign:0 */
 
-import {Core, isFuture} from './core';
+import {Future, isFuture} from './core';
 import {noop, show, showf, partial1, partial2} from './internal/fn';
 import {isFunction} from './internal/is';
 import {invalidFuture} from './internal/error';
@@ -30,7 +30,7 @@ export function Hook(acquire, dispose, consume){
   this._consume = consume;
 }
 
-Hook.prototype = Object.create(Core);
+Hook.prototype = Object.create(Future.prototype);
 
 Hook.prototype._interpret = function Hook$interpret(rec, rej, res){
 

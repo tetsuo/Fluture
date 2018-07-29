@@ -1,4 +1,4 @@
-import {Core} from './core';
+import {Future} from './core';
 import {Next, Done} from './internal/iteration';
 import {Undetermined, Synchronous, Asynchronous} from './internal/timing';
 import {show, showf, noop} from './internal/fn';
@@ -8,7 +8,7 @@ export function ChainRec(step, init){
   this._init = init;
 }
 
-ChainRec.prototype = Object.create(Core);
+ChainRec.prototype = Object.create(Future.prototype);
 
 ChainRec.prototype._interpret = function ChainRec$interpret(rec, rej, res){
 
