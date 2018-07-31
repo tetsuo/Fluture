@@ -4,7 +4,7 @@ import {throwInvalidArgument} from './src/internal/throw';
 import {Future, of, reject, never} from './src/future';
 import {FL} from './src/internal/const';
 import {chainRec} from './src/chain-rec';
-import {ap, map, bimap, chain, race, alt} from './src/dispatchers';
+import {ap, map, bimap, chain, race, alt} from './src/dispatchers/index';
 
 Future.of = Future[FL.of] = of;
 Future.chainRec = Future[FL.chainRec] = chainRec;
@@ -32,7 +32,7 @@ function seq(par){
 
 export {Future, Future as default, Par, isParallel, seq};
 export {isFuture, reject, of, never, isNever} from './src/future';
-export * from './src/dispatchers';
+export * from './src/dispatchers/index';
 export {after, rejectAfter} from './src/after';
 export {attempt, attempt as try} from './src/attempt';
 export {cache} from './src/cache';
