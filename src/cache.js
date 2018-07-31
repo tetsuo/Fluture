@@ -1,5 +1,5 @@
-import {Future, isFuture} from './core';
-import {noop} from './internal/fn';
+import {Future, isFuture} from './future';
+import {noop} from './internal/utils';
 import {throwInvalidFuture} from './internal/throw';
 
 var Cold = Cached.Cold = 0;

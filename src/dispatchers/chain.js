@@ -1,6 +1,6 @@
 import Z from 'sanctuary-type-classes';
-import {partial1} from '../internal/fn';
-import {isFunction} from '../internal/is';
+import {partial1} from '../internal/utils';
+import {isFunction} from '../internal/predicates';
 import {throwInvalidArgument} from '../internal/throw';
 
 function chain$chainer(chainer, m){

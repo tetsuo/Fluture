@@ -1,4 +1,4 @@
-import {of} from './core';
+import {of} from './future';
 import {Next, Done} from './internal/iteration';
 
 export function chainRec(step, init){

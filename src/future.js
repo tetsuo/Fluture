@@ -1,5 +1,5 @@
-import {show, showf, noop, moop, raise} from './internal/fn';
-import {isFunction} from './internal/is';
+import {show, showf, noop, moop, raise} from './internal/utils';
+import {isFunction} from './internal/predicates';
 import {FL, $$type} from './internal/const';
 import interpret from './internal/interpreter';
 import {nil, cons} from './internal/list';

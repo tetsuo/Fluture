@@ -1,6 +1,6 @@
-import {Future, never} from './core';
-import {show, partial1} from './internal/fn';
-import {isUnsigned} from './internal/is';
+import {Future, never} from './future';
+import {show, partial1} from './internal/utils';
+import {isUnsigned} from './internal/predicates';
 import {throwInvalidArgument} from './internal/throw';
 
 function After$race(other){

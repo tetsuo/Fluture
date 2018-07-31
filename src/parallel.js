@@ -1,7 +1,7 @@
-import {Future, Resolved, isFuture} from './core';
+import {Future, Resolved, isFuture} from './future';
 import {throwInvalidFuture, throwInvalidArgument} from './internal/throw';
-import {noop, show, partial1} from './internal/fn';
-import {isUnsigned, isArray} from './internal/is';
+import {noop, show, partial1} from './internal/utils';
+import {isUnsigned, isArray} from './internal/predicates';
 
 export function Parallel(max, futures){
   this._futures = futures;

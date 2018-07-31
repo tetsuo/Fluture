@@ -1,4 +1,4 @@
-import {show, indent} from './fn';
+import {show, indent} from './utils';
 import {ordinal, namespace, name, version} from './const';
 import type from 'sanctuary-type-identifiers';
 

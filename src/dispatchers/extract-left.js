@@ -1,4 +1,4 @@
-import {isFuture} from '../core';
+import {isFuture} from '../future';
 import {throwInvalidFuture} from '../internal/throw';
 
 export function extractLeft(m){

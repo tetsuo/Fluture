@@ -1,9 +1,9 @@
 /*eslint consistent-return: 0, no-cond-assign: 0*/
 
-import {Future, isFuture} from './core';
-import {isFunction, isIterator} from './internal/is';
+import {Future, isFuture} from './future';
+import {isFunction, isIterator} from './internal/predicates';
 import {isIteration} from './internal/iteration';
-import {show, showf, noop} from './internal/fn';
+import {show, showf, noop} from './internal/utils';
 import {typeError, invalidFuture, invalidArgument} from './internal/error';
 import {throwInvalidArgument} from './internal/throw';
 import {Undetermined, Synchronous, Asynchronous} from './internal/timing';

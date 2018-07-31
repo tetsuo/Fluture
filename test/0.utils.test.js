@@ -1,5 +1,5 @@
 import {expect} from 'chai';
-import * as fn from '../src/internal/fn';
+import * as fn from '../src/internal/utils';
 
 describe('fn', function (){
 

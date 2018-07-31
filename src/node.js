@@ -1,6 +1,6 @@
-import {Future} from './core';
-import {showf, noop} from './internal/fn';
-import {isFunction} from './internal/is';
+import {Future} from './future';
+import {showf, noop} from './internal/utils';
+import {isFunction} from './internal/predicates';
 import {throwInvalidArgument} from './internal/throw';
 
 export function Node(fn){

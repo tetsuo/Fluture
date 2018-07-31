@@ -1,7 +1,7 @@
 import {expect} from 'chai';
 import * as U from './util';
 import Future from '../index.mjs.js';
-import * as util from '../src/internal/is';
+import * as util from '../src/internal/predicates';
 
 describe('is', function (){
 

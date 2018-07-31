@@ -1,6 +1,6 @@
-import {Future} from './core';
-import {noop, show, showf, partial1} from './internal/fn';
-import {isThenable, isFunction} from './internal/is';
+import {Future} from './future';
+import {noop, show, showf, partial1} from './internal/utils';
+import {isThenable, isFunction} from './internal/predicates';
 import {typeError} from './internal/error';
 import {throwInvalidArgument} from './internal/throw';
 

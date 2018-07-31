@@ -2,7 +2,7 @@ import {Future, of, never, after} from '../index.mjs.js';
 import {expect} from 'chai';
 import {add, bang, noop, error, assertResolved, assertRejected, assertCrashed} from './util';
 import {resolved, rejected, resolvedSlow} from './futures';
-import {Sequence} from '../src/core';
+import {Sequence} from '../src/future';
 import {nil} from '../src/internal/list';
 import {StateT} from 'fantasy-states';
 

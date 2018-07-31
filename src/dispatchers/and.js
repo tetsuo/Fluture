@@ -1,5 +1,5 @@
-import {isFuture} from '../core';
-import {partial1} from '../internal/fn';
+import {isFuture} from '../future';
+import {partial1} from '../internal/utils';
 import {throwInvalidFuture} from '../internal/throw';
 
 function and$left(left, right){

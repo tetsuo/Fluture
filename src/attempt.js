@@ -1,6 +1,6 @@
-import {Future} from './core';
-import {noop, showf} from './internal/fn';
-import {isFunction} from './internal/is';
+import {Future} from './future';
+import {noop, showf} from './internal/utils';
+import {isFunction} from './internal/predicates';
 import {throwInvalidArgument} from './internal/throw';
 
 export function Attempt(fn){

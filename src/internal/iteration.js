@@ -1,4 +1,4 @@
-import {isObject, isBoolean} from './is';
+import {isObject, isBoolean} from './predicates';
 
 export function Next(x){
   return {done: false, value: x};

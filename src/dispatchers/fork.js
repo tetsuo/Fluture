@@ -1,6 +1,6 @@
-import {isFuture} from '../core';
-import {raise, partial1, partial2} from '../internal/fn';
-import {isFunction} from '../internal/is';
+import {isFuture} from '../future';
+import {raise, partial1, partial2} from '../internal/utils';
+import {isFunction} from '../internal/predicates';
 import {throwInvalidArgument, throwInvalidFuture} from '../internal/throw';
 
 function fork$f$g(f, g, m){

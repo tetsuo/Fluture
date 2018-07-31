@@ -1,7 +1,7 @@
 /*eslint no-cond-assign:0, no-constant-condition:0 */
 
 import Denque from 'denque';
-import {noop} from './fn';
+import {noop} from './utils';
 import {nil, cons} from './list';
 
 export default function interpretSequence(seq, rec, rej, res){

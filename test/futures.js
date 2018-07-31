@@ -1,5 +1,5 @@
 import {of, reject, after, rejectAfter} from '../index.mjs.js';
-import {Future, Crashed} from '../src/core';
+import {Future, Crashed} from '../src/future';
 import {error} from './util';
 
 export var mock = Object.create(Future.prototype);

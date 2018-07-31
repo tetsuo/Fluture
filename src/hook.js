@@ -1,8 +1,8 @@
 /* eslint no-param-reassign:0 */
 
-import {Future, isFuture} from './core';
-import {noop, show, showf, partial1, partial2} from './internal/fn';
-import {isFunction} from './internal/is';
+import {Future, isFuture} from './future';
+import {noop, show, showf, partial1, partial2} from './internal/utils';
+import {isFunction} from './internal/predicates';
 import {invalidFuture} from './internal/error';
 import {throwInvalidArgument, throwInvalidFuture} from './internal/throw';
 

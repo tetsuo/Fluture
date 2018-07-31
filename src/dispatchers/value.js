@@ -1,6 +1,6 @@
-import {isFuture} from '../core';
-import {partial1} from '../internal/fn';
-import {isFunction} from '../internal/is';
+import {isFuture} from '../future';
+import {partial1} from '../internal/utils';
+import {isFunction} from '../internal/predicates';
 import {throwInvalidArgument, throwInvalidFuture} from '../internal/throw';
 
 function value$cont(cont, m){
