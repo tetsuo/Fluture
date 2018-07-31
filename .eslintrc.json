@@ -30,6 +30,17 @@
   },
   "overrides": [
     {
+      "files": ["test/*"],
+      "env": {"node": true, "mocha": true},
+      "globals": {"Promise": false},
+      "rules": {
+        "arrow-body-style": 0,
+        "no-sequences": 0,
+        "max-len": 0,
+        "space-before-function-paren": ["error", "always"]
+      }
+    },
+    {
       "files": ["README.md"],
       "env": {
         "browser": true,
