@@ -4,6 +4,10 @@ import {isIteration} from '../src/internal/iteration';
 import * as U from './util';
 import type from 'sanctuary-type-identifiers';
 
+function mockStep (next, done, x){
+  return of(done(x));
+}
+
 describe('chainRec()', function (){
 
   it('is a binary function', function (){
@@ -12,7 +16,7 @@ describe('chainRec()', function (){
   });
 
   it('returns an instance of Future', function (){
-    expect(Future.chainRec(U.noop, 1)).to.be.an.instanceof(Future);
+    expect(Future.chainRec(mockStep, 1)).to.be.an.instanceof(Future);
   });
 
 });
@@ -20,11 +24,11 @@ describe('chainRec()', function (){
 describe('ChainRec', function (){
 
   it('extends Future', function (){
-    expect(Future.chainRec(U.noop, 1)).to.be.an.instanceof(Future);
+    expect(Future.chainRec(mockStep, 1)).to.be.an.instanceof(Future);
   });
 
   it('is considered a member of fluture/Fluture', function (){
-    expect(type(Future.chainRec(U.noop, 1))).to.equal(Future['@@type']);
+    expect(type(Future.chainRec(mockStep, 1))).to.equal(Future['@@type']);
   });
 
   describe('#_interpret()', function (){
@@ -88,17 +92,6 @@ describe('ChainRec', function (){
       var cancel = m._interpret(done, U.failRej, U.failRes);
       setTimeout(cancel, 25);
       setTimeout(done, 70);
-    });
-
-  });
-
-  describe('#toString()', function (){
-
-    it('returns the code to create the ChainRec', function (){
-      var f = function (next, done, x){ return next(x) };
-      var m = Future.chainRec(f, 1);
-      var s = 'Future.chainRec(' + (f.toString()) + ', 1)';
-      expect(m.toString()).to.equal(s);
     });
 
   });
