@@ -179,7 +179,7 @@ Future.prototype.extractRight = function Future$extractRight(){
 };
 
 Future.prototype._transform = function Future$transform(action){
-  return new Sequence(this, cons(action, nil));
+  return new Transformation(this, cons(action, nil));
 };
 
 Future.prototype._ap = function Future$ap(other){
@@ -286,6 +286,32 @@ Computation.prototype._interpret = function Computation$interpret(rec, rej, res)
 
 Computation.prototype.toString = function Computation$toString(){
   return 'Future(' + showf(this._computation) + ')';
+};
+
+export function Transformation(spawn, actions){
+  this._spawn = spawn;
+  this._actions = actions;
+}
+
+Transformation.prototype = Object.create(Future.prototype);
+
+Transformation.prototype._transform = function Transformation$_transform(action){
+  return new Transformation(this._spawn, cons(action, this._actions));
+};
+
+Transformation.prototype._interpret = function Transformation$interpret(rec, rej, res){
+  return interpret(this, rec, rej, res);
+};
+
+Transformation.prototype.toString = function Transformation$toString(){
+  var str = '', tail = this._actions;
+
+  while(tail !== nil){
+    str = '.' + tail.head.toString() + str;
+    tail = tail.tail;
+  }
+
+  return this._spawn.toString() + str;
 };
 
 export function Crashed(error){
@@ -734,29 +760,3 @@ export function BothActionState(early, other){
 }
 
 BothActionState.prototype = Object.create(BothAction.prototype);
-
-export function Sequence(spawn, actions){
-  this._spawn = spawn;
-  this._actions = actions;
-}
-
-Sequence.prototype = Object.create(Future.prototype);
-
-Sequence.prototype._transform = function Sequence$_transform(action){
-  return new Sequence(this._spawn, cons(action, this._actions));
-};
-
-Sequence.prototype._interpret = function Sequence$interpret(rec, rej, res){
-  return interpret(this, rec, rej, res);
-};
-
-Sequence.prototype.toString = function Sequence$toString(){
-  var str = '', tail = this._actions;
-
-  while(tail !== nil){
-    str = '.' + tail.head.toString() + str;
-    tail = tail.tail;
-  }
-
-  return this._spawn.toString() + str;
-};

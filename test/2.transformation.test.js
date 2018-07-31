@@ -2,14 +2,14 @@ import {Future, of, never, after} from '../index.mjs.js';
 import {expect} from 'chai';
 import {add, bang, noop, error, assertResolved, assertRejected, assertCrashed} from './util';
 import {resolved, rejected, resolvedSlow} from './futures';
-import {Sequence} from '../src/future';
+import {Transformation} from '../src/future';
 import {nil} from '../src/internal/list';
 import {StateT} from 'fantasy-states';
 
-describe('Sequence', function (){
+describe('Transformation', function (){
 
-  var dummy = new Sequence(resolved, nil);
-  var rejectedDummy = new Sequence(rejected, nil);
+  var dummy = new Transformation(resolved, nil);
+  var rejectedDummy = new Transformation(rejected, nil);
   var throwing = function (){ throw error };
 
   describe('ap', function (){
@@ -287,7 +287,7 @@ describe('Sequence', function (){
   describe('swap', function (){
 
     var seq = dummy.swap();
-    var nseq = new Sequence(rejected, nil).swap();
+    var nseq = new Transformation(rejected, nil).swap();
 
     describe('#_interpret()', function (){
 
@@ -353,7 +353,7 @@ describe('Sequence', function (){
 
       it('runs the other if the left rejects', function (done){
         var other = Future(function (){done()});
-        var m = new Sequence(rejected, nil).finally(other);
+        var m = new Transformation(rejected, nil).finally(other);
         m._interpret(done, noop, noop);
       });
 
@@ -374,7 +374,7 @@ describe('Sequence', function (){
     describe('#_interpret()', function (){
 
       it('is capable of joining', function (){
-        var m = new Sequence(of('a'), nil)
+        var m = new Transformation(of('a'), nil)
         //eslint-disable-next-line max-nested-callbacks
         .chain(function (x){ return after(5, (x + 'b')).chain(function (x){ return after(5, (x + 'c')) }) })
         .chain(function (x){ return after(5, (x + 'd')) })
@@ -384,7 +384,7 @@ describe('Sequence', function (){
       });
 
       it('is capable of early termination', function (done){
-        var slow = new Sequence(Future(function (){
+        var slow = new Transformation(Future(function (){
           var id = setTimeout(done, 20, new Error('Not terminated'));
           return function (){ return clearTimeout(id) };
         }), nil);
@@ -394,7 +394,7 @@ describe('Sequence', function (){
       });
 
       it('cancels running actions when one early-terminates asynchronously', function (done){
-        var slow = new Sequence(Future(function (){
+        var slow = new Transformation(Future(function (){
           var id = setTimeout(done, 50, new Error('Not terminated'));
           return function (){ return clearTimeout(id) };
         }), nil);
@@ -404,19 +404,19 @@ describe('Sequence', function (){
       });
 
       it('does not run actions unnecessarily when one early-terminates synchronously', function (done){
-        var broken = new Sequence(Future(function (){ done(error) }), nil);
+        var broken = new Transformation(Future(function (){ done(error) }), nil);
         var m = resolvedSlow.race(broken).race(broken).race(resolved);
         m._interpret(done, noop, function (){ return done() });
       });
 
       it('resolves the left-hand side first when running actions in parallel', function (){
-        var m = new Sequence(of(1), nil).map(function (x){ return x }).chain(function (x){ return of(x) });
+        var m = new Transformation(of(1), nil).map(function (x){ return x }).chain(function (x){ return of(x) });
         return assertResolved(m.race(of(2)), 1);
       });
 
       it('does not forget about actions to run after early termination', function (){
-        var m = new Sequence(after(30, 'a'), nil)
-                  .race(new Sequence(after(20, 'b'), nil))
+        var m = new Transformation(after(30, 'a'), nil)
+                  .race(new Transformation(after(20, 'b'), nil))
                   .map(function (x){ return (x + 'c') });
         return assertResolved(m, 'bc');
       });
@@ -424,14 +424,14 @@ describe('Sequence', function (){
       it('does not run early terminating actions twice, or cancel them', function (done){
         var mock = Object.create(Future.prototype);
         mock._interpret = function (_, l, r){ return r(done()) || (function (){ return done(error) }) };
-        var m = new Sequence(after(30, 'a'), nil).map(function (x){ return (x + 'b') }).race(mock);
+        var m = new Transformation(after(30, 'a'), nil).map(function (x){ return (x + 'b') }).race(mock);
         m._interpret(done, noop, noop);
       });
 
       it('does not run concurrent computations twice', function (done){
         var ran = false;
         var mock = Future(function (){ ran ? done(error) : (ran = true) });
-        var m = new Sequence(resolvedSlow, nil).chain(function (){ return resolvedSlow }).race(mock);
+        var m = new Transformation(resolvedSlow, nil).chain(function (){ return resolvedSlow }).race(mock);
         m._interpret(done, done, function (){ return done() });
       });
 
