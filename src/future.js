@@ -615,15 +615,8 @@ ChainRejAction.prototype.toString = function ChainRejAction$toString(){
 
 export function SwapAction(){}
 SwapAction.prototype = Object.create(Action);
-
-SwapAction.prototype.rejected = function SwapAction$rejected(x){
-  return new Resolved(x);
-};
-
-SwapAction.prototype.resolved = function SwapAction$resolved(x){
-  return new Rejected(x);
-};
-
+SwapAction.prototype.rejected = Action.resolved;
+SwapAction.prototype.resolved = Action.rejected;
 SwapAction.prototype.toString = function SwapAction$toString(){
   return 'swap()';
 };
