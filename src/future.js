@@ -512,8 +512,8 @@ Eager.prototype._interpret = function Eager$interpret(rec, rej, res){
 export var Action = {
   rejected: function Action$rejected(x){ this.cancel(); return new Rejected(x) },
   resolved: function Action$resolved(x){ this.cancel(); return new Resolved(x) },
-  run: function Action$run(){ return this },
-  cancel: function Action$cancel(){}
+  run: moop,
+  cancel: noop
 };
 
 export function ApAction(other){ this.other = other }
