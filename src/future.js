@@ -510,13 +510,23 @@ Eager.prototype._interpret = function Eager$interpret(rec, rej, res){
 };
 
 export var Action = {
-  name: 'noop',
   rejected: function Action$rejected(x){ this.cancel(); return new Rejected(x) },
   resolved: function Action$resolved(x){ this.cancel(); return new Resolved(x) },
-  toString: function Action$toString(){ return this.name + '()' },
   run: moop,
   cancel: noop
 };
+
+function nullaryActionToString(){
+  return this.name + '()';
+}
+
+function createNullaryAction(name, prototype){
+  function NullaryAction(mapper){ this.mapper = mapper }
+  NullaryAction.prototype = Object.assign(Object.create(Action), prototype);
+  NullaryAction.prototype.name = name;
+  NullaryAction.prototype.toString = nullaryActionToString;
+  return NullaryAction;
+}
 
 function mapperActionToString(){
   return this.name + '(' + showf(this.mapper) + ')';
@@ -630,11 +640,10 @@ export var ChainRejAction = createMapperAction('chainRej', {
   rejected: chainActionHandler
 });
 
-export function SwapAction(){}
-SwapAction.prototype = Object.create(Action);
-SwapAction.prototype.name = 'swap';
-SwapAction.prototype.rejected = Action.resolved;
-SwapAction.prototype.resolved = Action.rejected;
+export var SwapAction = createNullaryAction('swap', {
+  rejected: Action.resolved,
+  resolved: Action.rejected
+});
 
 export var FoldAction = createBimapperAction('fold', {
   resolved: mapRight,
