@@ -427,7 +427,7 @@ Resolved.prototype.toString = function Resolved$toString(){
   return 'Future.of(' + show(this._value) + ')';
 };
 
-export function of(x){
+export function resolve(x){
   return new Resolved(x);
 }
 

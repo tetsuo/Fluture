@@ -1,12 +1,12 @@
 import concurrify from 'concurrify';
 import type from 'sanctuary-type-identifiers';
 import {throwInvalidArgument} from './src/internal/throw';
-import {Future, of, reject, never} from './src/future';
+import {Future, resolve, reject, never} from './src/future';
 import {FL} from './src/internal/const';
 import {chainRec} from './src/chain-rec';
 import {ap, map, bimap, chain, race, alt} from './src/dispatchers/index';
 
-Future.of = Future[FL.of] = of;
+Future.of = Future[FL.of] = resolve;
 Future.chainRec = Future[FL.chainRec] = chainRec;
 Future.reject = reject;
 Future.ap = ap;
@@ -31,7 +31,7 @@ function seq(par){
 }
 
 export {Future, Future as default, Par, isParallel, seq};
-export {isFuture, reject, of, never, isNever} from './src/future';
+export {isFuture, reject, resolve, resolve as of, never, isNever} from './src/future';
 export * from './src/dispatchers/index';
 export {after, rejectAfter} from './src/after';
 export {attempt, attempt as try} from './src/attempt';
