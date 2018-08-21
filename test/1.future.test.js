@@ -418,7 +418,8 @@ describe('Future', function (){
       mock._interpret = function (rec, rej){rej(1)};
       expect(mock.value.bind(mock, U.noop)).to.throw(Error, (
         'Future#value was called on a rejected Future\n' +
-        '  Actual: Future.reject(1)'
+        '  Rejection: 1\n' +
+        '  Future: (util.mock)'
       ));
     });
 

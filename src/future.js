@@ -7,13 +7,6 @@ import type from 'sanctuary-type-identifiers';
 import {error, typeError, invalidFuture, valueToError} from './internal/error';
 import {throwInvalidArgument, throwInvalidContext, throwInvalidFuture} from './internal/throw';
 
-function Future$value$rej(x){
-  raise(error(
-    'Future#value was called on a rejected Future\n' +
-    '  Actual: Future.reject(' + show(x) + ')'
-  ));
-}
-
 function Future$onCrash(x){
   raise(valueToError(x));
 }
@@ -152,7 +145,14 @@ Future.prototype.forkCatch = function Future$forkCatch(rec, rej, res){
 Future.prototype.value = function Future$value(res){
   if(!isFuture(this)) throwInvalidContext('Future#value', this);
   if(!isFunction(res)) throwInvalidArgument('Future#value', 0, 'to be a Function', res);
-  return this._interpret(Future$onCrash, Future$value$rej, res);
+  var _this = this;
+  return _this._interpret(Future$onCrash, function Future$value$rej(x){
+    raise(error(
+      'Future#value was called on a rejected Future\n' +
+      '  Rejection: ' + show(x) + '\n' +
+      '  Future: ' + _this.toString()
+    ));
+  }, res);
 };
 
 Future.prototype.done = function Future$done(callback){
