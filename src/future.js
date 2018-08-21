@@ -522,12 +522,45 @@ function mapperActionToString(){
   return this.name + '(' + showf(this.mapper) + ')';
 }
 
+function createMapperAction(name, prototype){
+  function MapperAction(mapper){ this.mapper = mapper }
+  MapperAction.prototype = Object.assign(Object.create(Action), prototype);
+  MapperAction.prototype.name = name;
+  MapperAction.prototype.toString = mapperActionToString;
+  return MapperAction;
+}
+
 function bimapperActionToString(){
   return this.name + '(' + showf(this.lmapper) + ', ' + showf(this.rmapper) + ')';
 }
 
+function createBimapperAction(name, prototype){
+  function BimapperAction(lmapper, rmapper){ this.lmapper = lmapper; this.rmapper = rmapper }
+  BimapperAction.prototype = Object.assign(Object.create(Action), prototype);
+  BimapperAction.prototype.name = name;
+  BimapperAction.prototype.toString = bimapperActionToString;
+  return BimapperAction;
+}
+
 function otherActionToString(){
   return this.name + '(' + this.other.toString() + ')';
+}
+
+function createOtherAction(name, prototype){
+  function OtherAction(other){ this.other = other }
+  OtherAction.prototype = Object.assign(Object.create(Action), prototype);
+  OtherAction.prototype.name = name;
+  OtherAction.prototype.toString = otherActionToString;
+  return OtherAction;
+}
+
+function apActionHandler(f){
+  return isFunction(f) ?
+         this.other._map(function ApAction$resolved$mapper(x){ return f(x) }) :
+         new Crashed(typeError(
+           'Future#' + this.name + ' expects its first argument to be a Future of a Function\n' +
+           '  Actual: Future.of(' + show(f) + ')'
+         ));
 }
 
 function chainActionHandler(x){
@@ -555,55 +588,30 @@ function mapRight(value){
   return mapWith(this.rmapper, resolve, value);
 }
 
-export function ApAction(other){ this.other = other }
-ApAction.prototype = Object.create(Action);
-ApAction.prototype.name = 'ap';
-ApAction.prototype.toString = otherActionToString;
-ApAction.prototype.resolved = function ApAction$resolved(f){
-  return isFunction(f) ?
-         this.other._map(function ApAction$resolved$mapper(x){ return f(x) }) :
-         new Crashed(typeError(
-           'Future#' + this.name + ' expects its first argument to be a Future of a Function\n' +
-           '  Actual: Future.of(' + show(f) + ')'
-         ));
-};
+export var ApAction = createOtherAction('ap', {
+  resolved: apActionHandler
+});
 
-export function MapAction(mapper){ this.mapper = mapper }
-MapAction.prototype = Object.create(Action);
-MapAction.prototype.name = 'map';
-MapAction.prototype.toString = mapperActionToString;
-MapAction.prototype.resolved = function MapAction$resolved(x){
-  return mapWith(this.mapper, resolve, x);
-};
+export var MapAction = createMapperAction('map', {
+  resolved: function MapAction$resolved(x){ return mapWith(this.mapper, resolve, x) }
+});
 
-export function BimapAction(lmapper, rmapper){ this.lmapper = lmapper; this.rmapper = rmapper }
-BimapAction.prototype = Object.create(Action);
-BimapAction.prototype.name = 'bimap';
-BimapAction.prototype.toString = bimapperActionToString;
-BimapAction.prototype.resolved = mapRight;
-BimapAction.prototype.rejected = function BimapAction$rejected(x){
-  return mapWith(this.lmapper, reject, x);
-};
+export var BimapAction = createBimapperAction('bimap', {
+  resolved: mapRight,
+  rejected: function BimapAction$rejected(x){ return mapWith(this.lmapper, reject, x) }
+});
 
-export function ChainAction(mapper){ this.mapper = mapper }
-ChainAction.prototype = Object.create(Action);
-ChainAction.prototype.name = 'chain';
-ChainAction.prototype.toString = mapperActionToString;
-ChainAction.prototype.resolved = chainActionHandler;
+export var ChainAction = createMapperAction('chain', {
+  resolved: chainActionHandler
+});
 
-export function MapRejAction(mapper){ this.mapper = mapper }
-MapRejAction.prototype = Object.create(Action);
-MapRejAction.prototype.name = 'mapRej';
-MapRejAction.prototype.toString = mapperActionToString;
-MapRejAction.prototype.rejected = function MapRejAction$rejected(x){
-  return mapWith(this.mapper, reject, x);
-};
+export var MapRejAction = createMapperAction('mapRej', {
+  rejected: function MapRejAction$rejected(x){ return mapWith(this.mapper, reject, x) }
+});
 
-export function ChainRejAction(mapper){ this.mapper = mapper }
-ChainRejAction.prototype = Object.create(Action);
-ChainRejAction.prototype.name = 'chainRej';
-ChainRejAction.prototype.toString = mapperActionToString;
-ChainRejAction.prototype.rejected = chainActionHandler;
+export var ChainRejAction = createMapperAction('chainRej', {
+  rejected: chainActionHandler
+});
 
 export function SwapAction(){}
 SwapAction.prototype = Object.create(Action);
@@ -611,67 +619,42 @@ SwapAction.prototype.name = 'swap';
 SwapAction.prototype.rejected = Action.resolved;
 SwapAction.prototype.resolved = Action.rejected;
 
-export function FoldAction(lmapper, rmapper){ this.lmapper = lmapper; this.rmapper = rmapper }
-FoldAction.prototype = Object.create(Action);
-FoldAction.prototype.name = 'fold';
-FoldAction.prototype.toString = bimapperActionToString;
-FoldAction.prototype.resolved = mapRight;
-FoldAction.prototype.rejected = function FoldAction$rejected(x){
-  return mapWith(this.lmapper, resolve, x);
-};
+export var FoldAction = createBimapperAction('fold', {
+  resolved: mapRight,
+  rejected: function FoldAction$rejected(x){ return mapWith(this.lmapper, resolve, x) }
+});
 
-export function FinallyAction(other){ this.other = other }
-FinallyAction.prototype = Object.create(Action);
-FinallyAction.prototype.name = 'finally';
-FinallyAction.prototype.toString = otherActionToString;
-FinallyAction.prototype.rejected = function FinallyAction$rejected(x){
-  return this.other._and(new Rejected(x));
-};
-FinallyAction.prototype.resolved = function FinallyAction$resolved(x){
-  return this.other._map(function FoldAction$resolved$mapper(){ return x });
-};
-FinallyAction.prototype.cancel = function FinallyAction$cancel(){
-  this.other._interpret(noop, noop, noop)();
-};
+export var FinallyAction = createOtherAction('finally', {
+  cancel: function FinallyAction$cancel(){ this.other._interpret(noop, noop, noop)() },
+  rejected: function FinallyAction$rejected(x){ return this.other._and(new Rejected(x)) },
+  resolved: function FinallyAction$resolved(x){
+    return this.other._map(function FoldAction$resolved$mapper(){ return x });
+  }
+});
 
-export function AndAction(other){ this.other = other }
-AndAction.prototype = Object.create(Action);
-AndAction.prototype.name = 'and';
-AndAction.prototype.toString = otherActionToString;
-AndAction.prototype.resolved = returnOther;
+export var AndAction = createOtherAction('and', {
+  resolved: returnOther
+});
 
-export function OrAction(other){ this.other = other }
-OrAction.prototype = Object.create(Action);
-OrAction.prototype.name = 'or';
-OrAction.prototype.toString = otherActionToString;
-OrAction.prototype.rejected = returnOther;
+export var OrAction = createOtherAction('or', {
+  rejected: returnOther
+});
 
-export function ParallelApAction(other){ this.other = other }
-ParallelApAction.prototype = Object.create(ApAction.prototype);
-ParallelApAction.prototype.name = '_parallelAp';
-ParallelApAction.prototype.toString = otherActionToString;
-ParallelApAction.prototype.run = function ParallelApAction$run(early){
-  return new ParallelApActionState(early, this.other);
-};
+export var ParallelApAction = createOtherAction('_parallelAp', {
+  run: function ParallelApAction$run(early){ return new ParallelApActionState(early, this.other) },
+  resolved: apActionHandler
+});
 
-export function RaceAction(other){ this.other = other }
-RaceAction.prototype = Object.create(Action);
-RaceAction.prototype.name = 'race';
-RaceAction.prototype.toString = otherActionToString;
-RaceAction.prototype.run = function RaceAction$run(early){
-  return new RaceActionState(early, this.other);
-};
+export var RaceAction = createOtherAction('race', {
+  run: function RaceAction$run(early){ return new RaceActionState(early, this.other) }
+});
 
-export function BothAction(other){ this.other = other }
-BothAction.prototype = Object.create(Action);
-BothAction.prototype.name = 'both';
-BothAction.prototype.toString = otherActionToString;
-BothAction.prototype.resolved = function BothAction$resolved(x){
-  return this.other._map(function BothAction$resolved$mapper(y){ return [x, y] });
-};
-BothAction.prototype.run = function BothAction$run(early){
-  return new BothActionState(early, this.other);
-};
+export var BothAction = createOtherAction('both', {
+  run: function BothAction$run(early){ return new BothActionState(early, this.other) },
+  resolved: function BothAction$resolved(x){
+    return this.other._map(function BothAction$resolved$mapper(y){ return [x, y] });
+  }
+});
 
 export function ParallelApActionState(early, other){
   var _this = this;
