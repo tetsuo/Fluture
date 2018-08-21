@@ -554,6 +554,23 @@ function createOtherAction(name, prototype){
   return OtherAction;
 }
 
+function createParallelAction(name, rej, res, prototype){
+  var ParallelAction = createOtherAction(name, prototype);
+  ParallelAction.prototype.run = function ParallelAction$run(early){
+    var eager = new Eager(this.other);
+    var action = new ParallelAction(eager);
+    action.cancel = eager._interpret(function ParallelAction$rec(x){
+      early(new Crashed(x), action);
+    }, rej ? function ParallelAction$rej(x){
+      early(new Rejected(x), action);
+    } : noop, res ? function ParallelAction$rej(x){
+      early(new Resolved(x), action);
+    } : noop);
+    return action;
+  };
+  return ParallelAction;
+}
+
 function apActionHandler(f){
   return isFunction(f) ?
          this.other._map(function ApAction$resolved$mapper(x){ return f(x) }) :
@@ -640,54 +657,14 @@ export var OrAction = createOtherAction('or', {
   rejected: returnOther
 });
 
-export var ParallelApAction = createOtherAction('_parallelAp', {
-  run: function ParallelApAction$run(early){ return new ParallelApActionState(early, this.other) },
+export var ParallelApAction = createParallelAction('_parallelAp', true, false, {
   resolved: apActionHandler
 });
 
-export var RaceAction = createOtherAction('race', {
-  run: function RaceAction$run(early){ return new RaceActionState(early, this.other) }
-});
+export var RaceAction = createParallelAction('race', true, true, {});
 
-export var BothAction = createOtherAction('both', {
-  run: function BothAction$run(early){ return new BothActionState(early, this.other) },
+export var BothAction = createParallelAction('both', true, false, {
   resolved: function BothAction$resolved(x){
     return this.other._map(function BothAction$resolved$mapper(y){ return [x, y] });
   }
 });
-
-export function ParallelApActionState(early, other){
-  var _this = this;
-  _this.other = new Eager(other);
-  _this.cancel = _this.other._interpret(
-    function ParallelApActionState$rec(x){ early(new Crashed(x), _this) },
-    function ParallelApActionState$rej(x){ early(new Rejected(x), _this) },
-    noop
-  );
-}
-
-ParallelApActionState.prototype = Object.create(ParallelApAction.prototype);
-
-export function RaceActionState(early, other){
-  var _this = this;
-  _this.other = new Eager(other);
-  _this.cancel = _this.other._interpret(
-    function RaceActionState$rec(x){ early(new Crashed(x), _this) },
-    function RaceActionState$rej(x){ early(new Rejected(x), _this) },
-    function RaceActionState$res(x){ early(new Resolved(x), _this) }
-  );
-}
-
-RaceActionState.prototype = Object.create(RaceAction.prototype);
-
-export function BothActionState(early, other){
-  var _this = this;
-  _this.other = new Eager(other);
-  _this.cancel = _this.other._interpret(
-    function BothActionState$rec(x){ early(new Crashed(x), _this) },
-    function BothActionState$rej(x){ early(new Rejected(x), _this) },
-    noop
-  );
-}
-
-BothActionState.prototype = Object.create(BothAction.prototype);
