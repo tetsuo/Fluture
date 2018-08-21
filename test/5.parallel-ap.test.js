@@ -117,7 +117,7 @@ var testInstance = function (pap){
     it('crashes when the other does not resolve to a Function', function (){
       var m = pap(of(1), of(null));
       return U.assertCrashed(m, new TypeError(
-        'Future#ap expects its first argument to be a Future of a Function\n' +
+        'Future#_parallelAp expects its first argument to be a Future of a Function\n' +
         '  Actual: Future.of(null)'
       ));
     });
