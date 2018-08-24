@@ -42,91 +42,6 @@ Future.prototype[FL.chain] = function Future$FL$chain(mapper){
   return this._chain(mapper);
 };
 
-Future.prototype.ap = function Future$ap(other){
-  if(!isFuture(this)) throwInvalidContext('Future#ap', this);
-  if(!isFuture(other)) throwInvalidFuture('Future#ap', 0, other);
-  return this._ap(other);
-};
-
-Future.prototype.map = function Future$map(mapper){
-  if(!isFuture(this)) throwInvalidContext('Future#map', this);
-  if(!isFunction(mapper)) throwInvalidArgument('Future#map', 0, 'to be a Function', mapper);
-  return this._map(mapper);
-};
-
-Future.prototype.bimap = function Future$bimap(lmapper, rmapper){
-  if(!isFuture(this)) throwInvalidContext('Future#bimap', this);
-  if(!isFunction(lmapper)) throwInvalidArgument('Future#bimap', 0, 'to be a Function', lmapper);
-  if(!isFunction(rmapper)) throwInvalidArgument('Future#bimap', 1, 'to be a Function', rmapper);
-  return this._bimap(lmapper, rmapper);
-};
-
-Future.prototype.chain = function Future$chain(mapper){
-  if(!isFuture(this)) throwInvalidContext('Future#chain', this);
-  if(!isFunction(mapper)) throwInvalidArgument('Future#chain', 0, 'to be a Function', mapper);
-  return this._chain(mapper);
-};
-
-Future.prototype.mapRej = function Future$mapRej(mapper){
-  if(!isFuture(this)) throwInvalidContext('Future#mapRej', this);
-  if(!isFunction(mapper)) throwInvalidArgument('Future#mapRej', 0, 'to be a Function', mapper);
-  return this._mapRej(mapper);
-};
-
-Future.prototype.chainRej = function Future$chainRej(mapper){
-  if(!isFuture(this)) throwInvalidContext('Future#chainRej', this);
-  if(!isFunction(mapper)) throwInvalidArgument('Future#chainRej', 0, 'to be a Function', mapper);
-  return this._chainRej(mapper);
-};
-
-Future.prototype.race = function Future$race(other){
-  if(!isFuture(this)) throwInvalidContext('Future#race', this);
-  if(!isFuture(other)) throwInvalidFuture('Future#race', 0, other);
-  return this._race(other);
-};
-
-Future.prototype.both = function Future$both(other){
-  if(!isFuture(this)) throwInvalidContext('Future#both', this);
-  if(!isFuture(other)) throwInvalidFuture('Future#both', 0, other);
-  return this._both(other);
-};
-
-Future.prototype.and = function Future$and(other){
-  if(!isFuture(this)) throwInvalidContext('Future#and', this);
-  if(!isFuture(other)) throwInvalidFuture('Future#and', 0, other);
-  return this._and(other);
-};
-
-Future.prototype.or = function Future$or(other){
-  if(!isFuture(this)) throwInvalidContext('Future#or', this);
-  if(!isFuture(other)) throwInvalidFuture('Future#or', 0, other);
-  return this._or(other);
-};
-
-Future.prototype.swap = function Future$swap(){
-  if(!isFuture(this)) throwInvalidContext('Future#ap', this);
-  return this._swap();
-};
-
-Future.prototype.fold = function Future$fold(lmapper, rmapper){
-  if(!isFuture(this)) throwInvalidContext('Future#ap', this);
-  if(!isFunction(lmapper)) throwInvalidArgument('Future#fold', 0, 'to be a Function', lmapper);
-  if(!isFunction(rmapper)) throwInvalidArgument('Future#fold', 1, 'to be a Function', rmapper);
-  return this._fold(lmapper, rmapper);
-};
-
-Future.prototype.finally = function Future$finally(other){
-  if(!isFuture(this)) throwInvalidContext('Future#finally', this);
-  if(!isFuture(other)) throwInvalidFuture('Future#finally', 0, other);
-  return this._finally(other);
-};
-
-Future.prototype.lastly = function Future$lastly(other){
-  if(!isFuture(this)) throwInvalidContext('Future#lastly', this);
-  if(!isFuture(other)) throwInvalidFuture('Future#lastly', 0, other);
-  return this._finally(other);
-};
-
 Future.prototype.fork = function Future$fork(rej, res){
   if(!isFuture(this)) throwInvalidContext('Future#fork', this);
   if(!isFunction(rej)) throwInvalidArgument('Future#fork', 0, 'to be a Function', rej);
@@ -180,62 +95,6 @@ Future.prototype.extractRight = function Future$extractRight(){
 
 Future.prototype._transform = function Future$transform(action){
   return new Transformation(this, cons(action, nil));
-};
-
-Future.prototype._ap = function Future$ap(other){
-  return this._transform(new ApAction(other));
-};
-
-Future.prototype._parallelAp = function Future$pap(other){
-  return this._transform(new ParallelApAction(other));
-};
-
-Future.prototype._map = function Future$map(mapper){
-  return this._transform(new MapAction(mapper));
-};
-
-Future.prototype._bimap = function Future$bimap(lmapper, rmapper){
-  return this._transform(new BimapAction(lmapper, rmapper));
-};
-
-Future.prototype._chain = function Future$chain(mapper){
-  return this._transform(new ChainAction(mapper));
-};
-
-Future.prototype._mapRej = function Future$mapRej(mapper){
-  return this._transform(new MapRejAction(mapper));
-};
-
-Future.prototype._chainRej = function Future$chainRej(mapper){
-  return this._transform(new ChainRejAction(mapper));
-};
-
-Future.prototype._race = function Future$race(other){
-  return isNever(other) ? this : this._transform(new RaceAction(other));
-};
-
-Future.prototype._both = function Future$both(other){
-  return this._transform(new BothAction(other));
-};
-
-Future.prototype._and = function Future$and(other){
-  return this._transform(new AndAction(other));
-};
-
-Future.prototype._or = function Future$or(other){
-  return this._transform(new OrAction(other));
-};
-
-Future.prototype._swap = function Future$swap(){
-  return this._transform(new SwapAction);
-};
-
-Future.prototype._fold = function Future$fold(lmapper, rmapper){
-  return this._transform(new FoldAction(lmapper, rmapper));
-};
-
-Future.prototype._finally = function Future$finally(other){
-  return this._transform(new FinallyAction(other));
 };
 
 export function Computation(computation){
@@ -520,11 +379,19 @@ function nullaryActionToString(){
   return this.name + '()';
 }
 
-function createNullaryAction(name, prototype){
-  function NullaryAction(mapper){ this.mapper = mapper }
+function defineNullaryAction(name, prototype){
+  var _name = '_' + name;
+  function NullaryAction(){}
   NullaryAction.prototype = Object.assign(Object.create(Action), prototype);
   NullaryAction.prototype.name = name;
   NullaryAction.prototype.toString = nullaryActionToString;
+  Future.prototype[name] = function checkedNullaryTransformation(){
+    if(!isFuture(this)) throwInvalidContext('Future#' + name, this);
+    return this[_name]();
+  };
+  Future.prototype[_name] = function uncheckedNullaryTransformation(){
+    return this._transform(new NullaryAction);
+  };
   return NullaryAction;
 }
 
@@ -532,11 +399,20 @@ function mapperActionToString(){
   return this.name + '(' + showf(this.mapper) + ')';
 }
 
-function createMapperAction(name, prototype){
+function defineMapperAction(name, prototype){
+  var _name = '_' + name;
   function MapperAction(mapper){ this.mapper = mapper }
   MapperAction.prototype = Object.assign(Object.create(Action), prototype);
   MapperAction.prototype.name = name;
   MapperAction.prototype.toString = mapperActionToString;
+  Future.prototype[name] = function checkedMapperTransformation(mapper){
+    if(!isFuture(this)) throwInvalidContext('Future#' + name, this);
+    if(!isFunction(mapper)) throwInvalidArgument('Future#' + name, 0, 'to be a Function', mapper);
+    return this[_name](mapper);
+  };
+  Future.prototype[_name] = function uncheckedMapperTransformation(mapper){
+    return this._transform(new MapperAction(mapper));
+  };
   return MapperAction;
 }
 
@@ -544,11 +420,21 @@ function bimapperActionToString(){
   return this.name + '(' + showf(this.lmapper) + ', ' + showf(this.rmapper) + ')';
 }
 
-function createBimapperAction(name, prototype){
+function defineBimapperAction(name, prototype){
+  var _name = '_' + name;
   function BimapperAction(lmapper, rmapper){ this.lmapper = lmapper; this.rmapper = rmapper }
   BimapperAction.prototype = Object.assign(Object.create(Action), prototype);
   BimapperAction.prototype.name = name;
   BimapperAction.prototype.toString = bimapperActionToString;
+  Future.prototype[name] = function checkedBimapperTransformation(lm, rm){
+    if(!isFuture(this)) throwInvalidContext('Future#' + name, this);
+    if(!isFunction(lm)) throwInvalidArgument('Future#' + name, 0, 'to be a Function', lm);
+    if(!isFunction(rm)) throwInvalidArgument('Future#' + name, 1, 'to be a Function', rm);
+    return this[_name](lm, rm);
+  };
+  Future.prototype[_name] = function uncheckedBimapperTransformation(lm, rm){
+    return this._transform(new BimapperAction(lm, rm));
+  };
   return BimapperAction;
 }
 
@@ -556,26 +442,34 @@ function otherActionToString(){
   return this.name + '(' + this.other.toString() + ')';
 }
 
-function createOtherAction(name, prototype){
+function defineOtherAction(name, prototype){
+  var _name = '_' + name;
   function OtherAction(other){ this.other = other }
   OtherAction.prototype = Object.assign(Object.create(Action), prototype);
   OtherAction.prototype.name = name;
   OtherAction.prototype.toString = otherActionToString;
+  Future.prototype[name] = function checkedOtherTransformation(other){
+    if(!isFuture(this)) throwInvalidContext('Future#' + name, this);
+    if(!isFuture(other)) throwInvalidFuture('Future#' + name, 0, other);
+    return this[_name](other);
+  };
+  Future.prototype[_name] = function uncheckedOtherTransformation(other){
+    return this._transform(new OtherAction(other));
+  };
   return OtherAction;
 }
 
-function createParallelAction(name, rej, res, prototype){
-  var ParallelAction = createOtherAction(name, prototype);
+function defineParallelAction(name, rec, rej, res, prototype){
+  var ParallelAction = defineOtherAction(name, prototype);
   ParallelAction.prototype.run = function ParallelAction$run(early){
     var eager = new Eager(this.other);
     var action = new ParallelAction(eager);
-    action.cancel = eager._interpret(function ParallelAction$rec(x){
-      early(new Crashed(x), action);
-    }, rej ? function ParallelAction$rej(x){
-      early(new Rejected(x), action);
-    } : noop, res ? function ParallelAction$rej(x){
-      early(new Resolved(x), action);
-    } : noop);
+    function ParallelAction$early(m){ early(m, action) }
+    action.cancel = eager._interpret(
+      function ParallelAction$rec(x){ rec(ParallelAction$early, x) },
+      function ParallelAction$rej(x){ rej(ParallelAction$early, x) },
+      function ParallelAction$res(x){ res(ParallelAction$early, x) }
+    );
     return action;
   };
   return ParallelAction;
@@ -615,64 +509,79 @@ function mapRight(value){
   return mapWith(this.rmapper, resolve, value);
 }
 
-export var ApAction = createOtherAction('ap', {
+function earlyCrash(early, x){
+  early(new Crashed(x));
+}
+
+function earlyReject(early, x){
+  early(new Rejected(x));
+}
+
+function earlyResolve(early, x){
+  early(new Resolved(x));
+}
+
+defineOtherAction('ap', {
   resolved: apActionHandler
 });
 
-export var MapAction = createMapperAction('map', {
+defineMapperAction('map', {
   resolved: function MapAction$resolved(x){ return mapWith(this.mapper, resolve, x) }
 });
 
-export var BimapAction = createBimapperAction('bimap', {
+defineBimapperAction('bimap', {
   resolved: mapRight,
   rejected: function BimapAction$rejected(x){ return mapWith(this.lmapper, reject, x) }
 });
 
-export var ChainAction = createMapperAction('chain', {
+defineMapperAction('chain', {
   resolved: chainActionHandler
 });
 
-export var MapRejAction = createMapperAction('mapRej', {
+defineMapperAction('mapRej', {
   rejected: function MapRejAction$rejected(x){ return mapWith(this.mapper, reject, x) }
 });
 
-export var ChainRejAction = createMapperAction('chainRej', {
+defineMapperAction('chainRej', {
   rejected: chainActionHandler
 });
 
-export var SwapAction = createNullaryAction('swap', {
+defineNullaryAction('swap', {
   rejected: Action.resolved,
   resolved: Action.rejected
 });
 
-export var FoldAction = createBimapperAction('fold', {
+defineBimapperAction('fold', {
   resolved: mapRight,
   rejected: function FoldAction$rejected(x){ return mapWith(this.lmapper, resolve, x) }
 });
 
-export var FinallyAction = createOtherAction('finally', {
+var finallyAction = {
   cancel: function FinallyAction$cancel(){ this.other._interpret(noop, noop, noop)() },
   rejected: function FinallyAction$rejected(x){ return this.other._and(new Rejected(x)) },
   resolved: function FinallyAction$resolved(x){
     return this.other._map(function FoldAction$resolved$mapper(){ return x });
   }
-});
+};
 
-export var AndAction = createOtherAction('and', {
+defineOtherAction('finally', finallyAction);
+defineOtherAction('lastly', finallyAction);
+
+defineOtherAction('and', {
   resolved: returnOther
 });
 
-export var OrAction = createOtherAction('or', {
+defineOtherAction('or', {
   rejected: returnOther
 });
 
-export var ParallelApAction = createParallelAction('_parallelAp', true, false, {
+defineParallelAction('_parallelAp', earlyCrash, earlyReject, noop, {
   resolved: apActionHandler
 });
 
-export var RaceAction = createParallelAction('race', true, true, {});
+defineParallelAction('race', earlyCrash, earlyReject, earlyResolve, {});
 
-export var BothAction = createParallelAction('both', true, false, {
+defineParallelAction('both', earlyCrash, earlyReject, noop, {
   resolved: function BothAction$resolved(x){
     return this.other._map(function BothAction$resolved$mapper(y){ return [x, y] });
   }

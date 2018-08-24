@@ -156,7 +156,7 @@ module.exports = require('sanctuary-benchmark')(Old, New, config, {
     }
   ],
 
-  'run.transform.async.race.fast-vs-slow': [
+  'run.transform.parallel.async.race.fast-vs-slow': [
     {defer: true}, ({Future, race}, [d]) => {
       const a = fast(Future, 1);
       const b = slow(Future, 1);
@@ -164,7 +164,7 @@ module.exports = require('sanctuary-benchmark')(Old, New, config, {
     }
   ],
 
-  'run.transform.async.race.slow-vs-fast': [
+  'run.transform.parallel.async.race.slow-vs-fast': [
     {defer: true}, ({Future, race}, [d]) => {
       const a = slow(Future, 1);
       const b = fast(Future, 1);
@@ -172,7 +172,7 @@ module.exports = require('sanctuary-benchmark')(Old, New, config, {
     }
   ],
 
-  'run.transform.async.race.slow-vs-slow': [
+  'run.transform.parallel.async.race.slow-vs-slow': [
     {defer: true}, ({Future, race}, [d]) => {
       const a = slow(Future, 1);
       const b = slow(Future, 1);

@@ -1,4 +1,4 @@
-import {Future, of, never, after} from '../index.mjs.js';
+import {Future, of, after} from '../index.mjs.js';
 import {expect} from 'chai';
 import {add, bang, noop, error, assertResolved, assertRejected, assertCrashed} from './util';
 import {resolved, rejected, resolvedSlow} from './futures';
@@ -172,10 +172,6 @@ describe('Transformation', function (){
   describe('race', function (){
 
     var seq = dummy.race(dummy);
-
-    it('returns itself when racing Never', function (){
-      expect(dummy.race(never)).to.equal(dummy);
-    });
 
     describe('#_interpret()', function (){
 

@@ -54,11 +54,6 @@ describe('After', function (){
 
   describe('#race()', function (){
 
-    it('returns itself if the other is Never', function (){
-      var m = after(1, 1);
-      expect(m.race(never)).to.equal(m);
-    });
-
     it('returns the faster After', function (){
       var fast = after(1, 1);
       var slow = after(10, 1);

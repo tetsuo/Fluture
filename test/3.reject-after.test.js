@@ -54,11 +54,6 @@ describe('RejectAfter', function (){
 
   describe('#race()', function (){
 
-    it('returns itself if the other is Never', function (){
-      var m = rejectAfter(1, 1);
-      expect(m.race(never)).to.equal(m);
-    });
-
     it('returns the faster After', function (){
       var fast = rejectAfter(1, 1);
       var slow = rejectAfter(10, 1);
