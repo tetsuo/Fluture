@@ -1,5 +1,5 @@
 import {expect} from 'chai';
-import {Future, race, of, after, never} from '../index.mjs.js';
+import {Future, race, of} from '../index.mjs.js';
 import * as U from './util';
 import * as F from './futures';
 import type from 'sanctuary-type-identifiers';
@@ -186,11 +186,6 @@ describe('Future#race()', function (){
     var xs = [NaN, {}, [], 1, 'a', new Date, undefined, null, function (x){ return x }];
     var fs = xs.map(function (x){ return function (){ return of(1).race(x) } });
     fs.forEach(function (f){ return expect(f).to.throw(TypeError, /Future/) });
-  });
-
-  it('returns other when called on a Never', function (){
-    var m = after(10, 1);
-    expect(never.race(m)).to.equal(m);
   });
 
   testInstance(function (a, b){ return a.race(b) });

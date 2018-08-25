@@ -254,6 +254,9 @@ Transformation.prototype._interpret = function Transformation$interpret(rec, rej
   //This function is called when an exception is caught.
   function exception(e){
     Sequence$cancel();
+    settled = true;
+    queue.clear();
+    future = never;
     rec(e);
   }
 
@@ -329,23 +332,13 @@ export function Crashed(error){
 
 Crashed.prototype = Object.create(Future.prototype);
 
-Crashed.prototype._ap = moop;
-Crashed.prototype._parallelAp = moop;
-Crashed.prototype._map = moop;
-Crashed.prototype._bimap = moop;
-Crashed.prototype._chain = moop;
-Crashed.prototype._mapRej = moop;
-Crashed.prototype._chainRej = moop;
-Crashed.prototype._both = moop;
-Crashed.prototype._or = moop;
-Crashed.prototype._swap = moop;
-Crashed.prototype._fold = moop;
-Crashed.prototype._finally = moop;
-Crashed.prototype._race = moop;
-
 Crashed.prototype._interpret = function Crashed$interpret(rec){
   rec(this._error);
   return noop;
+};
+
+Crashed.prototype.toString = function Crashed$toString(){
+  return 'Future(function crash(){ throw ' + show(this._error) + ' })';
 };
 
 export function Rejected(value){
@@ -353,26 +346,6 @@ export function Rejected(value){
 }
 
 Rejected.prototype = Object.create(Future.prototype);
-
-Rejected.prototype._ap = moop;
-Rejected.prototype._parallelAp = moop;
-Rejected.prototype._map = moop;
-Rejected.prototype._chain = moop;
-Rejected.prototype._race = moop;
-Rejected.prototype._both = moop;
-Rejected.prototype._and = moop;
-
-Rejected.prototype._or = function Rejected$or(other){
-  return other;
-};
-
-Rejected.prototype._finally = function Rejected$finally(other){
-  return other._and(this);
-};
-
-Rejected.prototype._swap = function Rejected$swap(){
-  return new Resolved(this._value);
-};
 
 Rejected.prototype._interpret = function Rejected$interpret(rec, rej){
   rej(this._value);
@@ -397,32 +370,6 @@ export function Resolved(value){
 
 Resolved.prototype = Object.create(Future.prototype);
 
-Resolved.prototype._race = moop;
-Resolved.prototype._mapRej = moop;
-Resolved.prototype._or = moop;
-
-Resolved.prototype._and = function Resolved$and(other){
-  return other;
-};
-
-Resolved.prototype._both = function Resolved$both(other){
-  var left = this._value;
-  return other._map(function Resolved$both$mapper(right){
-    return [left, right];
-  });
-};
-
-Resolved.prototype._swap = function Resolved$swap(){
-  return new Rejected(this._value);
-};
-
-Resolved.prototype._finally = function Resolved$finally(other){
-  var value = this._value;
-  return other._map(function Resolved$finally$mapper(){
-    return value;
-  });
-};
-
 Resolved.prototype._interpret = function Resolved$interpret(rec, rej, res){
   res(this._value);
   return noop;
@@ -445,23 +392,6 @@ function Never(){
 }
 
 Never.prototype = Object.create(Future.prototype);
-
-Never.prototype._ap = moop;
-Never.prototype._parallelAp = moop;
-Never.prototype._map = moop;
-Never.prototype._bimap = moop;
-Never.prototype._chain = moop;
-Never.prototype._mapRej = moop;
-Never.prototype._chainRej = moop;
-Never.prototype._both = moop;
-Never.prototype._or = moop;
-Never.prototype._swap = moop;
-Never.prototype._fold = moop;
-Never.prototype._finally = moop;
-
-Never.prototype._race = function Never$race(other){
-  return other;
-};
 
 Never.prototype._interpret = function Never$interpret(){
   return noop;

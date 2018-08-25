@@ -13,13 +13,26 @@ import {
   seq,
   Par,
   extractLeft,
-  extractRight
+  extractRight,
+  never,
+  isNever,
 } from '../index.mjs.js';
 
 describe('Future', function (){
 
   it('instances are considered members of fluture/Future by sanctuary-type-identifiers', function (){
     expect(type(F.mock)).to.equal(Future['@@type']);
+  });
+
+  describe('.never', function (){
+    it('is a Future', function (){
+      expect(isFuture(never)).to.equal(true);
+      expect(type(never)).to.equal(Future['@@type']);
+      expect(never).to.be.an.instanceof(Future);
+    });
+    it('is never', function (){
+      expect(isNever(never)).to.equal(true);
+    });
   });
 
   describe('.isFuture()', function (){

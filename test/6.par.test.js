@@ -98,13 +98,6 @@ describe('Par()', function (){
       return U.assertRejected(seq(actual), 'rejected');
     });
 
-    it('interprets in parallel', function (){
-      this.slow(40);
-      this.timeout(30);
-      var actual = ap(Par(F.resolvedSlow.and(mf)), Par(F.resolvedSlow));
-      return U.assertResolved(seq(actual), 'resolvedSlow!');
-    });
-
     it('creates a cancel function which cancels both Futures', function (done){
       var cancelled = false;
       var m = Par(Future(function (){ return function (){ return (cancelled ? done() : (cancelled = true)) } }));
@@ -156,7 +149,7 @@ describe('Par()', function (){
 
     it('shows a reasonable representation when cast to string', function (){
       var m = alt(Par(of(2)), Par(of(1)));
-      var s = 'ConcurrentFuture(Future.of(1))';
+      var s = 'ConcurrentFuture(Future.of(1).race(Future.of(2)))';
       expect(m.toString()).to.equal(s);
     });
 

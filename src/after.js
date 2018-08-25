@@ -3,24 +3,12 @@ import {show, partial1} from './internal/utils';
 import {isUnsigned} from './internal/predicates';
 import {throwInvalidArgument} from './internal/throw';
 
-function After$race(other){
-  return typeof other._time === 'number'
-       ? other._time < this._time ? other : this
-       : Future.prototype._race.call(this, other);
-}
-
 export function After(time, value){
   this._time = time;
   this._value = value;
 }
 
 After.prototype = Object.create(Future.prototype);
-
-After.prototype._race = After$race;
-
-After.prototype._swap = function After$swap(){
-  return new RejectAfter(this._time, this._value);
-};
 
 After.prototype._interpret = function After$interpret(rec, rej, res){
   var id = setTimeout(res, this._time, this._value);
@@ -41,12 +29,6 @@ export function RejectAfter(time, value){
 }
 
 RejectAfter.prototype = Object.create(Future.prototype);
-
-RejectAfter.prototype._race = After$race;
-
-RejectAfter.prototype._swap = function RejectAfter$swap(){
-  return new After(this._time, this._value);
-};
 
 RejectAfter.prototype._interpret = function RejectAfter$interpret(rec, rej){
   var id = setTimeout(rej, this._time, this._value);

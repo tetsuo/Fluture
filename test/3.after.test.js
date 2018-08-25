@@ -1,5 +1,5 @@
 import {expect} from 'chai';
-import {Future, after, never, rejectAfter} from '../index.mjs.js';
+import {Future, after, never} from '../index.mjs.js';
 import * as U from './util';
 import type from 'sanctuary-type-identifiers';
 
@@ -53,19 +53,6 @@ describe('After', function (){
   });
 
   describe('#race()', function (){
-
-    it('returns the faster After', function (){
-      var fast = after(1, 1);
-      var slow = after(10, 1);
-      var fastr = rejectAfter(1, 1);
-      var slowr = rejectAfter(10, 1);
-      expect(slow.race(fast)).to.equal(fast);
-      expect(slow.race(fastr)).to.equal(fastr);
-      expect(slow.race(slowr)).to.equal(slow);
-      expect(fast.race(slow)).to.equal(fast);
-      expect(fast.race(slowr)).to.equal(fast);
-      expect(fast.race(fastr)).to.equal(fast);
-    });
 
     it('races undeterministic Futures the conventional way', function (){
       var m = after(1, 1);
