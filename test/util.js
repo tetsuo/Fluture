@@ -62,19 +62,19 @@ export var interpertAndGuard = function (m, rec, rej, res){
     if(rejected){ throw new Error(m.toString() + ' crashed after rejecting: ' + show(e)) }
     if(resolved){ throw new Error(m.toString() + ' crashed after resolving: ' + show(e)) }
     crashed = true;
-    rec(e);
+    setTimeout(rec, 20, e);
   }, function (e){
     if(crashed){ throw new Error(m.toString() + ' rejected after crashing: ' + show(e)) }
     if(rejected){ throw new Error(m.toString() + ' rejected twice with: ' + show(e)) }
     if(resolved){ throw new Error(m.toString() + ' rejected after resolving: ' + show(e)) }
     rejected = true;
-    rej(e);
+    setTimeout(rej, 20, e);
   }, function (x){
     if(crashed){ throw new Error(m.toString() + ' resolved after crashing: ' + show(x)) }
     if(rejected){ throw new Error(m.toString() + ' resolved twice with: ' + show(x)) }
     if(resolved){ throw new Error(m.toString() + ' resolved after rejecting: ' + show(x)) }
     resolved = true;
-    res(x);
+    setTimeout(res, 20, x);
   });
 };
 
