@@ -196,18 +196,14 @@ Transformation.prototype._interpret = function Transformation$interpret(rec, rej
   function settle(m){
     settled = true;
     future = m;
-
     if(future._spawn){
       var tail = future._actions;
-
       while(tail !== nil){
         queue.unshift(tail.head);
         tail = tail.tail;
       }
-
       future = future._spawn;
     }
-
     if(async) drain();
   }
 
@@ -235,12 +231,10 @@ Transformation.prototype._interpret = function Transformation$interpret(rec, rej
   function early(m, terminator){
     cancel();
     queue.clear();
-
     if(async && action !== terminator){
       action.cancel();
       while((it = popStack()) && it !== terminator) it.cancel();
     }
-
     settle(m);
   }
 
@@ -274,23 +268,10 @@ Transformation.prototype._interpret = function Transformation$interpret(rec, rej
     action = action.run(early);
   }
 
-  //This function represents our main execution loop.
-  //When we refer to a "tick", we mean the execution of the body inside the
-  //primary while-loop of this function.
-  //Every tick follows the following algorithm:
-  // 1. We try to take an action from the cold queue, if we fail, go to step 2.
-  //      1a. We fork the future.
-  //      1b. We warmupActions() if the we haven't settled yet.
-  // 2. We try to take an action from the hot queue, if we fail, go to step 3.
-  //      2a. We fork the Future, if settles, we continue to the next tick.
-  // 3. If we couldn't take actions from either queues, we fork the Future into
-  //    the user provided continuations. This is the end of the interpretation.
-  // 4. If we did take an action from one of queues, but none of the steps
-  //    caused a settle(), it means we are asynchronously waiting for something
-  //    to settle and start the next tick, so we return from the function.
+  //This function represents our main execution loop. By "tick", we've been
+  //referring to the execution of one iteration in the while-loop below.
   function drain(){
     async = false;
-
     while(true){
       settled = false;
       if(action = queue.shift()){
@@ -303,7 +284,6 @@ Transformation.prototype._interpret = function Transformation$interpret(rec, rej
       async = true;
       return;
     }
-
     cancel = future._interpret(exception, rej, res);
   }
 
