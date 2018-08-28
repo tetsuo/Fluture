@@ -1,5 +1,5 @@
 /**
- * Fluture bundled; version 9.0.1
+ * Fluture bundled; version 9.0.2
  */
 
 var Fluture = (function () {
@@ -3213,38 +3213,6 @@ var Fluture = (function () {
 	  throw invalidFuture(it, at, m, s);
 	}
 
-	function isFunction(f){
-	  return typeof f === 'function';
-	}
-
-	function isThenable(m){
-	  return m instanceof Promise || Boolean(m) && isFunction(m.then);
-	}
-
-	function isBoolean(f){
-	  return typeof f === 'boolean';
-	}
-
-	function isNumber(f){
-	  return typeof f === 'number';
-	}
-
-	function isUnsigned(n){
-	  return (n === Infinity || isNumber(n) && n > 0 && n % 1 === 0);
-	}
-
-	function isObject(o){
-	  return o !== null && typeof o === 'object';
-	}
-
-	function isIterator(i){
-	  return isObject(i) && isFunction(i.next);
-	}
-
-	function isArray(x){
-	  return Array.isArray(x);
-	}
-
 	/**
 	 * Custom implementation of a double ended queue.
 	 */
@@ -3680,6 +3648,38 @@ var Fluture = (function () {
 
 	var denque = Denque;
 
+	function isFunction(f){
+	  return typeof f === 'function';
+	}
+
+	function isThenable(m){
+	  return m instanceof Promise || Boolean(m) && isFunction(m.then);
+	}
+
+	function isBoolean(f){
+	  return typeof f === 'boolean';
+	}
+
+	function isNumber(f){
+	  return typeof f === 'number';
+	}
+
+	function isUnsigned(n){
+	  return (n === Infinity || isNumber(n) && n > 0 && n % 1 === 0);
+	}
+
+	function isObject(o){
+	  return o !== null && typeof o === 'object';
+	}
+
+	function isIterator(i){
+	  return isObject(i) && isFunction(i.next);
+	}
+
+	function isArray(x){
+	  return Array.isArray(x);
+	}
+
 	/* eslint no-param-reassign:0 */
 
 	var nil = {head: null};
@@ -3690,165 +3690,6 @@ var Fluture = (function () {
 	}
 
 	/*eslint no-cond-assign:0, no-constant-condition:0 */
-
-	function interpretSequence(seq, rec, rej, res){
-
-	  //This is the primary queue of actions. All actions in here will be "cold",
-	  //meaning they haven't had the chance yet to run concurrent computations.
-	  var queue = new denque();
-
-	  //These combined variables define our current state.
-	  // future  = the future we are currently forking
-	  // action  = the action to be informed when the future settles
-	  // cancel  = the cancel function of the current future
-	  // settled = a boolean indicating whether a new tick should start
-	  // async   = a boolean indicating whether we are awaiting a result asynchronously
-	  var future, action, cancel = noop, stack = nil, settled, async = true, it;
-
-	  //Pushes a new action onto the stack. The stack is used to keep "hot"
-	  //actions. The last one added is the first one to process, because actions
-	  //are pushed right-to-left (see warmupActions).
-	  function pushStack(x){
-	    stack = cons(x, stack);
-	  }
-
-	  //Takes the leftmost action from the stack and returns it.
-	  function popStack(){
-	    var x = stack.head;
-	    stack = stack.tail;
-	    return x;
-	  }
-
-	  //This function is called with a future to use in the next tick.
-	  //Here we "flatten" the actions of another Sequence into our own actions,
-	  //this is the magic that allows for infinitely stack safe recursion because
-	  //actions like ChainAction will return a new Sequence.
-	  //If we settled asynchronously, we call drain() directly to run the next tick.
-	  function settle(m){
-	    settled = true;
-	    future = m;
-
-	    if(future._spawn){
-	      var tail = future._actions;
-
-	      while(tail !== nil){
-	        queue.unshift(tail.head);
-	        tail = tail.tail;
-	      }
-
-	      future = future._spawn;
-	    }
-
-	    if(async) drain();
-	  }
-
-	  //This function serves as a rejection handler for our current future.
-	  //It will tell the current action that the future rejected, and it will
-	  //settle the current tick with the action's answer to that.
-	  function rejected(x){
-	    settle(action.rejected(x));
-	  }
-
-	  //This function serves as a resolution handler for our current future.
-	  //It will tell the current action that the future resolved, and it will
-	  //settle the current tick with the action's answer to that.
-	  function resolved(x){
-	    settle(action.resolved(x));
-	  }
-
-	  //This function is passed into actions when they are "warmed up".
-	  //If the action decides that it has its result, without the need to await
-	  //anything else, then it can call this function to force "early termination".
-	  //When early termination occurs, all actions which were queued prior to the
-	  //terminator will be skipped. If they were already hot, they will also receive
-	  //a cancel signal so they can cancel their own concurrent computations, as
-	  //their results are no longer needed.
-	  function early(m, terminator){
-	    cancel();
-	    queue.clear();
-
-	    if(async && action !== terminator){
-	      action.cancel();
-	      while((it = popStack()) && it !== terminator) it.cancel();
-	    }
-
-	    settle(m);
-	  }
-
-	  //This will cancel the current Future, the current action, and all queued hot actions.
-	  function Sequence$cancel(){
-	    cancel();
-	    action && action.cancel();
-	    while(it = popStack()) it.cancel();
-	  }
-
-	  //This function is called when an exception is caught.
-	  function exception(e){
-	    Sequence$cancel();
-	    rec(e);
-	  }
-
-	  //This function serves to kickstart concurrent computations.
-	  //Takes all actions from the cold queue *back-to-front*, and calls run() on
-	  //each of them, passing them the "early" function. If any of them settles (by
-	  //calling early()), we abort. After warming up all actions in the cold queue,
-	  //we warm up the current action as well.
-	  function warmupActions(){
-	    while(it = queue.pop()){
-	      it = it.run(early);
-	      if(settled) return;
-	      pushStack(it);
-	    }
-	    action = action.run(early);
-	  }
-
-	  //This function represents our main execution loop.
-	  //When we refer to a "tick", we mean the execution of the body inside the
-	  //primary while-loop of this function.
-	  //Every tick follows the following algorithm:
-	  // 1. We try to take an action from the cold queue, if we fail, go to step 2.
-	  //      1a. We fork the future.
-	  //      1b. We warmupActions() if the we haven't settled yet.
-	  // 2. We try to take an action from the hot queue, if we fail, go to step 3.
-	  //      2a. We fork the Future, if settles, we continue to the next tick.
-	  // 3. If we couldn't take actions from either queues, we fork the Future into
-	  //    the user provided continuations. This is the end of the interpretation.
-	  // 4. If we did take an action from one of queues, but none of the steps
-	  //    caused a settle(), it means we are asynchronously waiting for something
-	  //    to settle and start the next tick, so we return from the function.
-	  function drain(){
-	    async = false;
-
-	    while(true){
-	      settled = false;
-	      if(action = queue.shift()){
-	        cancel = future._interpret(exception, rejected, resolved);
-	        if(!settled) warmupActions();
-	      }else if(action = popStack()){
-	        cancel = future._interpret(exception, rejected, resolved);
-	      }else break;
-	      if(settled) continue;
-	      async = true;
-	      return;
-	    }
-
-	    cancel = future._interpret(exception, rej, res);
-	  }
-
-	  //Start the execution loop.
-	  settle(seq);
-
-	  //Return the cancellation function.
-	  return Sequence$cancel;
-
-	}
-
-	function Future$value$rej(x){
-	  raise(error(
-	    'Future#value was called on a rejected Future\n' +
-	    '  Actual: Future.reject(' + sanctuaryShow(x) + ')'
-	  ));
-	}
 
 	function Future$onCrash(x){
 	  raise(valueToError(x));
@@ -3885,91 +3726,6 @@ var Fluture = (function () {
 	  return this._chain(mapper);
 	};
 
-	Future.prototype.ap = function Future$ap(other){
-	  if(!isFuture(this)) throwInvalidContext('Future#ap', this);
-	  if(!isFuture(other)) throwInvalidFuture('Future#ap', 0, other);
-	  return this._ap(other);
-	};
-
-	Future.prototype.map = function Future$map(mapper){
-	  if(!isFuture(this)) throwInvalidContext('Future#map', this);
-	  if(!isFunction(mapper)) throwInvalidArgument('Future#map', 0, 'to be a Function', mapper);
-	  return this._map(mapper);
-	};
-
-	Future.prototype.bimap = function Future$bimap(lmapper, rmapper){
-	  if(!isFuture(this)) throwInvalidContext('Future#bimap', this);
-	  if(!isFunction(lmapper)) throwInvalidArgument('Future#bimap', 0, 'to be a Function', lmapper);
-	  if(!isFunction(rmapper)) throwInvalidArgument('Future#bimap', 1, 'to be a Function', rmapper);
-	  return this._bimap(lmapper, rmapper);
-	};
-
-	Future.prototype.chain = function Future$chain(mapper){
-	  if(!isFuture(this)) throwInvalidContext('Future#chain', this);
-	  if(!isFunction(mapper)) throwInvalidArgument('Future#chain', 0, 'to be a Function', mapper);
-	  return this._chain(mapper);
-	};
-
-	Future.prototype.mapRej = function Future$mapRej(mapper){
-	  if(!isFuture(this)) throwInvalidContext('Future#mapRej', this);
-	  if(!isFunction(mapper)) throwInvalidArgument('Future#mapRej', 0, 'to be a Function', mapper);
-	  return this._mapRej(mapper);
-	};
-
-	Future.prototype.chainRej = function Future$chainRej(mapper){
-	  if(!isFuture(this)) throwInvalidContext('Future#chainRej', this);
-	  if(!isFunction(mapper)) throwInvalidArgument('Future#chainRej', 0, 'to be a Function', mapper);
-	  return this._chainRej(mapper);
-	};
-
-	Future.prototype.race = function Future$race(other){
-	  if(!isFuture(this)) throwInvalidContext('Future#race', this);
-	  if(!isFuture(other)) throwInvalidFuture('Future#race', 0, other);
-	  return this._race(other);
-	};
-
-	Future.prototype.both = function Future$both(other){
-	  if(!isFuture(this)) throwInvalidContext('Future#both', this);
-	  if(!isFuture(other)) throwInvalidFuture('Future#both', 0, other);
-	  return this._both(other);
-	};
-
-	Future.prototype.and = function Future$and(other){
-	  if(!isFuture(this)) throwInvalidContext('Future#and', this);
-	  if(!isFuture(other)) throwInvalidFuture('Future#and', 0, other);
-	  return this._and(other);
-	};
-
-	Future.prototype.or = function Future$or(other){
-	  if(!isFuture(this)) throwInvalidContext('Future#or', this);
-	  if(!isFuture(other)) throwInvalidFuture('Future#or', 0, other);
-	  return this._or(other);
-	};
-
-	Future.prototype.swap = function Future$swap(){
-	  if(!isFuture(this)) throwInvalidContext('Future#ap', this);
-	  return this._swap();
-	};
-
-	Future.prototype.fold = function Future$fold(lmapper, rmapper){
-	  if(!isFuture(this)) throwInvalidContext('Future#ap', this);
-	  if(!isFunction(lmapper)) throwInvalidArgument('Future#fold', 0, 'to be a Function', lmapper);
-	  if(!isFunction(rmapper)) throwInvalidArgument('Future#fold', 1, 'to be a Function', rmapper);
-	  return this._fold(lmapper, rmapper);
-	};
-
-	Future.prototype.finally = function Future$finally(other){
-	  if(!isFuture(this)) throwInvalidContext('Future#finally', this);
-	  if(!isFuture(other)) throwInvalidFuture('Future#finally', 0, other);
-	  return this._finally(other);
-	};
-
-	Future.prototype.lastly = function Future$lastly(other){
-	  if(!isFuture(this)) throwInvalidContext('Future#lastly', this);
-	  if(!isFuture(other)) throwInvalidFuture('Future#lastly', 0, other);
-	  return this._finally(other);
-	};
-
 	Future.prototype.fork = function Future$fork(rej, res){
 	  if(!isFuture(this)) throwInvalidContext('Future#fork', this);
 	  if(!isFunction(rej)) throwInvalidArgument('Future#fork', 0, 'to be a Function', rej);
@@ -3988,7 +3744,14 @@ var Fluture = (function () {
 	Future.prototype.value = function Future$value(res){
 	  if(!isFuture(this)) throwInvalidContext('Future#value', this);
 	  if(!isFunction(res)) throwInvalidArgument('Future#value', 0, 'to be a Function', res);
-	  return this._interpret(Future$onCrash, Future$value$rej, res);
+	  var _this = this;
+	  return _this._interpret(Future$onCrash, function Future$value$rej(x){
+	    raise(error(
+	      'Future#value was called on a rejected Future\n' +
+	      '  Rejection: ' + sanctuaryShow(x) + '\n' +
+	      '  Future: ' + _this.toString()
+	    ));
+	  }, res);
 	};
 
 	Future.prototype.done = function Future$done(callback){
@@ -4015,63 +3778,7 @@ var Fluture = (function () {
 	};
 
 	Future.prototype._transform = function Future$transform(action){
-	  return new Sequence(this, cons(action, nil));
-	};
-
-	Future.prototype._ap = function Future$ap(other){
-	  return this._transform(new ApAction(other));
-	};
-
-	Future.prototype._parallelAp = function Future$pap(other){
-	  return this._transform(new ParallelApAction(other));
-	};
-
-	Future.prototype._map = function Future$map(mapper){
-	  return this._transform(new MapAction(mapper));
-	};
-
-	Future.prototype._bimap = function Future$bimap(lmapper, rmapper){
-	  return this._transform(new BimapAction(lmapper, rmapper));
-	};
-
-	Future.prototype._chain = function Future$chain(mapper){
-	  return this._transform(new ChainAction(mapper));
-	};
-
-	Future.prototype._mapRej = function Future$mapRej(mapper){
-	  return this._transform(new MapRejAction(mapper));
-	};
-
-	Future.prototype._chainRej = function Future$chainRej(mapper){
-	  return this._transform(new ChainRejAction(mapper));
-	};
-
-	Future.prototype._race = function Future$race(other){
-	  return isNever(other) ? this : this._transform(new RaceAction(other));
-	};
-
-	Future.prototype._both = function Future$both(other){
-	  return this._transform(new BothAction(other));
-	};
-
-	Future.prototype._and = function Future$and(other){
-	  return this._transform(new AndAction(other));
-	};
-
-	Future.prototype._or = function Future$or(other){
-	  return this._transform(new OrAction(other));
-	};
-
-	Future.prototype._swap = function Future$swap(){
-	  return this._transform(new SwapAction);
-	};
-
-	Future.prototype._fold = function Future$fold(lmapper, rmapper){
-	  return this._transform(new FoldAction(lmapper, rmapper));
-	};
-
-	Future.prototype._finally = function Future$finally(other){
-	  return this._transform(new FinallyAction(other));
+	  return new Transformation(this, cons(action, nil));
 	};
 
 	function Computation(computation){
@@ -4124,29 +3831,176 @@ var Fluture = (function () {
 	  return 'Future(' + showf(this._computation) + ')';
 	};
 
+	function Transformation(spawn, actions){
+	  this._spawn = spawn;
+	  this._actions = actions;
+	}
+
+	Transformation.prototype = Object.create(Future.prototype);
+
+	Transformation.prototype._transform = function Transformation$_transform(action){
+	  return new Transformation(this._spawn, cons(action, this._actions));
+	};
+
+	Transformation.prototype._interpret = function Transformation$interpret(rec, rej, res){
+
+	  //This is the primary queue of actions. All actions in here will be "cold",
+	  //meaning they haven't had the chance yet to run concurrent computations.
+	  var queue = new denque();
+
+	  //These combined variables define our current state.
+	  // future  = the future we are currently forking
+	  // action  = the action to be informed when the future settles
+	  // cancel  = the cancel function of the current future
+	  // settled = a boolean indicating whether a new tick should start
+	  // async   = a boolean indicating whether we are awaiting a result asynchronously
+	  var future, action, cancel = noop, stack = nil, settled, async = true, it;
+
+	  //Pushes a new action onto the stack. The stack is used to keep "hot"
+	  //actions. The last one added is the first one to process, because actions
+	  //are pushed right-to-left (see warmupActions).
+	  function pushStack(x){
+	    stack = cons(x, stack);
+	  }
+
+	  //Takes the leftmost action from the stack and returns it.
+	  function popStack(){
+	    var x = stack.head;
+	    stack = stack.tail;
+	    return x;
+	  }
+
+	  //This function is called with a future to use in the next tick.
+	  //Here we "flatten" the actions of another Sequence into our own actions,
+	  //this is the magic that allows for infinitely stack safe recursion because
+	  //actions like ChainAction will return a new Sequence.
+	  //If we settled asynchronously, we call drain() directly to run the next tick.
+	  function settle(m){
+	    settled = true;
+	    future = m;
+	    if(future._spawn){
+	      var tail = future._actions;
+	      while(tail !== nil){
+	        queue.unshift(tail.head);
+	        tail = tail.tail;
+	      }
+	      future = future._spawn;
+	    }
+	    if(async) drain();
+	  }
+
+	  //This function serves as a rejection handler for our current future.
+	  //It will tell the current action that the future rejected, and it will
+	  //settle the current tick with the action's answer to that.
+	  function rejected(x){
+	    settle(action.rejected(x));
+	  }
+
+	  //This function serves as a resolution handler for our current future.
+	  //It will tell the current action that the future resolved, and it will
+	  //settle the current tick with the action's answer to that.
+	  function resolved(x){
+	    settle(action.resolved(x));
+	  }
+
+	  //This function is passed into actions when they are "warmed up".
+	  //If the action decides that it has its result, without the need to await
+	  //anything else, then it can call this function to force "early termination".
+	  //When early termination occurs, all actions which were queued prior to the
+	  //terminator will be skipped. If they were already hot, they will also receive
+	  //a cancel signal so they can cancel their own concurrent computations, as
+	  //their results are no longer needed.
+	  function early(m, terminator){
+	    cancel();
+	    queue.clear();
+	    if(async && action !== terminator){
+	      action.cancel();
+	      while((it = popStack()) && it !== terminator) it.cancel();
+	    }
+	    settle(m);
+	  }
+
+	  //This will cancel the current Future, the current action, and all queued hot actions.
+	  function Sequence$cancel(){
+	    cancel();
+	    action && action.cancel();
+	    while(it = popStack()) it.cancel();
+	  }
+
+	  //This function is called when an exception is caught.
+	  function exception(e){
+	    Sequence$cancel();
+	    settled = true;
+	    queue.clear();
+	    future = never;
+	    rec(e);
+	  }
+
+	  //This function serves to kickstart concurrent computations.
+	  //Takes all actions from the cold queue *back-to-front*, and calls run() on
+	  //each of them, passing them the "early" function. If any of them settles (by
+	  //calling early()), we abort. After warming up all actions in the cold queue,
+	  //we warm up the current action as well.
+	  function warmupActions(){
+	    while(it = queue.pop()){
+	      it = it.run(early);
+	      if(settled) return;
+	      pushStack(it);
+	    }
+	    action = action.run(early);
+	  }
+
+	  //This function represents our main execution loop. By "tick", we've been
+	  //referring to the execution of one iteration in the while-loop below.
+	  function drain(){
+	    async = false;
+	    while(true){
+	      settled = false;
+	      if(action = queue.shift()){
+	        cancel = future._interpret(exception, rejected, resolved);
+	        if(!settled) warmupActions();
+	      }else if(action = popStack()){
+	        cancel = future._interpret(exception, rejected, resolved);
+	      }else break;
+	      if(settled) continue;
+	      async = true;
+	      return;
+	    }
+	    cancel = future._interpret(exception, rej, res);
+	  }
+
+	  //Start the execution loop.
+	  settle(this);
+
+	  //Return the cancellation function.
+	  return Sequence$cancel;
+
+	};
+
+	Transformation.prototype.toString = function Transformation$toString(){
+	  var str = '', tail = this._actions;
+
+	  while(tail !== nil){
+	    str = '.' + tail.head.toString() + str;
+	    tail = tail.tail;
+	  }
+
+	  return this._spawn.toString() + str;
+	};
+
 	function Crashed(error$$1){
 	  this._error = error$$1;
 	}
 
 	Crashed.prototype = Object.create(Future.prototype);
 
-	Crashed.prototype._ap = moop;
-	Crashed.prototype._parallelAp = moop;
-	Crashed.prototype._map = moop;
-	Crashed.prototype._bimap = moop;
-	Crashed.prototype._chain = moop;
-	Crashed.prototype._mapRej = moop;
-	Crashed.prototype._chainRej = moop;
-	Crashed.prototype._both = moop;
-	Crashed.prototype._or = moop;
-	Crashed.prototype._swap = moop;
-	Crashed.prototype._fold = moop;
-	Crashed.prototype._finally = moop;
-	Crashed.prototype._race = moop;
-
 	Crashed.prototype._interpret = function Crashed$interpret(rec){
 	  rec(this._error);
 	  return noop;
+	};
+
+	Crashed.prototype.toString = function Crashed$toString(){
+	  return 'Future(function crash(){ throw ' + sanctuaryShow(this._error) + ' })';
 	};
 
 	function Rejected(value){
@@ -4154,26 +4008,6 @@ var Fluture = (function () {
 	}
 
 	Rejected.prototype = Object.create(Future.prototype);
-
-	Rejected.prototype._ap = moop;
-	Rejected.prototype._parallelAp = moop;
-	Rejected.prototype._map = moop;
-	Rejected.prototype._chain = moop;
-	Rejected.prototype._race = moop;
-	Rejected.prototype._both = moop;
-	Rejected.prototype._and = moop;
-
-	Rejected.prototype._or = function Rejected$or(other){
-	  return other;
-	};
-
-	Rejected.prototype._finally = function Rejected$finally(other){
-	  return other._and(this);
-	};
-
-	Rejected.prototype._swap = function Rejected$swap(){
-	  return new Resolved(this._value);
-	};
 
 	Rejected.prototype._interpret = function Rejected$interpret(rec, rej){
 	  rej(this._value);
@@ -4198,32 +4032,6 @@ var Fluture = (function () {
 
 	Resolved.prototype = Object.create(Future.prototype);
 
-	Resolved.prototype._race = moop;
-	Resolved.prototype._mapRej = moop;
-	Resolved.prototype._or = moop;
-
-	Resolved.prototype._and = function Resolved$and(other){
-	  return other;
-	};
-
-	Resolved.prototype._both = function Resolved$both(other){
-	  var left = this._value;
-	  return other._map(function Resolved$both$mapper(right){
-	    return [left, right];
-	  });
-	};
-
-	Resolved.prototype._swap = function Resolved$swap(){
-	  return new Rejected(this._value);
-	};
-
-	Resolved.prototype._finally = function Resolved$finally(other){
-	  var value = this._value;
-	  return other._map(function Resolved$finally$mapper(){
-	    return value;
-	  });
-	};
-
 	Resolved.prototype._interpret = function Resolved$interpret(rec, rej, res){
 	  res(this._value);
 	  return noop;
@@ -4237,7 +4045,7 @@ var Fluture = (function () {
 	  return 'Future.of(' + sanctuaryShow(this._value) + ')';
 	};
 
-	function of(x){
+	function resolve(x){
 	  return new Resolved(x);
 	}
 
@@ -4246,23 +4054,6 @@ var Fluture = (function () {
 	}
 
 	Never.prototype = Object.create(Future.prototype);
-
-	Never.prototype._ap = moop;
-	Never.prototype._parallelAp = moop;
-	Never.prototype._map = moop;
-	Never.prototype._bimap = moop;
-	Never.prototype._chain = moop;
-	Never.prototype._mapRej = moop;
-	Never.prototype._chainRej = moop;
-	Never.prototype._both = moop;
-	Never.prototype._or = moop;
-	Never.prototype._swap = moop;
-	Never.prototype._fold = moop;
-	Never.prototype._finally = moop;
-
-	Never.prototype._race = function Never$race(other){
-	  return other;
-	};
 
 	Never.prototype._interpret = function Never$interpret(){
 	  return noop;
@@ -4322,280 +4113,221 @@ var Fluture = (function () {
 	var Action = {
 	  rejected: function Action$rejected(x){ this.cancel(); return new Rejected(x) },
 	  resolved: function Action$resolved(x){ this.cancel(); return new Resolved(x) },
-	  run: function Action$run(){ return this },
-	  cancel: function Action$cancel(){}
+	  run: moop,
+	  cancel: noop
 	};
 
-	function ApAction(other){ this.other = other; }
-	ApAction.prototype = Object.create(Action);
+	function nullaryActionToString(){
+	  return this.name + '()';
+	}
 
-	ApAction.prototype.resolved = function ApAction$resolved(f){
+	function defineNullaryAction(name$$1, prototype){
+	  var _name = '_' + name$$1;
+	  function NullaryAction(){}
+	  NullaryAction.prototype = Object.assign(Object.create(Action), prototype);
+	  NullaryAction.prototype.name = name$$1;
+	  NullaryAction.prototype.toString = nullaryActionToString;
+	  Future.prototype[name$$1] = function checkedNullaryTransformation(){
+	    if(!isFuture(this)) throwInvalidContext('Future#' + name$$1, this);
+	    return this[_name]();
+	  };
+	  Future.prototype[_name] = function uncheckedNullaryTransformation(){
+	    return this._transform(new NullaryAction);
+	  };
+	  return NullaryAction;
+	}
+
+	function mapperActionToString(){
+	  return this.name + '(' + showf(this.mapper) + ')';
+	}
+
+	function defineMapperAction(name$$1, prototype){
+	  var _name = '_' + name$$1;
+	  function MapperAction(mapper){ this.mapper = mapper; }
+	  MapperAction.prototype = Object.assign(Object.create(Action), prototype);
+	  MapperAction.prototype.name = name$$1;
+	  MapperAction.prototype.toString = mapperActionToString;
+	  Future.prototype[name$$1] = function checkedMapperTransformation(mapper){
+	    if(!isFuture(this)) throwInvalidContext('Future#' + name$$1, this);
+	    if(!isFunction(mapper)) throwInvalidArgument('Future#' + name$$1, 0, 'to be a Function', mapper);
+	    return this[_name](mapper);
+	  };
+	  Future.prototype[_name] = function uncheckedMapperTransformation(mapper){
+	    return this._transform(new MapperAction(mapper));
+	  };
+	  return MapperAction;
+	}
+
+	function bimapperActionToString(){
+	  return this.name + '(' + showf(this.lmapper) + ', ' + showf(this.rmapper) + ')';
+	}
+
+	function defineBimapperAction(name$$1, prototype){
+	  var _name = '_' + name$$1;
+	  function BimapperAction(lmapper, rmapper){ this.lmapper = lmapper; this.rmapper = rmapper; }
+	  BimapperAction.prototype = Object.assign(Object.create(Action), prototype);
+	  BimapperAction.prototype.name = name$$1;
+	  BimapperAction.prototype.toString = bimapperActionToString;
+	  Future.prototype[name$$1] = function checkedBimapperTransformation(lm, rm){
+	    if(!isFuture(this)) throwInvalidContext('Future#' + name$$1, this);
+	    if(!isFunction(lm)) throwInvalidArgument('Future#' + name$$1, 0, 'to be a Function', lm);
+	    if(!isFunction(rm)) throwInvalidArgument('Future#' + name$$1, 1, 'to be a Function', rm);
+	    return this[_name](lm, rm);
+	  };
+	  Future.prototype[_name] = function uncheckedBimapperTransformation(lm, rm){
+	    return this._transform(new BimapperAction(lm, rm));
+	  };
+	  return BimapperAction;
+	}
+
+	function otherActionToString(){
+	  return this.name + '(' + this.other.toString() + ')';
+	}
+
+	function defineOtherAction(name$$1, prototype){
+	  var _name = '_' + name$$1;
+	  function OtherAction(other){ this.other = other; }
+	  OtherAction.prototype = Object.assign(Object.create(Action), prototype);
+	  OtherAction.prototype.name = name$$1;
+	  OtherAction.prototype.toString = otherActionToString;
+	  Future.prototype[name$$1] = function checkedOtherTransformation(other){
+	    if(!isFuture(this)) throwInvalidContext('Future#' + name$$1, this);
+	    if(!isFuture(other)) throwInvalidFuture('Future#' + name$$1, 0, other);
+	    return this[_name](other);
+	  };
+	  Future.prototype[_name] = function uncheckedOtherTransformation(other){
+	    return this._transform(new OtherAction(other));
+	  };
+	  return OtherAction;
+	}
+
+	function defineParallelAction(name$$1, rec, rej, res, prototype){
+	  var ParallelAction = defineOtherAction(name$$1, prototype);
+	  ParallelAction.prototype.run = function ParallelAction$run(early){
+	    var eager = new Eager(this.other);
+	    var action = new ParallelAction(eager);
+	    function ParallelAction$early(m){ early(m, action); }
+	    action.cancel = eager._interpret(
+	      function ParallelAction$rec(x){ rec(ParallelAction$early, x); },
+	      function ParallelAction$rej(x){ rej(ParallelAction$early, x); },
+	      function ParallelAction$res(x){ res(ParallelAction$early, x); }
+	    );
+	    return action;
+	  };
+	  return ParallelAction;
+	}
+
+	function apActionHandler(f){
 	  return isFunction(f) ?
 	         this.other._map(function ApAction$resolved$mapper(x){ return f(x) }) :
 	         new Crashed(typeError(
-	           'Future#ap expects its first argument to be a Future of a Function'
-	           + '\n  Actual: Future.of(' + sanctuaryShow(f) + ')'
+	           'Future#' + this.name + ' expects its first argument to be a Future of a Function\n' +
+	           '  Actual: Future.of(' + sanctuaryShow(f) + ')'
 	         ));
-	};
+	}
 
-	ApAction.prototype.toString = function ApAction$toString(){
-	  return 'ap(' + this.other.toString() + ')';
-	};
-
-	function MapAction(mapper){ this.mapper = mapper; }
-	MapAction.prototype = Object.create(Action);
-
-	MapAction.prototype.resolved = function MapAction$resolved(x){
-	  var m;
-	  try{ m = new Resolved(this.mapper(x)); }catch(e){ m = new Crashed(e); }
-	  return m;
-	};
-
-	MapAction.prototype.toString = function MapAction$toString(){
-	  return 'map(' + showf(this.mapper) + ')';
-	};
-
-	function BimapAction(lmapper, rmapper){ this.lmapper = lmapper; this.rmapper = rmapper; }
-	BimapAction.prototype = Object.create(Action);
-
-	BimapAction.prototype.rejected = function BimapAction$rejected(x){
-	  var m;
-	  try{ m = new Rejected(this.lmapper(x)); }catch(e){ m = new Crashed(e); }
-	  return m;
-	};
-
-	BimapAction.prototype.resolved = function BimapAction$resolved(x){
-	  var m;
-	  try{ m = new Resolved(this.rmapper(x)); }catch(e){ m = new Crashed(e); }
-	  return m;
-	};
-
-	BimapAction.prototype.toString = function BimapAction$toString(){
-	  return 'bimap(' + showf(this.lmapper) + ', ' + showf(this.rmapper) + ')';
-	};
-
-	function ChainAction(mapper){ this.mapper = mapper; }
-	ChainAction.prototype = Object.create(Action);
-
-	ChainAction.prototype.resolved = function ChainAction$resolved(x){
+	function chainActionHandler(x){
 	  var m;
 	  try{ m = this.mapper(x); }catch(e){ return new Crashed(e) }
 	  return isFuture(m) ? m : new Crashed(invalidFuture(
-	    'Future#chain',
+	    'Future#' + this.name,
 	    'the function it\'s given to return a Future',
 	    m,
 	    '\n  From calling: ' + showf(this.mapper) + '\n  With: ' + sanctuaryShow(x)
 	  ));
-	};
+	}
 
-	ChainAction.prototype.toString = function ChainAction$toString(){
-	  return 'chain(' + showf(this.mapper) + ')';
-	};
-
-	function MapRejAction(mapper){ this.mapper = mapper; }
-	MapRejAction.prototype = Object.create(Action);
-
-	MapRejAction.prototype.rejected = function MapRejAction$rejected(x){
-	  var m;
-	  try{ m = new Rejected(this.mapper(x)); }catch(e){ m = new Crashed(e); }
-	  return m;
-	};
-
-	MapRejAction.prototype.toString = function MapRejAction$toString(){
-	  return 'mapRej(' + showf(this.mapper) + ')';
-	};
-
-	function ChainRejAction(mapper){ this.mapper = mapper; }
-	ChainRejAction.prototype = Object.create(Action);
-
-	ChainRejAction.prototype.rejected = function ChainRejAction$rejected(x){
-	  var m;
-	  try{ m = this.mapper(x); }catch(e){ return new Crashed(e) }
-	  return isFuture(m) ? m : new Crashed(invalidFuture(
-	    'Future#chainRej',
-	    'the function it\'s given to return a Future',
-	    m,
-	    '\n  From calling: ' + showf(this.mapper) + '\n  With: ' + sanctuaryShow(x)
-	  ));
-	};
-
-	ChainRejAction.prototype.toString = function ChainRejAction$toString(){
-	  return 'chainRej(' + showf(this.mapper) + ')';
-	};
-
-	function SwapAction(){}
-	SwapAction.prototype = Object.create(Action);
-
-	SwapAction.prototype.rejected = function SwapAction$rejected(x){
-	  return new Resolved(x);
-	};
-
-	SwapAction.prototype.resolved = function SwapAction$resolved(x){
-	  return new Rejected(x);
-	};
-
-	SwapAction.prototype.toString = function SwapAction$toString(){
-	  return 'swap()';
-	};
-
-	function FoldAction(lmapper, rmapper){ this.lmapper = lmapper; this.rmapper = rmapper; }
-	FoldAction.prototype = Object.create(Action);
-
-	FoldAction.prototype.rejected = function FoldAction$rejected(x){
-	  var m;
-	  try{ m = new Resolved(this.lmapper(x)); }catch(e){ m = new Crashed(e); }
-	  return m;
-	};
-
-	FoldAction.prototype.resolved = function FoldAction$resolved(x){
-	  var m;
-	  try{ m = new Resolved(this.rmapper(x)); }catch(e){ m = new Crashed(e); }
-	  return m;
-	};
-
-	FoldAction.prototype.toString = function FoldAction$toString(){
-	  return 'fold(' + showf(this.lmapper) + ', ' + showf(this.rmapper) + ')';
-	};
-
-	function FinallyAction(other){ this.other = other; }
-	FinallyAction.prototype = Object.create(Action);
-
-	FinallyAction.prototype.rejected = function FinallyAction$rejected(x){
-	  return this.other._and(new Rejected(x));
-	};
-
-	FinallyAction.prototype.resolved = function FinallyAction$resolved(x){
-	  return this.other._map(function FoldAction$resolved$mapper(){ return x });
-	};
-
-	FinallyAction.prototype.cancel = function FinallyAction$cancel(){
-	  this.other._interpret(noop, noop, noop)();
-	};
-
-	FinallyAction.prototype.toString = function FinallyAction$toString(){
-	  return 'finally(' + this.other.toString() + ')';
-	};
-
-	function AndAction(other){ this.other = other; }
-	AndAction.prototype = Object.create(Action);
-
-	AndAction.prototype.resolved = function AndAction$resolved(){
+	function returnOther(){
 	  return this.other;
-	};
-
-	AndAction.prototype.toString = function AndAction$toString(){
-	  return 'and(' + this.other.toString() + ')';
-	};
-
-	function OrAction(other){ this.other = other; }
-	OrAction.prototype = Object.create(Action);
-
-	OrAction.prototype.rejected = function OrAction$rejected(){
-	  return this.other;
-	};
-
-	OrAction.prototype.toString = function OrAction$toString(){
-	  return 'or(' + this.other.toString() + ')';
-	};
-
-	function ParallelApAction(other){ this.other = other; }
-	ParallelApAction.prototype = Object.create(ApAction.prototype);
-
-	ParallelApAction.prototype.run = function ParallelApAction$run(early){
-	  return new ParallelApActionState(early, this.other);
-	};
-
-	ParallelApAction.prototype.toString = function ParallelApAction$toString(){
-	  return '_parallelAp(' + this.other.toString() + ')';
-	};
-
-	function RaceAction(other){ this.other = other; }
-	RaceAction.prototype = Object.create(Action);
-
-	RaceAction.prototype.run = function RaceAction$run(early){
-	  return new RaceActionState(early, this.other);
-	};
-
-	RaceAction.prototype.toString = function RaceAction$toString(){
-	  return 'race(' + this.other.toString() + ')';
-	};
-
-	function BothAction(other){ this.other = other; }
-	BothAction.prototype = Object.create(Action);
-
-	BothAction.prototype.resolved = function BothAction$resolved(x){
-	  return this.other._map(function BothAction$resolved$mapper(y){ return [x, y] });
-	};
-
-	BothAction.prototype.run = function BothAction$run(early){
-	  return new BothActionState(early, this.other);
-	};
-
-	BothAction.prototype.toString = function BothAction$toString(){
-	  return 'both(' + this.other.toString() + ')';
-	};
-
-	function ParallelApActionState(early, other){
-	  var _this = this;
-	  _this.other = new Eager(other);
-	  _this.cancel = _this.other._interpret(
-	    function ParallelApActionState$rec(x){ early(new Crashed(x), _this); },
-	    function ParallelApActionState$rej(x){ early(new Rejected(x), _this); },
-	    noop
-	  );
 	}
 
-	ParallelApActionState.prototype = Object.create(ParallelApAction.prototype);
-
-	function RaceActionState(early, other){
-	  var _this = this;
-	  _this.other = new Eager(other);
-	  _this.cancel = _this.other._interpret(
-	    function RaceActionState$rec(x){ early(new Crashed(x), _this); },
-	    function RaceActionState$rej(x){ early(new Rejected(x), _this); },
-	    function RaceActionState$res(x){ early(new Resolved(x), _this); }
-	  );
+	function mapWith(mapper, create, value){
+	  var m;
+	  try{ m = create(mapper(value)); }catch(e){ m = new Crashed(e); }
+	  return m;
 	}
 
-	RaceActionState.prototype = Object.create(RaceAction.prototype);
-
-	function BothActionState(early, other){
-	  var _this = this;
-	  _this.other = new Eager(other);
-	  _this.cancel = _this.other._interpret(
-	    function BothActionState$rec(x){ early(new Crashed(x), _this); },
-	    function BothActionState$rej(x){ early(new Rejected(x), _this); },
-	    noop
-	  );
+	function mapRight(value){
+	  return mapWith(this.rmapper, resolve, value);
 	}
 
-	BothActionState.prototype = Object.create(BothAction.prototype);
-
-	function Sequence(spawn, actions){
-	  this._spawn = spawn;
-	  this._actions = actions;
+	function earlyCrash(early, x){
+	  early(new Crashed(x));
 	}
 
-	Sequence.prototype = Object.create(Future.prototype);
+	function earlyReject(early, x){
+	  early(new Rejected(x));
+	}
 
-	Sequence.prototype._transform = function Sequence$_transform(action){
-	  return new Sequence(this._spawn, cons(action, this._actions));
-	};
+	function earlyResolve(early, x){
+	  early(new Resolved(x));
+	}
 
-	Sequence.prototype._interpret = function Sequence$interpret(rec, rej, res){
-	  return interpretSequence(this, rec, rej, res);
-	};
+	defineOtherAction('ap', {
+	  resolved: apActionHandler
+	});
 
-	Sequence.prototype.toString = function Sequence$toString(){
-	  var str = '', tail = this._actions;
+	defineMapperAction('map', {
+	  resolved: function MapAction$resolved(x){ return mapWith(this.mapper, resolve, x) }
+	});
 
-	  while(tail !== nil){
-	    str = '.' + tail.head.toString() + str;
-	    tail = tail.tail;
+	defineBimapperAction('bimap', {
+	  resolved: mapRight,
+	  rejected: function BimapAction$rejected(x){ return mapWith(this.lmapper, reject, x) }
+	});
+
+	defineMapperAction('chain', {
+	  resolved: chainActionHandler
+	});
+
+	defineMapperAction('mapRej', {
+	  rejected: function MapRejAction$rejected(x){ return mapWith(this.mapper, reject, x) }
+	});
+
+	defineMapperAction('chainRej', {
+	  rejected: chainActionHandler
+	});
+
+	defineNullaryAction('swap', {
+	  rejected: Action.resolved,
+	  resolved: Action.rejected
+	});
+
+	defineBimapperAction('fold', {
+	  resolved: mapRight,
+	  rejected: function FoldAction$rejected(x){ return mapWith(this.lmapper, resolve, x) }
+	});
+
+	var finallyAction = {
+	  cancel: function FinallyAction$cancel(){ this.other._interpret(noop, noop, noop)(); },
+	  rejected: function FinallyAction$rejected(x){ return this.other._and(new Rejected(x)) },
+	  resolved: function FinallyAction$resolved(x){
+	    return this.other._map(function FoldAction$resolved$mapper(){ return x });
 	  }
-
-	  return this._spawn.toString() + str;
 	};
+
+	defineOtherAction('finally', finallyAction);
+	defineOtherAction('lastly', finallyAction);
+
+	defineOtherAction('and', {
+	  resolved: returnOther
+	});
+
+	defineOtherAction('or', {
+	  rejected: returnOther
+	});
+
+	defineParallelAction('_parallelAp', earlyCrash, earlyReject, noop, {
+	  resolved: apActionHandler
+	});
+
+	defineParallelAction('race', earlyCrash, earlyReject, earlyResolve, {});
+
+	defineParallelAction('both', earlyCrash, earlyReject, noop, {
+	  resolved: function BothAction$resolved(x){
+	    return this.other._map(function BothAction$resolved$mapper(y){ return [x, y] });
+	  }
+	});
 
 	function Next(x){
 	  return {done: false, value: x};
@@ -4609,62 +4341,10 @@ var Fluture = (function () {
 	  return isObject(x) && isBoolean(x.done);
 	}
 
-	var Undetermined = 0;
-	var Synchronous = 1;
-	var Asynchronous = 2;
-
-	function ChainRec(step, init){
-	  this._step = step;
-	  this._init = init;
-	}
-
-	ChainRec.prototype = Object.create(Future.prototype);
-
-	ChainRec.prototype._interpret = function ChainRec$interpret(rec, rej, res){
-
-	  var _step = this._step;
-	  var _init = this._init;
-	  var timing = Undetermined, cancel = noop, state = Next(_init);
-
-	  function resolved(it){
-	    state = it;
-	    timing = timing === Undetermined ? Synchronous : drain();
-	  }
-
-	  function drain(){
-	    while(!state.done){
-	      timing = Undetermined;
-
-	      try{
-	        var m = _step(Next, Done, state.value);
-	      }catch(e){
-	        rec(e);
-	        return;
-	      }
-
-	      cancel = m._interpret(rec, rej, resolved);
-
-	      if(timing !== Synchronous){
-	        timing = Asynchronous;
-	        return;
-	      }
-	    }
-
-	    res(state.value);
-	  }
-
-	  drain();
-
-	  return function Future$chainRec$cancel(){ cancel(); };
-
-	};
-
-	ChainRec.prototype.toString = function ChainRec$toString(){
-	  return 'Future.chainRec(' + showf(this._step) + ', ' + sanctuaryShow(this._init) + ')';
-	};
-
 	function chainRec(step, init){
-	  return new ChainRec(step, init);
+	  return resolve(Next(init))._chain(function chainRec$recur(o){
+	    return o.done ? resolve(o.value) : step(Next, Done, o.value)._chain(chainRec$recur);
+	  });
 	}
 
 	function ap$mval(mval, mfunc){
@@ -4895,24 +4575,12 @@ var Fluture = (function () {
 	  return m.extractRight();
 	}
 
-	function After$race(other){
-	  return typeof other._time === 'number'
-	       ? other._time < this._time ? other : this
-	       : Future.prototype._race.call(this, other);
-	}
-
 	function After(time, value){
 	  this._time = time;
 	  this._value = value;
 	}
 
 	After.prototype = Object.create(Future.prototype);
-
-	After.prototype._race = After$race;
-
-	After.prototype._swap = function After$swap(){
-	  return new RejectAfter(this._time, this._value);
-	};
 
 	After.prototype._interpret = function After$interpret(rec, rej, res){
 	  var id = setTimeout(res, this._time, this._value);
@@ -4933,12 +4601,6 @@ var Fluture = (function () {
 	}
 
 	RejectAfter.prototype = Object.create(Future.prototype);
-
-	RejectAfter.prototype._race = After$race;
-
-	RejectAfter.prototype._swap = function RejectAfter$swap(){
-	  return new After(this._time, this._value);
-	};
 
 	RejectAfter.prototype._interpret = function RejectAfter$interpret(rec, rej){
 	  var id = setTimeout(rej, this._time, this._value);
@@ -5531,6 +5193,10 @@ var Fluture = (function () {
 	  }
 	}
 
+	var Undetermined = 0;
+	var Synchronous = 1;
+	var Asynchronous = 2;
+
 	/*eslint consistent-return: 0, no-cond-assign: 0*/
 
 	function invalidIteration(o){
@@ -5916,7 +5582,7 @@ var Fluture = (function () {
 	  return new TryP(f);
 	}
 
-	Future.of = Future[FL.of] = of;
+	Future.of = Future[FL.of] = resolve;
 	Future.chainRec = Future[FL.chainRec] = chainRec;
 	Future.reject = reject;
 	Future.ap = ap;
@@ -5948,7 +5614,8 @@ var Fluture = (function () {
 		seq: seq,
 		isFuture: isFuture,
 		reject: reject,
-		of: of,
+		resolve: resolve,
+		of: resolve,
 		never: never,
 		isNever: isNever,
 		after: after,
