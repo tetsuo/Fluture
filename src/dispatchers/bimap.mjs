@@ -1,11 +1,12 @@
-import Z from 'sanctuary-type-classes';
+import {isBifunctor} from '../internal/predicates';
+import {FL} from '../internal/const';
 import {partial1, partial2} from '../internal/utils';
 import {isFunction} from '../internal/predicates';
 import {throwInvalidArgument} from '../internal/throw';
 
 function bimap$lmapper$rmapper(lmapper, rmapper, m){
-  if(!Z.Bifunctor.test(m)) throwInvalidArgument('Future.bimap', 2, 'be a Bifunctor', m);
-  return Z.bimap(lmapper, rmapper, m);
+  if(!isBifunctor(m)) throwInvalidArgument('Future.bimap', 2, 'be a Bifunctor', m);
+  return m[FL.bimap](lmapper, rmapper);
 }
 
 function bimap$lmapper(lmapper, rmapper, m){

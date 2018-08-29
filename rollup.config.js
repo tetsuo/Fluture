@@ -4,7 +4,6 @@ var dependencies = {
   'concurrify': 'concurrify',
   'denque': 'Denque',
   'sanctuary-show': 'sanctuaryShow',
-  'sanctuary-type-classes': 'sanctuaryTypeClasses',
   'sanctuary-type-identifiers': 'sanctuaryTypeIdentifiers'
 };
 

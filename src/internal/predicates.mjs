@@ -1,3 +1,5 @@
+import {FL} from './const';
+
 export function isFunction(f){
   return typeof f === 'function';
 }
@@ -28,4 +30,28 @@ export function isIterator(i){
 
 export function isArray(x){
   return Array.isArray(x);
+}
+
+export function hasMethod(method, x){
+  return x != null && isFunction(x[method]);
+}
+
+export function isFunctor(x){
+  return hasMethod(FL.map, x);
+}
+
+export function isAlt(x){
+  return isFunctor(x) && hasMethod(FL.alt, x);
+}
+
+export function isApply(x){
+  return isFunctor(x) && hasMethod(FL.ap, x);
+}
+
+export function isBifunctor(x){
+  return isFunctor(x) && hasMethod(FL.bimap, x);
+}
+
+export function isChain(x){
+  return isApply(x) && hasMethod(FL.chain, x);
 }

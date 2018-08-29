@@ -279,20 +279,15 @@ The concrete types you will encounter throughout this documentation:
 
 #### Type classes
 
-Some signatures contain "constrained type variables". These constraints are
-expressed by means of [type classes][Guide:constraints], specifically those defined by
-[Fantasy Land][FL] and verified by [Sanctuary Type Classes][Z]:
+Some signatures contain [constrained type variables][Guide:constraints].
+Generally, these constraints express that some value must conform to a
+[Fantasy Land][FL]-specified interface.
 
-- [**Functor**][Z:Functor] - Values which conform to the
-  [Fantasy Land Functor specification][FL:functor].
-- [**Bifunctor**][Z:Bifunctor] - Values which conform to the
-  [Fantasy Land Bifunctor specification][FL:bifunctor].
-- [**Chain**][Z:Chain] - Values which conform to the
-  [Fantasy Land Chain specification][FL:chain].
-- [**Apply**][Z:Apply] - Values which conform to the
-  [Fantasy Land Apply specification][FL:apply].
-- [**Alt**][Z:Alt] - Values which conform to the
-  [Fantasy Land Alt specification][FL:alt].
+- **Functor** - [Fantasy Land Functor][FL:functor] conformant values.
+- **Bifunctor** - [Fantasy Land Bifunctor][FL:bifunctor] conformant values.
+- **Chain** - [Fantasy Land Chain][FL:chain] conformant values.
+- **Apply** - [Fantasy Land Apply][FL:apply] conformant values.
+- **Alt** - [Fantasy Land Alt][FL:alt] conformant values.
 
 ### Cancellation
 
@@ -1763,13 +1758,6 @@ it is **not** the correct way to [consume a Future](#consuming-futures).
 [SS]:                   https://github.com/sanctuary-js/sanctuary-show
 [STI]:                  https://github.com/sanctuary-js/sanctuary-type-identifiers
 [FST]:                  https://github.com/fluture-js/fluture-sanctuary-types
-
-[Z]:                    https://github.com/sanctuary-js/sanctuary-type-classes#readme
-[Z:Functor]:            https://github.com/sanctuary-js/sanctuary-type-classes#Functor
-[Z:Bifunctor]:          https://github.com/sanctuary-js/sanctuary-type-classes#Bifunctor
-[Z:Chain]:              https://github.com/sanctuary-js/sanctuary-type-classes#Chain
-[Z:Apply]:              https://github.com/sanctuary-js/sanctuary-type-classes#Apply
-[Z:Alt]:                https://github.com/sanctuary-js/sanctuary-type-classes#Alt
 
 [$]:                    https://github.com/sanctuary-js/sanctuary-def
 
