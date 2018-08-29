@@ -3,7 +3,7 @@ export function isFunction(f){
 }
 
 export function isThenable(m){
-  return m instanceof Promise || Boolean(m) && isFunction(m.then);
+  return m instanceof Promise || m != null && isFunction(m.then);
 }
 
 export function isBoolean(f){
