@@ -456,13 +456,17 @@ Future(function computation(reject, resolve){
 <details><summary><code>of :: b -> Future a b</code></summary>
 
 ```hs
-of        :: b -> Future a b
-Future.of :: b -> Future a b
+of             :: b -> Future a b
+resolve        :: b -> Future a b
+Future.of      :: b -> Future a b
+Future.resolve :: b -> Future a b
 ```
 
 </details>
 
 Creates a Future which immediately resolves with the given value.
+
+This function has an alias `resolve`.
 
 ```js
 var eventualThing = Future.of('world');
