@@ -6,7 +6,7 @@ import {FL} from './src/internal/const';
 import {chainRec} from './src/chain-rec';
 import {ap, map, bimap, chain, race, alt} from './src/dispatchers/index';
 
-Future.of = Future[FL.of] = resolve;
+Future.resolve = Future.of = Future[FL.of] = resolve;
 Future.chainRec = Future[FL.chainRec] = chainRec;
 Future.reject = reject;
 Future.ap = ap;

@@ -279,6 +279,9 @@ declare module 'fluture' {
   /** Create a Future with the given resolution value. See https://github.com/fluture-js/Fluture#of */
   export function of<L, R>(value: R): FutureInstance<L, R>
 
+  /** Create a Future with the given resolution value. See https://github.com/fluture-js/Fluture#of */
+  export function resolve<L, R>(value: R): FutureInstance<L, R>
+
   /** Logical or for Futures. See https://github.com/fluture-js/Fluture#or */
   export function or<L, R>(left: FutureInstance<L, R>, right: FutureInstance<L, R>): FutureInstance<L, R>
   export function or<L, R>(left: FutureInstance<L, R>): (right: FutureInstance<L, R>) => FutureInstance<L, R>
@@ -335,7 +338,8 @@ declare module 'fluture' {
     bimap: typeof bimap
     chain: typeof chain
     map: typeof map
-    of: typeof of
+    of: typeof resolve
+    resolve: typeof resolve
     reject: typeof reject
 
     '@@type': string
