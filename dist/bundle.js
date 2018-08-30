@@ -1,5 +1,5 @@
 /**
- * Fluture bundled; version 9.0.2
+ * Fluture bundled; version 10.0.0
  */
 
 var Fluture = (function () {
@@ -3111,11 +3111,12 @@ var Fluture = (function () {
 	}
 
 	var FL = {
-	  map: 'fantasy-land/map',
+	  alt: 'fantasy-land/alt',
+	  ap: 'fantasy-land/ap',
 	  bimap: 'fantasy-land/bimap',
 	  chain: 'fantasy-land/chain',
 	  chainRec: 'fantasy-land/chainRec',
-	  ap: 'fantasy-land/ap',
+	  map: 'fantasy-land/map',
 	  of: 'fantasy-land/of',
 	  zero: 'fantasy-land/zero'
 	};
@@ -3653,7 +3654,7 @@ var Fluture = (function () {
 	}
 
 	function isThenable(m){
-	  return m instanceof Promise || Boolean(m) && isFunction(m.then);
+	  return m instanceof Promise || m != null && isFunction(m.then);
 	}
 
 	function isBoolean(f){
@@ -3678,6 +3679,30 @@ var Fluture = (function () {
 
 	function isArray(x){
 	  return Array.isArray(x);
+	}
+
+	function hasMethod(method, x){
+	  return x != null && isFunction(x[method]);
+	}
+
+	function isFunctor(x){
+	  return hasMethod(FL.map, x);
+	}
+
+	function isAlt(x){
+	  return isFunctor(x) && hasMethod(FL.alt, x);
+	}
+
+	function isApply(x){
+	  return isFunctor(x) && hasMethod(FL.ap, x);
+	}
+
+	function isBifunctor(x){
+	  return isFunctor(x) && hasMethod(FL.bimap, x);
+	}
+
+	function isChain(x){
+	  return isApply(x) && hasMethod(FL.chain, x);
 	}
 
 	/* eslint no-param-reassign:0 */
@@ -4299,11 +4324,8 @@ var Fluture = (function () {
 	});
 
 	var finallyAction = {
-	  cancel: function FinallyAction$cancel(){ this.other._interpret(noop, noop, noop)(); },
 	  rejected: function FinallyAction$rejected(x){ return this.other._and(new Rejected(x)) },
-	  resolved: function FinallyAction$resolved(x){
-	    return this.other._map(function FoldAction$resolved$mapper(){ return x });
-	  }
+	  resolved: function FinallyAction$resolved(x){ return this.other._and(new Resolved(x)) }
 	};
 
 	defineOtherAction('finally', finallyAction);
@@ -4348,30 +4370,30 @@ var Fluture = (function () {
 	}
 
 	function ap$mval(mval, mfunc){
-	  if(!sanctuaryTypeClasses.Apply.test(mfunc)) throwInvalidArgument('Future.ap', 1, 'be an Apply', mfunc);
-	  return sanctuaryTypeClasses.ap(mval, mfunc);
+	  if(!isApply(mfunc)) throwInvalidArgument('Future.ap', 1, 'be an Apply', mfunc);
+	  return mfunc[FL.ap](mval);
 	}
 
 	function ap(mval, mfunc){
-	  if(!sanctuaryTypeClasses.Apply.test(mval)) throwInvalidArgument('Future.ap', 0, 'be an Apply', mval);
+	  if(!isApply(mval)) throwInvalidArgument('Future.ap', 0, 'be an Apply', mval);
 	  if(arguments.length === 1) return partial1(ap$mval, mval);
 	  return ap$mval(mval, mfunc);
 	}
 
 	function alt$left(left, right){
-	  if(!sanctuaryTypeClasses.Alt.test(right)) throwInvalidArgument('alt', 1, 'be an Alt', right);
-	  return sanctuaryTypeClasses.alt(left, right);
+	  if(!isAlt(right)) throwInvalidArgument('alt', 1, 'be an Alt', right);
+	  return left[FL.alt](right);
 	}
 
 	function alt(left, right){
-	  if(!sanctuaryTypeClasses.Alt.test(left)) throwInvalidArgument('alt', 0, 'be an Alt', left);
+	  if(!isAlt(left)) throwInvalidArgument('alt', 0, 'be an Alt', left);
 	  if(arguments.length === 1) return partial1(alt$left, left);
 	  return alt$left(left, right);
 	}
 
 	function map$mapper(mapper, m){
-	  if(!sanctuaryTypeClasses.Functor.test(m)) throwInvalidArgument('Future.map', 1, 'be a Functor', m);
-	  return sanctuaryTypeClasses.map(mapper, m);
+	  if(!isFunctor(m)) throwInvalidArgument('Future.map', 1, 'be a Functor', m);
+	  return m[FL.map](mapper);
 	}
 
 	function map(mapper, m){
@@ -4381,8 +4403,8 @@ var Fluture = (function () {
 	}
 
 	function bimap$lmapper$rmapper(lmapper, rmapper, m){
-	  if(!sanctuaryTypeClasses.Bifunctor.test(m)) throwInvalidArgument('Future.bimap', 2, 'be a Bifunctor', m);
-	  return sanctuaryTypeClasses.bimap(lmapper, rmapper, m);
+	  if(!isBifunctor(m)) throwInvalidArgument('Future.bimap', 2, 'be a Bifunctor', m);
+	  return m[FL.bimap](lmapper, rmapper);
 	}
 
 	function bimap$lmapper(lmapper, rmapper, m){
@@ -4399,8 +4421,8 @@ var Fluture = (function () {
 	}
 
 	function chain$chainer(chainer, m){
-	  if(!sanctuaryTypeClasses.Chain.test(m)) throwInvalidArgument('Future.chain', 1, 'be a Chain', m);
-	  return sanctuaryTypeClasses.chain(chainer, m);
+	  if(!isChain(m)) throwInvalidArgument('Future.chain', 1, 'be a Chain', m);
+	  return m[FL.chain](chainer);
 	}
 
 	function chain(chainer, m){
@@ -5582,7 +5604,7 @@ var Fluture = (function () {
 	  return new TryP(f);
 	}
 
-	Future.of = Future[FL.of] = resolve;
+	Future.resolve = Future.of = Future[FL.of] = resolve;
 	Future.chainRec = Future[FL.chainRec] = chainRec;
 	Future.reject = reject;
 	Future.ap = ap;

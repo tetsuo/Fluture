@@ -1,6 +1,6 @@
 {
   "name": "fluture",
-  "version": "9.0.2",
+  "version": "10.0.0",
   "description": "FantasyLand compliant (monadic) alternative to Promises",
   "main": "index",
   "types": "index.d.ts",
