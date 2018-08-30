@@ -49,11 +49,6 @@ var testInstance = function (fin){
       setTimeout(done, 25);
     });
 
-    it('immediately runs and cancels the disposal Future when cancelled early', function (done){
-      var cancel = fin(F.resolvedSlow, Future(function (){ return function (){ return done() } }))._interpret(done, U.failRej, U.failRes);
-      setTimeout(cancel, 10);
-    });
-
   });
 
 };
