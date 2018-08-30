@@ -617,11 +617,8 @@ defineBimapperAction('fold', {
 });
 
 var finallyAction = {
-  cancel: function FinallyAction$cancel(){ this.other._interpret(noop, noop, noop)() },
   rejected: function FinallyAction$rejected(x){ return this.other._and(new Rejected(x)) },
-  resolved: function FinallyAction$resolved(x){
-    return this.other._map(function FoldAction$resolved$mapper(){ return x });
-  }
+  resolved: function FinallyAction$resolved(x){ return this.other._and(new Resolved(x)) }
 };
 
 defineOtherAction('finally', finallyAction);
