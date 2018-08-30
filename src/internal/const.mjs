@@ -1,9 +1,10 @@
 export var FL = {
-  map: 'fantasy-land/map',
+  alt: 'fantasy-land/alt',
+  ap: 'fantasy-land/ap',
   bimap: 'fantasy-land/bimap',
   chain: 'fantasy-land/chain',
   chainRec: 'fantasy-land/chainRec',
-  ap: 'fantasy-land/ap',
+  map: 'fantasy-land/map',
   of: 'fantasy-land/of',
   zero: 'fantasy-land/zero'
 };

@@ -26,7 +26,9 @@
     "camelcase": 0,
     "indent": 0,
     "func-name-matching": 0,
-    "no-console": 2
+    "no-console": 2,
+    "eqeqeq": [2, "smart"],
+    "no-eq-null": 0
   },
   "overrides": [
     {

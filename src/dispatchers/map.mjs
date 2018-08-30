@@ -1,11 +1,12 @@
-import Z from 'sanctuary-type-classes';
+import {isFunctor} from '../internal/predicates';
+import {FL} from '../internal/const';
 import {partial1} from '../internal/utils';
 import {isFunction} from '../internal/predicates';
 import {throwInvalidArgument} from '../internal/throw';
 
 function map$mapper(mapper, m){
-  if(!Z.Functor.test(m)) throwInvalidArgument('Future.map', 1, 'be a Functor', m);
-  return Z.map(mapper, m);
+  if(!isFunctor(m)) throwInvalidArgument('Future.map', 1, 'be a Functor', m);
+  return m[FL.map](mapper);
 }
 
 export function map(mapper, m){
