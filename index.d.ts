@@ -57,6 +57,9 @@ declare module 'fluture' {
 
   export interface FutureInstance<L, R> {
 
+    /** Apply a function to this Future. See https://github.com/fluture-js/Fluture#pipe */
+    pipe<T>(fn: (future: FutureInstance<L, R>) => T): T
+
     /** Logical and for Futures. See https://github.com/fluture-js/Fluture#and */
     and<RB>(right: FutureInstance<L, RB>): FutureInstance<L, RB>
 

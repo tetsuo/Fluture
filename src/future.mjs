@@ -44,6 +44,12 @@ Future.prototype[FL.chain] = function Future$FL$chain(mapper){
   return this._chain(mapper);
 };
 
+Future.prototype.pipe = function Future$pipe(f){
+  if(!isFuture(this)) throwInvalidContext('Future#pipe', this);
+  if(!isFunction(f)) throwInvalidArgument('Future#pipe', 0, 'to be a Function', f);
+  return f(this);
+};
+
 Future.prototype.fork = function Future$fork(rej, res){
   if(!isFuture(this)) throwInvalidContext('Future#fork', this);
   if(!isFunction(rej)) throwInvalidArgument('Future#fork', 0, 'to be a Function', rej);
