@@ -284,6 +284,31 @@ describe('Future', function (){
 
   });
 
+  describe('#pipe()', function (){
+
+    it('throws when invoked out of context', function (){
+      var f = function (){ return F.mock.pipe.call(null, U.noop) };
+      expect(f).to.throw(TypeError, /Future/);
+    });
+
+    it('throws TypeError when not given a function', function (){
+      var xs = [NaN, {}, [], 1, 'a', new Date, undefined, null];
+      var fs = xs.map(function (x){ return function (){ return F.mock.pipe(x) } });
+      fs.forEach(function (f){ return expect(f).to.throw(TypeError, /Future/) });
+    });
+
+    it('calls the given function on itself', function (){
+      var guard = {};
+      var actual = F.mock.pipe(f);
+      expect(actual).to.equal(guard);
+      function f (m){
+        expect(m).to.equal(F.mock);
+        return guard;
+      }
+    });
+
+  });
+
   describe('#fork()', function (){
 
     it('throws when invoked out of context', function (){

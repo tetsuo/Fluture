@@ -169,6 +169,7 @@ for sponsoring the project.
 
 <details><summary>Transforming and combining Futures</summary>
 
+- [`pipe`: Apply a function to a Future in a fluent method chain](#pipe)
 - [`map`: Synchronously process the success value in a Future](#map)
 - [`bimap`: Synchronously process the success or failure value in a Future](#bimap)
 - [`chain`: Asynchronously process the success value in a Future](#chain)
@@ -208,6 +209,7 @@ for sponsoring the project.
 <details><summary>Resource management and utilities</summary>
 
 - [`hook`: Safely create and dispose resources](#hook)
+- [`pipe`: Apply a function to a Future in a fluent method chain](#pipe)
 - [`cache`: Cache a Future so that it can be forked multiple times](#cache)
 - [`isFuture`: Determine whether a value is a Fluture compatible Future](#isfuture)
 - [`never`: A Future that never settles](#never)
@@ -1604,6 +1606,30 @@ will be ignored.
 
 ### Utility functions
 
+#### pipe
+
+<details><summary><code>pipe :: Future a b ~> (Future a b -> c) -> c</code></summary>
+
+```hs
+pipe :: Future a b ~> (Future a b -> c) -> c
+```
+
+</details>
+
+A method available on all Futures to allow arbitrary functions over Futures to
+be included in a fluent-style method chain.
+
+This method is particularly useful in combination with functions derived from
+Fantasy Land implementations, for example [`S.join`][S:join]:
+
+```js
+Future.of(42)
+.map(Future.resolve)
+.pipe(S.join)
+.value(console.log);
+//> 42
+```
+
 #### cache
 
 <details><summary><code>cache :: Future a b -> Future a b</code></summary>
@@ -1758,6 +1784,7 @@ it is **not** the correct way to [consume a Future](#consuming-futures).
 [S:Either]:             https://sanctuary.js.org/#either-type
 [S:is]:                 https://sanctuary.js.org/#is
 [S:create]:             https://sanctuary.js.org/#create
+[S:join]:               https://sanctuary.js.org/#join
 
 [SS]:                   https://github.com/sanctuary-js/sanctuary-show
 [STI]:                  https://github.com/sanctuary-js/sanctuary-type-identifiers
