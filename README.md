@@ -1801,6 +1801,7 @@ it is **not** the correct way to [consume a Future](#consuming-futures).
 [concurrify]:           https://github.com/fluture-js/concurrify
 
 [Rollup]:               https://rollupjs.org/
+[esm]:                  https://github.com/standard-things/esm
 
 [Guide:HM]:             https://drboolean.gitbooks.io/mostly-adequate-guide/content/ch7.html
 [Guide:constraints]:    https://drboolean.gitbooks.io/mostly-adequate-guide/content/ch7.html#constraints
