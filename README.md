@@ -45,13 +45,38 @@ For more information:
 
 > `npm install --save fluture`
 
-Fluture is written for EcmaScript version 5.
-
-For older environments you may need to polyfill one or more of the following
+On older environments you may need to polyfill one or more of the following
 functions: [`Object.create`][JS:Object.create],
 [`Object.assign`][JS:Object.assign] and [`Array.isArray`][JS:Array.isArray].
 
+### EcmaScript Module
+
+Fluture is written as modular JavaScript (`.mjs`). It can be loaded directly
+by Node 9 and up using `--experimental-modules`, with the [esm loader][esm], or
+with TypeScript (typings included).
+
+Besides the module system, no other ES5+ features are used in Fluture's source,
+which means that no transpilation is needed after concatenation.
+
+```js
+import {readFile} from 'fs';
+import {node, encase} from 'fluture';
+
+var getPackageName = file =>
+  node(done => { readFile(file, 'utf8', done) })
+  .chain(encase(JSON.parse))
+  .map(x => x.name);
+
+getPackageName('package.json')
+.fork(console.error, console.log);
+//> "fluture"
+```
+
 ### CommonJS Module
+
+Although the Fluture source uses the EcmaScript module system, versions
+downloaded from the npm registry include a CommonJS build, which will
+automatically be used when loading Fluture with `require`.
 
 <!-- eslint-disable no-var -->
 <!-- eslint-disable padding-line-between-statements -->
@@ -64,25 +89,6 @@ var getPackageName = function(file){
   .chain(Future.encase(JSON.parse))
   .map(function(x){ return x.name });
 };
-
-getPackageName('package.json')
-.fork(console.error, console.log);
-//> "fluture"
-```
-
-### EcmaScript Module
-
-The `package.json` sets a `module`-field for build-tools like [Rollup][]. The
-module version also has TypeScript definitions.
-
-```js
-import {readFile} from 'fs';
-import {node, encase} from 'fluture';
-
-var getPackageName = file =>
-  node(done => { readFile(file, 'utf8', done) })
-  .chain(encase(JSON.parse))
-  .map(x => x.name);
 
 getPackageName('package.json')
 .fork(console.error, console.log);
