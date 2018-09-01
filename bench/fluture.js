@@ -83,6 +83,10 @@ module.exports = require('sanctuary-benchmark')(Old, New, config, {
     {}, ({of, chain}) => chain(plus1, of(1))
   ],
 
+  'run.construct.Future': [
+    {}, ({Future}) => run(Future((rej, res) => res(1)))
+  ],
+
   'run.construct.parallel.empty': [
     {}, ({parallel}) => run(parallel(1, []))
   ],
