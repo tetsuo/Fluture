@@ -313,7 +313,7 @@ The cancellation signal travels all the way back to the source (with the
 exception of cached Futures - see [`cache`](#cache)), allowing all parties
 along the way to clean up.
 
-With the [`Future` constructor](#future), we can provide a the cancellation
+With the [`Future` constructor](#future), we can provide a custom cancellation
 handler by returning it from the computation. Let's see what this looks like:
 
 ```js
