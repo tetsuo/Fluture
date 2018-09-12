@@ -1215,7 +1215,7 @@ Future.prototype.forkCatch :: Future a b ~> (Error -> Any,     a -> Any,     b -
 </details>
 
 An advanced version of [fork](#fork) that allows us to recover in the event
-that an error was `throw`n during the executation of the computation.
+that an error was `throw`n during the execution of the computation.
 
 The recovery function will always be called with an instance of Error,
 independent of what was thrown.
