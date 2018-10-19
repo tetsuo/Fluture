@@ -1,5 +1,5 @@
 /**
- * Fluture bundled; version 10.1.0
+ * Fluture bundled; version 10.1.1
  */
 
 var Fluture = (function () {
@@ -1265,6 +1265,10 @@ var Fluture = (function () {
 	var nil = {head: null};
 	nil.tail = nil;
 
+	function isNil(list){
+	  return list.tail === list;
+	}
+
 	function cons(head, tail){
 	  return {head: head, tail: tail};
 	}
@@ -1466,7 +1470,7 @@ var Fluture = (function () {
 	    future = m;
 	    if(future._spawn){
 	      var tail = future._actions;
-	      while(tail !== nil){
+	      while(!isNil(tail)){
 	        queue.unshift(tail.head);
 	        tail = tail.tail;
 	      }
@@ -1566,7 +1570,7 @@ var Fluture = (function () {
 	Transformation.prototype.toString = function Transformation$toString(){
 	  var str = '', tail = this._actions;
 
-	  while(tail !== nil){
+	  while(!isNil(tail)){
 	    str = '.' + tail.head.toString() + str;
 	    tail = tail.tail;
 	  }
