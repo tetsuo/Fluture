@@ -4,7 +4,7 @@ import Denque from 'denque';
 import {show, showf, noop, moop, raise} from './internal/utils';
 import {isFunction} from './internal/predicates';
 import {FL, $$type} from './internal/const';
-import {nil, cons} from './internal/list';
+import {nil, cons, isNil} from './internal/list';
 import type from 'sanctuary-type-identifiers';
 import {error, typeError, invalidFuture, valueToError} from './internal/error';
 import {throwInvalidArgument, throwInvalidContext, throwInvalidFuture} from './internal/throw';
@@ -204,7 +204,7 @@ Transformation.prototype._interpret = function Transformation$interpret(rec, rej
     future = m;
     if(future._spawn){
       var tail = future._actions;
-      while(tail !== nil){
+      while(!isNil(tail)){
         queue.unshift(tail.head);
         tail = tail.tail;
       }
@@ -304,7 +304,7 @@ Transformation.prototype._interpret = function Transformation$interpret(rec, rej
 Transformation.prototype.toString = function Transformation$toString(){
   var str = '', tail = this._actions;
 
-  while(tail !== nil){
+  while(!isNil(tail)){
     str = '.' + tail.head.toString() + str;
     tail = tail.tail;
   }
