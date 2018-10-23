@@ -27,7 +27,7 @@ Some of the features provided by Fluture include:
 * [Resource management utilities](#resource-management).
 * [Stack safe composition and recursion](#stack-safety).
 * [Integration](#sanctuary) with [Sanctuary][S].
-* A pleasant debugging experience through informative error messages.
+* [A pleasant debugging experience](#debugging).
 
 For more information:
 
@@ -131,6 +131,7 @@ for sponsoring the project.
 - [How to read the type signatures](#type-signatures)
 - [How cancellation works](#cancellation)
 - [On stack safety](#stack-safety)
+- [Debugging with Fluture](#debugging)
 - [Usage with Sanctuary](#sanctuary)
 - [Using multiple versions of Fluture](#casting-futures)
 
@@ -208,13 +209,21 @@ for sponsoring the project.
 
 </details>
 
-<details><summary>Resource management and utilities</summary>
+<details><summary>Resource management</summary>
 
 - [`hook`: Safely create and dispose resources](#hook)
+- [`finally`: Run a Future after the previous settles](#finally)
+
+</details>
+
+<details><summary>Other utilities</summary>
+
 - [`pipe`: Apply a function to a Future in a fluent method chain](#pipe)
 - [`cache`: Cache a Future so that it can be forked multiple times](#cache)
 - [`isFuture`: Determine whether a value is a Fluture compatible Future](#isfuture)
 - [`never`: A Future that never settles](#never)
+- [`debugMode`: Configure Fluture's debug mode](#debugmode)
+- [`context`: The debugging context of a Future instance](#context)
 
 </details>
 
@@ -280,6 +289,9 @@ The concrete types you will encounter throughout this documentation:
 - **Iterator** - Objects with `next`-methods which conform to the [Iterator protocol][3].
 - **Cancel** - The nullary [cancellation](#cancellation) functions returned from computations.
 - **Catchable e f** - A function `f` which may throw an exception `e`.
+- **List** - Fluture's internal linked-list structure: `{ head :: Any, tail :: List }`.
+- **Context** - Fluture's internal debugging context object:
+  `{ tag :: String, name :: String, stack :: String }`.
 
 #### Type classes
 
@@ -378,6 +390,44 @@ m.fork(console.error, console.log);
 
 To learn more about memory and stack usage under different types of recursion,
 see (or execute) [`scripts/test-mem`](scripts/test-mem).
+
+### Debugging
+
+First and foremost, Fluture type-checks all of its input and throws TypeErrors
+when incorrect input is provided. The messages they carry are designed to
+provide enough insight to figure out what went wrong.
+
+Secondly, Fluture catches exceptions that are thrown asynchronously, and
+exposes them to you in one of two ways:
+
+1. By throwing an Error when it happens.
+2. By calling your [exception handler](#forkcatch) with an Error.
+
+The original exception isn't used because it might have been any value.
+Instead, a regular JavaScript Error instance whose properties are based on the
+original exception is created. Its properties are as follows:
+
+- `name`: Always just `"Error"`.
+- `message`: The original error message, or a message describing the value.
+- `reason`: The original value that was caught by Fluture.
+- `context`: A linked list of "context" objects. This is used to create the
+  `stack` property, and you generally don't need to look at it. If debug mode
+  is not enabled, the list is always empty.
+- `stack`: The stack trace of the original exception if it had one, or the
+  Error's own stack trace otherwise. If debug mode (see below) is enabled,
+  additional stack traces from the steps leading up to the crash are included.
+- `future`: The instance of [`Future`](#future) that was being
+  [consumed](#consuming-futures) when the exception happened. Often printing it
+  as a String can yield useful information. You can also try to consume it in
+  isolation to better identify what's going wrong.
+
+Finally, as mentioned, Fluture has a [debug mode](#debugmode) wherein
+additional contextual information across multiple JavaScript ticks is
+collected, included as an extended "async stack trace" on Errors, and
+[exposed on Future instances](#context).
+
+Debug mode can have a significant impact on performance, and uses up memory,
+so I would advise against using it in production.
 
 ### Sanctuary
 
@@ -1228,11 +1278,13 @@ However, we also forego the certainty that our program will be in a valid state
 after this happens. The more isolated the memory consumed by the particular
 computation was, the more certain we will be that recovery is safe.
 
+See [Debugging](#debugging) for information about the Error object that is
+recovered.
+
 ```js
 var fut = Future.after(300, null).map(x => x.foo);
 fut.forkCatch(console.error, console.error, console.log);
-//! Error: TypeError occurred while running a computation for a Future:
-//!   Cannot read property 'foo' of null
+//! Cannot read property 'foo' of null
 ```
 
 #### value
@@ -1759,6 +1811,49 @@ Returns an array whose only element is the resolution value of the Future.
 In many cases it will be impossible to extract this value; In those cases, the
 array will be empty. This function is meant to be used for type introspection:
 it is **not** the correct way to [consume a Future](#consuming-futures).
+
+#### debugMode
+
+<details><summary><code>debugMode :: Boolean -> Undefined</code></summary>
+
+```hs
+debugMode :: Boolean -> Undefined
+```
+
+</details>
+
+Enable or disable Fluture's debug mode. Debug mode is disabled by default.
+Pass `true` to enable, or `false` to disable.
+
+```js
+Future.debugMode(true);
+```
+
+For more information, see [Debugging](#debugging) and [Context](#context).
+
+#### context
+
+```hs
+context :: Future a b ~> List Context
+```
+
+A linked list of debugging contexts made available on every instance of
+`Future`. When [debug mode](#debugmode) is disabled, the list is always empty.
+
+The context objects have `stack` properties which contain snapshots of the
+stacktraces leading up to the creation of the `Future` instance. They are used
+by Fluture to generate asynchronous stack traces.
+
+```js
+Future.debugMode(true);
+const future = Future.after(10, 'Hello');
+
+let context = future.context;
+while(context.head){
+  console.log(context.head.stack);
+  context = context.tail;
+}
+```
 
 ## License
 

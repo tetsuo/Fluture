@@ -2,11 +2,14 @@ import {Future} from './future';
 import {noop, show, showf, partial1, partial2} from './internal/utils';
 import {isFunction} from './internal/predicates';
 import {throwInvalidArgument} from './internal/throw';
+import {nil} from './internal/list';
+import {captureContext} from './internal/debug';
 
 export function Encase2(fn, a, b){
   this._fn = fn;
   this._a = a;
   this._b = b;
+  this.context = captureContext(nil, 'a Future created with encase2', Encase2);
 }
 
 Encase2.prototype = Object.create(Future.prototype);

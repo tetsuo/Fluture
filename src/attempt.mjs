@@ -2,9 +2,12 @@ import {Future} from './future';
 import {noop, showf} from './internal/utils';
 import {isFunction} from './internal/predicates';
 import {throwInvalidArgument} from './internal/throw';
+import {nil} from './internal/list';
+import {captureContext} from './internal/debug';
 
 export function Attempt(fn){
   this._fn = fn;
+  this.context = captureContext(nil, 'a Future created with attempt/try', Attempt);
 }
 
 Attempt.prototype = Object.create(Future.prototype);

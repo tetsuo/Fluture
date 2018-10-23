@@ -3,6 +3,9 @@ import {noop, show, showf} from './internal/utils';
 import {isThenable, isFunction} from './internal/predicates';
 import {typeError} from './internal/error';
 import {throwInvalidArgument} from './internal/throw';
+import {makeError} from './internal/error';
+import {nil} from './internal/list';
+import {captureContext} from './internal/debug';
 
 function invalidPromise(p, f){
   return typeError(
@@ -13,6 +16,7 @@ function invalidPromise(p, f){
 
 export function TryP(fn){
   this._fn = fn;
+  this.context = captureContext(nil, 'a Future created with tryP', TryP);
 }
 
 TryP.prototype = Object.create(Future.prototype);
@@ -22,11 +26,11 @@ TryP.prototype._interpret = function TryP$interpret(rec, rej, res){
   try{
     p = fn();
   }catch(e){
-    rec(e);
+    rec(makeError(e, this, this.context));
     return noop;
   }
   if(!isThenable(p)){
-    rec(invalidPromise(p, fn));
+    rec(makeError(invalidPromise(p, fn), this, this.context));
     return noop;
   }
   p.then(function TryP$res(x){
