@@ -1,10 +1,9 @@
 /*eslint no-cond-assign:0, no-constant-condition:0 */
 
-import Denque from 'denque';
 import {show, showf, noop, moop, raise} from './internal/utils';
 import {isFunction} from './internal/predicates';
 import {FL, $$type} from './internal/const';
-import {nil, cons, cat, isNil} from './internal/list';
+import {nil, cons, cat, isNil, reverse} from './internal/list';
 import type from 'sanctuary-type-identifiers';
 import {error, typeError, invalidFuture, makeError} from './internal/error';
 import {throwInvalidArgument, throwInvalidContext, throwInvalidFuture} from './internal/throw';
@@ -169,9 +168,9 @@ Transformation.prototype._transform = function Transformation$_transform(action)
 
 Transformation.prototype._interpret = function Transformation$interpret(rec, rej, res){
 
-  //This is the primary queue of actions. All actions in here will be "cold",
-  //meaning they haven't had the chance yet to run concurrent computations.
-  var queue = new Denque();
+  //These are the cold, and hot, action stacks. The cold actions are those that
+  //have yet to run parallel computations, and hot are those that have.
+  var cold = nil, hot = nil;
 
   //A linked list of stack traces, tracking context across ticks.
   var context = captureContext(nil, 'consuming a transformed Future', Transformation$interpret);
@@ -185,19 +184,19 @@ Transformation.prototype._interpret = function Transformation$interpret(rec, rej
   // cancel  = the cancel function of the current future
   // settled = a boolean indicating whether a new tick should start
   // async   = a boolean indicating whether we are awaiting a result asynchronously
-  var future, action, cancel = noop, stack = nil, settled, async = true, it;
+  var future, action, cancel = noop, settled, async = true, it;
 
-  //Pushes a new action onto the stack. The stack is used to keep "hot"
-  //actions. The last one added is the first one to process, because actions
-  //are pushed right-to-left (see warmupActions).
-  function pushStack(x){
-    stack = cons(x, stack);
+  //Takes an action from the top of the hot stack and returns it.
+  function nextHot(){
+    var x = hot.head;
+    hot = hot.tail;
+    return x;
   }
 
-  //Takes the leftmost action from the stack and returns it.
-  function popStack(){
-    var x = stack.head;
-    stack = stack.tail;
+  //Takes an action from the top of the cold stack and returns it.
+  function nextCold(){
+    var x = cold.head;
+    cold = cold.tail;
     return x;
   }
 
@@ -212,7 +211,7 @@ Transformation.prototype._interpret = function Transformation$interpret(rec, rej
     if(future._spawn){
       var tail = future._actions;
       while(!isNil(tail)){
-        queue.unshift(tail.head);
+        cold = cons(tail.head, cold);
         tail = tail.tail;
       }
       future = future._spawn;
@@ -239,48 +238,50 @@ Transformation.prototype._interpret = function Transformation$interpret(rec, rej
   //This function is passed into actions when they are "warmed up".
   //If the action decides that it has its result, without the need to await
   //anything else, then it can call this function to force "early termination".
-  //When early termination occurs, all actions which were queued prior to the
-  //terminator will be skipped. If they were already hot, they will also receive
-  //a cancel signal so they can cancel their own concurrent computations, as
-  //their results are no longer needed.
+  //When early termination occurs, all actions which were stacked prior to the
+  //terminator will be skipped. If they were already hot, they will also be
+  //sent a cancel signal so they can cancel their own concurrent computations,
+  //as their results are no longer needed.
   function early(m, terminator){
     context = cat(terminator.context, context);
     cancel();
-    queue.clear();
+    cold = nil;
     if(async && action !== terminator){
       action.cancel();
-      while((it = popStack()) && it !== terminator) it.cancel();
+      while((it = nextHot()) && it !== terminator) it.cancel();
     }
     settle(m);
   }
 
-  //This will cancel the current Future, the current action, and all queued hot actions.
+  //This will cancel the current Future, the current action, and all stacked hot actions.
   function Sequence$cancel(){
     cancel();
     action && action.cancel();
-    while(it = popStack()) it.cancel();
+    while(it = nextHot()) it.cancel();
   }
 
   //This function is called when an exception is caught.
   function exception(e){
     Sequence$cancel();
     settled = true;
-    queue.clear();
+    cold = hot = nil;
     var error = makeError(e, future, context);
     future = never;
     rec(error);
   }
 
   //This function serves to kickstart concurrent computations.
-  //Takes all actions from the cold queue *back-to-front*, and calls run() on
+  //Takes all actions from the cold stack in reverse order, and calls run() on
   //each of them, passing them the "early" function. If any of them settles (by
   //calling early()), we abort. After warming up all actions in the cold queue,
   //we warm up the current action as well.
   function warmupActions(){
-    while(it = queue.pop()){
-      it = it.run(early);
+    cold = reverse(cold);
+    while(cold !== nil){
+      it = cold.head.run(early);
       if(settled) return;
-      pushStack(it);
+      hot = cons(it, hot);
+      cold = cold.tail;
     }
     action = action.run(early);
   }
@@ -292,10 +293,10 @@ Transformation.prototype._interpret = function Transformation$interpret(rec, rej
     while(true){
       settled = false;
       if(action) asyncContext = action.context;
-      if(action = queue.shift()){
+      if(action = nextCold()){
         cancel = future._interpret(exception, rejected, resolved);
         if(!settled) warmupActions();
-      }else if(action = popStack()){
+      }else if(action = nextHot()){
         cancel = future._interpret(exception, rejected, resolved);
       }else break;
       if(settled) continue;
