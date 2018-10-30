@@ -133,7 +133,6 @@ Computation.prototype._interpret = function Computation$interpret(rec, rej, res)
       }
     }) || noop;
   }catch(e){
-    open = false;
     rec(makeError(e, this, context));
     return noop;
   }
@@ -142,6 +141,7 @@ Computation.prototype._interpret = function Computation$interpret(rec, rej, res)
       'The computation was expected to return a nullary function or void\n' +
       '  Actual: ' + show(cancel)
     ), this, context));
+    return noop;
   }
   cont();
   return function Computation$cancel(){
