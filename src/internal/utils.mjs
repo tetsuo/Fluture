@@ -31,7 +31,3 @@ export function partial3(f, a, b, c){
 export function raise(x){
   throw x;
 }
-
-export function indent(s){
-  return '  ' + s;
-}

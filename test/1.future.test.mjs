@@ -142,22 +142,6 @@ describe('Future', function (){
       forkCatch(a, b, c, mock);
     });
 
-    it('ensures the recovery value has a consistent type', function (done){
-      var mock = Object.create(F.mock);
-      mock._interpret = function (rec){
-        rec(42);
-      };
-      forkCatch(function (x){
-        expect(x).to.be.an.instanceof(Error);
-        expect(x.name).to.equal('Error');
-        expect(x.message).to.equal(
-          'Non-Error occurred while running a computation for a Future:\n\n' +
-          '  42'
-        );
-        done();
-      }, U.noop, U.noop, mock);
-    });
-
   });
 
   describe('.value()', function (){
@@ -335,16 +319,6 @@ describe('Future', function (){
       expect(f).to.not.throw();
     });
 
-    it('throws when called on a crashed Future', function (){
-      var mock = Object.create(F.mock);
-      mock._interpret = function (rec){ rec(U.error) };
-      var f = function (){ return mock.fork(U.noop, U.noop) };
-      expect(f).to.throw(Error, (
-        'Error occurred while running a computation for a Future:\n\n' +
-        '  Intentional error for unit testing'
-      ));
-    });
-
     it('dispatches to #_interpret()', function (done){
       var a = function (){};
       var b = function (){};
@@ -358,6 +332,13 @@ describe('Future', function (){
       };
 
       mock.fork(a, b);
+    });
+
+    it('throws the interpretation crash value', function (){
+      var mock = Object.create(F.mock);
+      mock._interpret = function (rec){ rec(U.error) };
+      var f = function (){ return mock.fork(U.noop, U.noop) };
+      expect(f).to.throw(U.error);
     });
 
   });
@@ -408,22 +389,6 @@ describe('Future', function (){
       };
 
       mock.forkCatch(a, b, c);
-    });
-
-    it('ensures the recovery value has a consistent type', function (done){
-      var mock = Object.create(F.mock);
-      mock._interpret = function (rec){
-        rec(42);
-      };
-      mock.forkCatch(function (x){
-        expect(x).to.be.an.instanceof(Error);
-        expect(x.name).to.equal('Error');
-        expect(x.message).to.equal(
-          'Non-Error occurred while running a computation for a Future:\n\n' +
-          '  42'
-        );
-        done();
-      }, U.noop, U.noop);
     });
 
   });

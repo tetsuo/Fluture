@@ -2,17 +2,22 @@ import {Future} from './future';
 import {show, showf, partial1, partial2, noop} from './internal/utils';
 import {isFunction} from './internal/predicates';
 import {throwInvalidArgument} from './internal/throw';
+import {makeError} from './internal/error';
+import {nil} from './internal/list';
+import {captureContext} from './internal/debug';
 
 export function EncaseN2(fn, a, b){
   this._fn = fn;
   this._a = a;
   this._b = b;
+  this.context = captureContext(nil, 'a Future created with encaseN2', EncaseN2);
 }
 
 EncaseN2.prototype = Object.create(Future.prototype);
 
 EncaseN2.prototype._interpret = function EncaseN2$interpret(rec, rej, res){
   var open = false, cont = function(){ open = true };
+  var context = captureContext(this.context, 'consuming an encased Future', EncaseN2$interpret);
   try{
     this._fn(this._a, this._b, function EncaseN2$done(err, val){
       cont = err ? function EncaseN2$rej(){
@@ -27,7 +32,7 @@ EncaseN2.prototype._interpret = function EncaseN2$interpret(rec, rej, res){
       }
     });
   }catch(e){
-    rec(e);
+    rec(makeError(e, this, context));
     open = false;
     return noop;
   }

@@ -4,9 +4,11 @@ import {Future, isFuture} from './future';
 import {isFunction, isIterator} from './internal/predicates';
 import {isIteration} from './internal/iteration';
 import {show, showf, noop} from './internal/utils';
-import {typeError, invalidFuture, invalidArgument} from './internal/error';
+import {typeError, invalidFuture, invalidArgument, makeError} from './internal/error';
 import {throwInvalidArgument} from './internal/throw';
 import {Undetermined, Synchronous, Asynchronous} from './internal/timing';
+import {nil, cat} from './internal/list';
+import {captureContext} from './internal/debug';
 
 export function invalidIteration(o){
   return typeError(
@@ -26,30 +28,48 @@ export function invalidState(x){
 
 export function Go(generator){
   this._generator = generator;
+  this.context = captureContext(nil, 'a Future created with do-notation', Go);
 }
 
 Go.prototype = Object.create(Future.prototype);
 
 Go.prototype._interpret = function Go$interpret(rec, rej, res){
 
-  var timing = Undetermined, cancel = noop, state, value, iterator;
+  var _this = this, timing = Undetermined, cancel = noop, state, value, iterator;
+
+  var context = captureContext(
+    _this.context,
+    'interpreting a Future created with do-notation',
+    Go$interpret
+  );
 
   try{
-    iterator = this._generator();
+    iterator = _this._generator();
   }catch(e){
-    rec(e);
+    rec(makeError(e, _this, context));
     return noop;
   }
 
   if(!isIterator(iterator)){
-    rec(invalidArgument('Future.do', 0, 'return an iterator, maybe you forgot the "*"', iterator));
+    rec(makeError(
+      invalidArgument('Future.do', 0, 'return an iterator, maybe you forgot the "*"', iterator),
+      _this,
+      context
+    ));
     return noop;
   }
 
   function resolved(x){
     value = x;
-    if(timing === Asynchronous) return drain();
+    if(timing === Asynchronous){
+      context = cat(state.value.context, context);
+      return drain();
+    }
     timing = Synchronous;
+  }
+
+  function crash(e){
+    rec(makeError(e, state.value, cat(state.value.context, context)));
   }
 
   function drain(){
@@ -58,13 +78,13 @@ Go.prototype._interpret = function Go$interpret(rec, rej, res){
       try{
         state = iterator.next(value);
       }catch(e){
-        return rec(e);
+        return rec(makeError(e, _this, context));
       }
-      if(!isIteration(state)) return rec(invalidIteration(state));
+      if(!isIteration(state)) return rec(makeError(invalidIteration(state), _this, context));
       if(state.done) break;
-      if(!isFuture(state.value)) return rec(invalidState(state.value));
+      if(!isFuture(state.value)) return rec(makeError(invalidState(state.value), _this, context));
       timing = Undetermined;
-      cancel = state.value._interpret(rec, rej, resolved);
+      cancel = state.value._interpret(crash, rej, resolved);
       if(timing === Undetermined) return timing = Asynchronous;
     }
     res(state.value);

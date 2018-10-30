@@ -3,6 +3,9 @@ import {noop, show, showf, partial1, partial2, partial3} from './internal/utils'
 import {isThenable, isFunction} from './internal/predicates';
 import {typeError} from './internal/error';
 import {throwInvalidArgument} from './internal/throw';
+import {makeError} from './internal/error';
+import {nil} from './internal/list';
+import {captureContext} from './internal/debug';
 
 function invalidPromise(p, f, a, b, c){
   return typeError(
@@ -19,20 +22,22 @@ export function EncaseP3(fn, a, b, c){
   this._a = a;
   this._b = b;
   this._c = c;
+  this.context = captureContext(nil, 'a Future created with encaseP3', EncaseP3);
 }
 
 EncaseP3.prototype = Object.create(Future.prototype);
 
 EncaseP3.prototype._interpret = function EncaseP3$interpret(rec, rej, res){
   var open = true, fn = this._fn, a = this._a, b = this._b, c = this._c, p;
+  var context = captureContext(this.context, 'consuming an encased Future', EncaseP3$interpret);
   try{
     p = fn(a, b, c);
   }catch(e){
-    rec(e);
+    rec(makeError(e, this, context));
     return noop;
   }
   if(!isThenable(p)){
-    rec(invalidPromise(p, fn, a, b, c));
+    rec(makeError(invalidPromise(p, fn, a, b, c), this, context));
     return noop;
   }
   p.then(function EncaseP3$res(x){
