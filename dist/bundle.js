@@ -1,5 +1,5 @@
 /**
- * Fluture bundled; version 10.1.1
+ * Fluture bundled; version 10.2.0
  */
 
 var Fluture = (function () {
@@ -661,10 +661,6 @@ var Fluture = (function () {
 	  throw x;
 	}
 
-	function indent(s){
-	  return '  ' + s;
-	}
-
 	var FL = {
 	  alt: 'fantasy-land/alt',
 	  ap: 'fantasy-land/ap',
@@ -683,6 +679,78 @@ var Fluture = (function () {
 	var version = 4;
 
 	var $$type = namespace + '/' + name + '@' + version;
+
+	var nil = {head: null};
+	nil.tail = nil;
+
+	function isNil(list){
+	  return list.tail === list;
+	}
+
+	// cons :: (a, List a) -> List a
+	//      -- O(1) append operation
+	function cons(head, tail){
+	  return {head: head, tail: tail};
+	}
+
+	// reverse :: List a -> List a
+	//         -- O(n) list reversal
+	function reverse(xs){
+	  var ys = nil, tail = xs;
+	  while(!isNil(tail)){
+	    ys = cons(tail.head, ys);
+	    tail = tail.tail;
+	  }
+	  return ys;
+	}
+
+	// cat :: (List a, List a) -> List a
+	//     -- O(n) list concatenation
+	function cat(xs, ys){
+	  var zs = ys, tail = reverse(xs);
+	  while(!isNil(tail)){
+	    zs = cons(tail.head, zs);
+	    tail = tail.tail;
+	  }
+	  return zs;
+	}
+
+	/* istanbul ignore next: non v8 compatibility */
+	var captureStackTrace = Error.captureStackTrace || captureStackTraceFallback;
+	var _debug = noop;
+
+	function debugMode(debug){
+	  _debug = debug ? debugHandleAll : noop;
+	}
+
+	function debugHandleAll(fn){
+	  return fn();
+	}
+
+	function debug(fn){
+	  return _debug(fn);
+	}
+
+	function captureContext(previous, tag, fn){
+	  return debug(function debugCaptureContext(){
+	    var context = {
+	      tag: tag,
+	      name: ' from ' + tag + ':',
+	    };
+	    captureStackTrace(context, fn);
+	    return cat(previous, cons(context, nil));
+	  }) || previous;
+	}
+
+	function captureStackTraceFallback(x){
+	  var e = new Error;
+	  /* istanbul ignore else: non v8 compatibility */
+	  if(typeof e.stack === 'string'){
+	    x.stack = x.name + '\n' + e.stack.split('\n').slice(1).join('\n');
+	  }else{
+	    x.stack = x.name;
+	  }
+	}
 
 	function error(message){
 	  return new Error(message);
@@ -736,25 +804,36 @@ var Fluture = (function () {
 	  );
 	}
 
-	function valueToError(x){
-	  var name$$1, message;
+	function ensureError(value, fn){
+	  var message;
 	  try{
-	    if(x && typeof x.name === 'string' && typeof x.message === 'string'){
-	      name$$1 = x.name;
-	      message = x.message;
-	    }else{
-	      name$$1 = 'Non-Error';
-	      message = sanctuaryShow(x);
-	    }
+	    if(value instanceof Error) return value;
+	    message = 'A Non-Error was thrown from a Future: ' + sanctuaryShow(value);
 	  }catch (_){
-	    name$$1 = 'Something';
-	    message = '<The value which was thrown could not be converted to string>';
+	    message = 'Something was thrown from a Future, but it could not be converted to String';
 	  }
-	  var e = error(
-	    name$$1 + ' occurred while running a computation for a Future:\n\n' +
-	    message.split('\n').map(indent).join('\n')
-	  );
+	  var e = error(message);
+	  captureStackTrace(e, fn);
 	  return e;
+	}
+
+	function makeError(caught, callingFuture, extraContext){
+	  var origin = ensureError(caught, makeError);
+	  var e = error(origin.message);
+	  e.context = cat(origin.context || nil, extraContext || nil);
+	  e.future = origin.future || callingFuture;
+	  e.reason = origin.reason || origin;
+	  e.stack = e.reason.stack + (isNil(e.context) ? '' : '\n' + contextToStackTrace(e.context));
+	  return e;
+	}
+
+	function contextToStackTrace(context){
+	  var stack = '', tail = context;
+	  while(tail !== nil){
+	    stack += tail.head.stack + '\n';
+	    tail = tail.tail;
+	  }
+	  return stack;
 	}
 
 	function throwInvalidArgument(it, at, expected, actual){
@@ -768,441 +847,6 @@ var Fluture = (function () {
 	function throwInvalidFuture(it, at, m, s){
 	  throw invalidFuture(it, at, m, s);
 	}
-
-	/**
-	 * Custom implementation of a double ended queue.
-	 */
-	function Denque(array) {
-	  this._head = 0;
-	  this._tail = 0;
-	  this._capacityMask = 0x3;
-	  this._list = new Array(4);
-	  if (Array.isArray(array)) {
-	    this._fromArray(array);
-	  }
-	}
-
-	/**
-	 * -------------
-	 *  PUBLIC API
-	 * -------------
-	 */
-
-	/**
-	 * Returns the item at the specified index from the list.
-	 * 0 is the first element, 1 is the second, and so on...
-	 * Elements at negative values are that many from the end: -1 is one before the end
-	 * (the last element), -2 is two before the end (one before last), etc.
-	 * @param index
-	 * @returns {*}
-	 */
-	Denque.prototype.peekAt = function peekAt(index) {
-	  var i = index;
-	  // expect a number or return undefined
-	  if ((i !== (i | 0))) {
-	    return void 0;
-	  }
-	  var len = this.size();
-	  if (i >= len || i < -len) return undefined;
-	  if (i < 0) i += len;
-	  i = (this._head + i) & this._capacityMask;
-	  return this._list[i];
-	};
-
-	/**
-	 * Alias for peakAt()
-	 * @param i
-	 * @returns {*}
-	 */
-	Denque.prototype.get = function get(i) {
-	  return this.peekAt(i);
-	};
-
-	/**
-	 * Returns the first item in the list without removing it.
-	 * @returns {*}
-	 */
-	Denque.prototype.peek = function peek() {
-	  if (this._head === this._tail) return undefined;
-	  return this._list[this._head];
-	};
-
-	/**
-	 * Alias for peek()
-	 * @returns {*}
-	 */
-	Denque.prototype.peekFront = function peekFront() {
-	  return this.peek();
-	};
-
-	/**
-	 * Returns the item that is at the back of the queue without removing it.
-	 * Uses peekAt(-1)
-	 */
-	Denque.prototype.peekBack = function peekBack() {
-	  return this.peekAt(-1);
-	};
-
-	/**
-	 * Returns the current length of the queue
-	 * @return {Number}
-	 */
-	Object.defineProperty(Denque.prototype, 'length', {
-	  get: function length() {
-	    return this.size();
-	  }
-	});
-
-	/**
-	 * Return the number of items on the list, or 0 if empty.
-	 * @returns {number}
-	 */
-	Denque.prototype.size = function size() {
-	  if (this._head === this._tail) return 0;
-	  if (this._head < this._tail) return this._tail - this._head;
-	  else return this._capacityMask + 1 - (this._head - this._tail);
-	};
-
-	/**
-	 * Add an item at the beginning of the list.
-	 * @param item
-	 */
-	Denque.prototype.unshift = function unshift(item) {
-	  if (item === undefined) return this.size();
-	  var len = this._list.length;
-	  this._head = (this._head - 1 + len) & this._capacityMask;
-	  this._list[this._head] = item;
-	  if (this._tail === this._head) this._growArray();
-	  if (this._head < this._tail) return this._tail - this._head;
-	  else return this._capacityMask + 1 - (this._head - this._tail);
-	};
-
-	/**
-	 * Remove and return the first item on the list,
-	 * Returns undefined if the list is empty.
-	 * @returns {*}
-	 */
-	Denque.prototype.shift = function shift() {
-	  var head = this._head;
-	  if (head === this._tail) return undefined;
-	  var item = this._list[head];
-	  this._list[head] = undefined;
-	  this._head = (head + 1) & this._capacityMask;
-	  if (head < 2 && this._tail > 10000 && this._tail <= this._list.length >>> 2) this._shrinkArray();
-	  return item;
-	};
-
-	/**
-	 * Add an item to the bottom of the list.
-	 * @param item
-	 */
-	Denque.prototype.push = function push(item) {
-	  if (item === undefined) return this.size();
-	  var tail = this._tail;
-	  this._list[tail] = item;
-	  this._tail = (tail + 1) & this._capacityMask;
-	  if (this._tail === this._head) {
-	    this._growArray();
-	  }
-
-	  if (this._head < this._tail) return this._tail - this._head;
-	  else return this._capacityMask + 1 - (this._head - this._tail);
-	};
-
-	/**
-	 * Remove and return the last item on the list.
-	 * Returns undefined if the list is empty.
-	 * @returns {*}
-	 */
-	Denque.prototype.pop = function pop() {
-	  var tail = this._tail;
-	  if (tail === this._head) return undefined;
-	  var len = this._list.length;
-	  this._tail = (tail - 1 + len) & this._capacityMask;
-	  var item = this._list[this._tail];
-	  this._list[this._tail] = undefined;
-	  if (this._head < 2 && tail > 10000 && tail <= len >>> 2) this._shrinkArray();
-	  return item;
-	};
-
-	/**
-	 * Remove and return the item at the specified index from the list.
-	 * Returns undefined if the list is empty.
-	 * @param index
-	 * @returns {*}
-	 */
-	Denque.prototype.removeOne = function removeOne(index) {
-	  var i = index;
-	  // expect a number or return undefined
-	  if ((i !== (i | 0))) {
-	    return void 0;
-	  }
-	  if (this._head === this._tail) return void 0;
-	  var size = this.size();
-	  var len = this._list.length;
-	  if (i >= size || i < -size) return void 0;
-	  if (i < 0) i += size;
-	  i = (this._head + i) & this._capacityMask;
-	  var item = this._list[i];
-	  var k;
-	  if (index < size / 2) {
-	    for (k = index; k > 0; k--) {
-	      this._list[i] = this._list[i = (i - 1 + len) & this._capacityMask];
-	    }
-	    this._list[i] = void 0;
-	    this._head = (this._head + 1 + len) & this._capacityMask;
-	  } else {
-	    for (k = size - 1 - index; k > 0; k--) {
-	      this._list[i] = this._list[i = ( i + 1 + len) & this._capacityMask];
-	    }
-	    this._list[i] = void 0;
-	    this._tail = (this._tail - 1 + len) & this._capacityMask;
-	  }
-	  return item;
-	};
-
-	/**
-	 * Remove number of items from the specified index from the list.
-	 * Returns array of removed items.
-	 * Returns undefined if the list is empty.
-	 * @param index
-	 * @param count
-	 * @returns {array}
-	 */
-	Denque.prototype.remove = function remove(index, count) {
-	  var i = index;
-	  var removed;
-	  var del_count = count;
-	  // expect a number or return undefined
-	  if ((i !== (i | 0))) {
-	    return void 0;
-	  }
-	  if (this._head === this._tail) return void 0;
-	  var size = this.size();
-	  var len = this._list.length;
-	  if (i >= size || i < -size || count < 1) return void 0;
-	  if (i < 0) i += size;
-	  if (count === 1 || !count) {
-	    removed = new Array(1);
-	    removed[0] = this.removeOne(i);
-	    return removed;
-	  }
-	  if (i === 0 && i + count >= size) {
-	    removed = this.toArray();
-	    this.clear();
-	    return removed;
-	  }
-	  if (i + count > size) count = size - i;
-	  var k;
-	  removed = new Array(count);
-	  for (k = 0; k < count; k++) {
-	    removed[k] = this._list[(this._head + i + k) & this._capacityMask];
-	  }
-	  i = (this._head + i) & this._capacityMask;
-	  if (index + count === size) {
-	    this._tail = (this._tail - count + len) & this._capacityMask;
-	    for (k = count; k > 0; k--) {
-	      this._list[i = (i + 1 + len) & this._capacityMask] = void 0;
-	    }
-	    return removed;
-	  }
-	  if (index === 0) {
-	    this._head = (this._head + count + len) & this._capacityMask;
-	    for (k = count - 1; k > 0; k--) {
-	      this._list[i = (i + 1 + len) & this._capacityMask] = void 0;
-	    }
-	    return removed;
-	  }
-	  if (index < size / 2) {
-	    this._head = (this._head + index + count + len) & this._capacityMask;
-	    for (k = index; k > 0; k--) {
-	      this.unshift(this._list[i = (i - 1 + len) & this._capacityMask]);
-	    }
-	    i = (this._head - 1 + len) & this._capacityMask;
-	    while (del_count > 0) {
-	      this._list[i = (i - 1 + len) & this._capacityMask] = void 0;
-	      del_count--;
-	    }
-	  } else {
-	    this._tail = i;
-	    i = (i + count + len) & this._capacityMask;
-	    for (k = size - (count + index); k > 0; k--) {
-	      this.push(this._list[i++]);
-	    }
-	    i = this._tail;
-	    while (del_count > 0) {
-	      this._list[i = (i + 1 + len) & this._capacityMask] = void 0;
-	      del_count--;
-	    }
-	  }
-	  if (this._head < 2 && this._tail > 10000 && this._tail <= len >>> 2) this._shrinkArray();
-	  return removed;
-	};
-
-	/**
-	 * Native splice implementation.
-	 * Remove number of items from the specified index from the list and/or add new elements.
-	 * Returns array of removed items or empty array if count == 0.
-	 * Returns undefined if the list is empty.
-	 *
-	 * @param index
-	 * @param count
-	 * @param {...*} [elements]
-	 * @returns {array}
-	 */
-	Denque.prototype.splice = function splice(index, count) {
-	  var i = index;
-	  // expect a number or return undefined
-	  if ((i !== (i | 0))) {
-	    return void 0;
-	  }
-	  var size = this.size();
-	  if (i < 0) i += size;
-	  if (i > size) return void 0;
-	  if (arguments.length > 2) {
-	    var k;
-	    var temp;
-	    var removed;
-	    var arg_len = arguments.length;
-	    var len = this._list.length;
-	    var arguments_index = 2;
-	    if (!size || i < size / 2) {
-	      temp = new Array(i);
-	      for (k = 0; k < i; k++) {
-	        temp[k] = this._list[(this._head + k) & this._capacityMask];
-	      }
-	      if (count === 0) {
-	        removed = [];
-	        if (i > 0) {
-	          this._head = (this._head + i + len) & this._capacityMask;
-	        }
-	      } else {
-	        removed = this.remove(i, count);
-	        this._head = (this._head + i + len) & this._capacityMask;
-	      }
-	      while (arg_len > arguments_index) {
-	        this.unshift(arguments[--arg_len]);
-	      }
-	      for (k = i; k > 0; k--) {
-	        this.unshift(temp[k - 1]);
-	      }
-	    } else {
-	      temp = new Array(size - (i + count));
-	      var leng = temp.length;
-	      for (k = 0; k < leng; k++) {
-	        temp[k] = this._list[(this._head + i + count + k) & this._capacityMask];
-	      }
-	      if (count === 0) {
-	        removed = [];
-	        if (i != size) {
-	          this._tail = (this._head + i + len) & this._capacityMask;
-	        }
-	      } else {
-	        removed = this.remove(i, count);
-	        this._tail = (this._tail - leng + len) & this._capacityMask;
-	      }
-	      while (arguments_index < arg_len) {
-	        this.push(arguments[arguments_index++]);
-	      }
-	      for (k = 0; k < leng; k++) {
-	        this.push(temp[k]);
-	      }
-	    }
-	    return removed;
-	  } else {
-	    return this.remove(i, count);
-	  }
-	};
-
-	/**
-	 * Soft clear - does not reset capacity.
-	 */
-	Denque.prototype.clear = function clear() {
-	  this._head = 0;
-	  this._tail = 0;
-	};
-
-	/**
-	 * Returns true or false whether the list is empty.
-	 * @returns {boolean}
-	 */
-	Denque.prototype.isEmpty = function isEmpty() {
-	  return this._head === this._tail;
-	};
-
-	/**
-	 * Returns an array of all queue items.
-	 * @returns {Array}
-	 */
-	Denque.prototype.toArray = function toArray() {
-	  return this._copyArray(false);
-	};
-
-	/**
-	 * -------------
-	 *   INTERNALS
-	 * -------------
-	 */
-
-	/**
-	 * Fills the queue with items from an array
-	 * For use in the constructor
-	 * @param array
-	 * @private
-	 */
-	Denque.prototype._fromArray = function _fromArray(array) {
-	  for (var i = 0; i < array.length; i++) this.push(array[i]);
-	};
-
-	/**
-	 *
-	 * @param fullCopy
-	 * @returns {Array}
-	 * @private
-	 */
-	Denque.prototype._copyArray = function _copyArray(fullCopy) {
-	  var newArray = [];
-	  var list = this._list;
-	  var len = list.length;
-	  var i;
-	  if (fullCopy || this._head > this._tail) {
-	    for (i = this._head; i < len; i++) newArray.push(list[i]);
-	    for (i = 0; i < this._tail; i++) newArray.push(list[i]);
-	  } else {
-	    for (i = this._head; i < this._tail; i++) newArray.push(list[i]);
-	  }
-	  return newArray;
-	};
-
-	/**
-	 * Grows the internal list array.
-	 * @private
-	 */
-	Denque.prototype._growArray = function _growArray() {
-	  if (this._head) {
-	    // copy existing data, head to end, then beginning to tail.
-	    this._list = this._copyArray(true);
-	    this._head = 0;
-	  }
-
-	  // head is at 0 and array is now full, safe to extend
-	  this._tail = this._list.length;
-
-	  this._list.length *= 2;
-	  this._capacityMask = (this._capacityMask << 1) | 1;
-	};
-
-	/**
-	 * Shrinks the internal list array.
-	 * @private
-	 */
-	Denque.prototype._shrinkArray = function _shrinkArray() {
-	  this._list.length >>>= 1;
-	  this._capacityMask >>>= 1;
-	};
-
-
-	var denque = Denque;
 
 	function isFunction(f){
 	  return typeof f === 'function';
@@ -1260,24 +904,7 @@ var Fluture = (function () {
 	  return isApply(x) && hasMethod(FL.chain, x);
 	}
 
-	/* eslint no-param-reassign:0 */
-
-	var nil = {head: null};
-	nil.tail = nil;
-
-	function isNil(list){
-	  return list.tail === list;
-	}
-
-	function cons(head, tail){
-	  return {head: head, tail: tail};
-	}
-
 	/*eslint no-cond-assign:0, no-constant-condition:0 */
-
-	function Future$onCrash(x){
-	  raise(valueToError(x));
-	}
 
 	function Future(computation){
 	  if(!isFunction(computation)) throwInvalidArgument('Future', 0, 'be a Function', computation);
@@ -1320,7 +947,7 @@ var Fluture = (function () {
 	  if(!isFuture(this)) throwInvalidContext('Future#fork', this);
 	  if(!isFunction(rej)) throwInvalidArgument('Future#fork', 0, 'to be a Function', rej);
 	  if(!isFunction(res)) throwInvalidArgument('Future#fork', 1, 'to be a Function', res);
-	  return this._interpret(Future$onCrash, rej, res);
+	  return this._interpret(raise, rej, res);
 	};
 
 	Future.prototype.forkCatch = function Future$forkCatch(rec, rej, res){
@@ -1328,14 +955,14 @@ var Fluture = (function () {
 	  if(!isFunction(rec)) throwInvalidArgument('Future#fork', 0, 'to be a Function', rec);
 	  if(!isFunction(rej)) throwInvalidArgument('Future#fork', 1, 'to be a Function', rej);
 	  if(!isFunction(res)) throwInvalidArgument('Future#fork', 2, 'to be a Function', res);
-	  return this._interpret(function Future$forkCatch$recover(x){ rec(valueToError(x)); }, rej, res);
+	  return this._interpret(rec, rej, res);
 	};
 
 	Future.prototype.value = function Future$value(res){
 	  if(!isFuture(this)) throwInvalidContext('Future#value', this);
 	  if(!isFunction(res)) throwInvalidArgument('Future#value', 0, 'to be a Function', res);
 	  var _this = this;
-	  return _this._interpret(Future$onCrash, function Future$value$rej(x){
+	  return _this._interpret(raise, function Future$value$rej(x){
 	    raise(error(
 	      'Future#value was called on a rejected Future\n' +
 	      '  Rejection: ' + sanctuaryShow(x) + '\n' +
@@ -1347,7 +974,7 @@ var Fluture = (function () {
 	Future.prototype.done = function Future$done(callback){
 	  if(!isFuture(this)) throwInvalidContext('Future#done', this);
 	  if(!isFunction(callback)) throwInvalidArgument('Future#done', 0, 'to be a Function', callback);
-	  return this._interpret(Future$onCrash,
+	  return this._interpret(raise,
 	                         function Future$done$rej(x){ callback(x); },
 	                         function Future$done$res(x){ callback(null, x); });
 	};
@@ -1355,7 +982,7 @@ var Fluture = (function () {
 	Future.prototype.promise = function Future$promise(){
 	  var _this = this;
 	  return new Promise(function Future$promise$computation(res, rej){
-	    _this._interpret(Future$onCrash, rej, res);
+	    _this._interpret(raise, rej, res);
 	  });
 	};
 
@@ -1371,14 +998,18 @@ var Fluture = (function () {
 	  return new Transformation(this, cons(action, nil));
 	};
 
+	Future.prototype.context = nil;
+
 	function Computation(computation){
 	  this._computation = computation;
+	  this.context = captureContext(nil, 'a Future created with the Future constructor', Future);
 	}
 
 	Computation.prototype = Object.create(Future.prototype);
 
 	Computation.prototype._interpret = function Computation$interpret(rec, rej, res){
 	  var open = false, cancel = noop, cont = function(){ open = true; };
+	  var context = captureContext(this.context, 'consuming a Future', Computation$interpret);
 	  try{
 	    cancel = this._computation(function Computation$rej(x){
 	      cont = function Computation$rej$cont(){
@@ -1398,15 +1029,15 @@ var Fluture = (function () {
 	      }
 	    }) || noop;
 	  }catch(e){
-	    open = false;
-	    rec(e);
+	    rec(makeError(e, this, context));
 	    return noop;
 	  }
 	  if(!(isFunction(cancel) && cancel.length === 0)){
-	    rec(typeError(
+	    rec(makeError(typeError(
 	      'The computation was expected to return a nullary function or void\n' +
 	      '  Actual: ' + sanctuaryShow(cancel)
-	    ));
+	    ), this, context));
+	    return noop;
 	  }
 	  cont();
 	  return function Computation$cancel(){
@@ -1434,9 +1065,15 @@ var Fluture = (function () {
 
 	Transformation.prototype._interpret = function Transformation$interpret(rec, rej, res){
 
-	  //This is the primary queue of actions. All actions in here will be "cold",
-	  //meaning they haven't had the chance yet to run concurrent computations.
-	  var queue = new denque();
+	  //These are the cold, and hot, action stacks. The cold actions are those that
+	  //have yet to run parallel computations, and hot are those that have.
+	  var cold = nil, hot = nil;
+
+	  //A linked list of stack traces, tracking context across ticks.
+	  var context = captureContext(nil, 'consuming a transformed Future', Transformation$interpret);
+
+	  //The context of the last action to run.
+	  var asyncContext = nil;
 
 	  //These combined variables define our current state.
 	  // future  = the future we are currently forking
@@ -1444,19 +1081,19 @@ var Fluture = (function () {
 	  // cancel  = the cancel function of the current future
 	  // settled = a boolean indicating whether a new tick should start
 	  // async   = a boolean indicating whether we are awaiting a result asynchronously
-	  var future, action, cancel = noop, stack = nil, settled, async = true, it;
+	  var future, action, cancel = noop, settled, async = true, it;
 
-	  //Pushes a new action onto the stack. The stack is used to keep "hot"
-	  //actions. The last one added is the first one to process, because actions
-	  //are pushed right-to-left (see warmupActions).
-	  function pushStack(x){
-	    stack = cons(x, stack);
+	  //Takes an action from the top of the hot stack and returns it.
+	  function nextHot(){
+	    var x = hot.head;
+	    hot = hot.tail;
+	    return x;
 	  }
 
-	  //Takes the leftmost action from the stack and returns it.
-	  function popStack(){
-	    var x = stack.head;
-	    stack = stack.tail;
+	  //Takes an action from the top of the cold stack and returns it.
+	  function nextCold(){
+	    var x = cold.head;
+	    cold = cold.tail;
 	    return x;
 	  }
 
@@ -1471,7 +1108,7 @@ var Fluture = (function () {
 	    if(future._spawn){
 	      var tail = future._actions;
 	      while(!isNil(tail)){
-	        queue.unshift(tail.head);
+	        cold = cons(tail.head, cold);
 	        tail = tail.tail;
 	      }
 	      future = future._spawn;
@@ -1483,6 +1120,7 @@ var Fluture = (function () {
 	  //It will tell the current action that the future rejected, and it will
 	  //settle the current tick with the action's answer to that.
 	  function rejected(x){
+	    if(async) context = cat(future.context, cat(asyncContext, context));
 	    settle(action.rejected(x));
 	  }
 
@@ -1490,52 +1128,57 @@ var Fluture = (function () {
 	  //It will tell the current action that the future resolved, and it will
 	  //settle the current tick with the action's answer to that.
 	  function resolved(x){
+	    if(async) context = cat(future.context, cat(asyncContext, context));
 	    settle(action.resolved(x));
 	  }
 
 	  //This function is passed into actions when they are "warmed up".
 	  //If the action decides that it has its result, without the need to await
 	  //anything else, then it can call this function to force "early termination".
-	  //When early termination occurs, all actions which were queued prior to the
-	  //terminator will be skipped. If they were already hot, they will also receive
-	  //a cancel signal so they can cancel their own concurrent computations, as
-	  //their results are no longer needed.
+	  //When early termination occurs, all actions which were stacked prior to the
+	  //terminator will be skipped. If they were already hot, they will also be
+	  //sent a cancel signal so they can cancel their own concurrent computations,
+	  //as their results are no longer needed.
 	  function early(m, terminator){
+	    context = cat(terminator.context, context);
 	    cancel();
-	    queue.clear();
+	    cold = nil;
 	    if(async && action !== terminator){
 	      action.cancel();
-	      while((it = popStack()) && it !== terminator) it.cancel();
+	      while((it = nextHot()) && it !== terminator) it.cancel();
 	    }
 	    settle(m);
 	  }
 
-	  //This will cancel the current Future, the current action, and all queued hot actions.
+	  //This will cancel the current Future, the current action, and all stacked hot actions.
 	  function Sequence$cancel(){
 	    cancel();
 	    action && action.cancel();
-	    while(it = popStack()) it.cancel();
+	    while(it = nextHot()) it.cancel();
 	  }
 
 	  //This function is called when an exception is caught.
 	  function exception(e){
 	    Sequence$cancel();
 	    settled = true;
-	    queue.clear();
+	    cold = hot = nil;
+	    var error$$1 = makeError(e, future, context);
 	    future = never;
-	    rec(e);
+	    rec(error$$1);
 	  }
 
 	  //This function serves to kickstart concurrent computations.
-	  //Takes all actions from the cold queue *back-to-front*, and calls run() on
+	  //Takes all actions from the cold stack in reverse order, and calls run() on
 	  //each of them, passing them the "early" function. If any of them settles (by
 	  //calling early()), we abort. After warming up all actions in the cold queue,
 	  //we warm up the current action as well.
 	  function warmupActions(){
-	    while(it = queue.pop()){
-	      it = it.run(early);
+	    cold = reverse(cold);
+	    while(cold !== nil){
+	      it = cold.head.run(early);
 	      if(settled) return;
-	      pushStack(it);
+	      hot = cons(it, hot);
+	      cold = cold.tail;
 	    }
 	    action = action.run(early);
 	  }
@@ -1546,10 +1189,11 @@ var Fluture = (function () {
 	    async = false;
 	    while(true){
 	      settled = false;
-	      if(action = queue.shift()){
+	      if(action) asyncContext = action.context;
+	      if(action = nextCold()){
 	        cancel = future._interpret(exception, rejected, resolved);
 	        if(!settled) warmupActions();
-	      }else if(action = popStack()){
+	      }else if(action = nextHot()){
 	        cancel = future._interpret(exception, rejected, resolved);
 	      }else break;
 	      if(settled) continue;
@@ -1578,19 +1222,19 @@ var Fluture = (function () {
 	  return this._spawn.toString() + str;
 	};
 
-	function Crashed(error$$1){
-	  this._error = error$$1;
+	function Crashed(exception){
+	  this._exception = exception;
 	}
 
 	Crashed.prototype = Object.create(Future.prototype);
 
 	Crashed.prototype._interpret = function Crashed$interpret(rec){
-	  rec(this._error);
+	  rec(this._exception);
 	  return noop;
 	};
 
 	Crashed.prototype.toString = function Crashed$toString(){
-	  return 'Future(function crash(){ throw ' + sanctuaryShow(this._error) + ' })';
+	  return 'Future(function crash(){ throw ' + sanctuaryShow(this._exception) + ' })';
 	};
 
 	function Rejected(value){
@@ -1707,13 +1351,17 @@ var Fluture = (function () {
 	  cancel: noop
 	};
 
+	function captureActionContext(name$$1, fn){
+	  return captureContext(nil, 'a Future transformed with ' + name$$1, fn);
+	}
+
 	function nullaryActionToString(){
 	  return this.name + '()';
 	}
 
 	function defineNullaryAction(name$$1, prototype){
 	  var _name = '_' + name$$1;
-	  function NullaryAction(){}
+	  function NullaryAction(context){ this.context = context; }
 	  NullaryAction.prototype = Object.assign(Object.create(Action), prototype);
 	  NullaryAction.prototype.name = name$$1;
 	  NullaryAction.prototype.toString = nullaryActionToString;
@@ -1722,7 +1370,9 @@ var Fluture = (function () {
 	    return this[_name]();
 	  };
 	  Future.prototype[_name] = function uncheckedNullaryTransformation(){
-	    return this._transform(new NullaryAction);
+	    return this._transform(new NullaryAction(
+	      captureActionContext(name$$1, uncheckedNullaryTransformation)
+	    ));
 	  };
 	  return NullaryAction;
 	}
@@ -1733,7 +1383,7 @@ var Fluture = (function () {
 
 	function defineMapperAction(name$$1, prototype){
 	  var _name = '_' + name$$1;
-	  function MapperAction(mapper){ this.mapper = mapper; }
+	  function MapperAction(mapper, context){ this.mapper = mapper; this.context = context; }
 	  MapperAction.prototype = Object.assign(Object.create(Action), prototype);
 	  MapperAction.prototype.name = name$$1;
 	  MapperAction.prototype.toString = mapperActionToString;
@@ -1743,7 +1393,10 @@ var Fluture = (function () {
 	    return this[_name](mapper);
 	  };
 	  Future.prototype[_name] = function uncheckedMapperTransformation(mapper){
-	    return this._transform(new MapperAction(mapper));
+	    return this._transform(new MapperAction(
+	      mapper,
+	      captureActionContext(name$$1, uncheckedMapperTransformation)
+	    ));
 	  };
 	  return MapperAction;
 	}
@@ -1754,7 +1407,11 @@ var Fluture = (function () {
 
 	function defineBimapperAction(name$$1, prototype){
 	  var _name = '_' + name$$1;
-	  function BimapperAction(lmapper, rmapper){ this.lmapper = lmapper; this.rmapper = rmapper; }
+	  function BimapperAction(lmapper, rmapper, context){
+	    this.lmapper = lmapper;
+	    this.rmapper = rmapper;
+	    this.context = context;
+	  }
 	  BimapperAction.prototype = Object.assign(Object.create(Action), prototype);
 	  BimapperAction.prototype.name = name$$1;
 	  BimapperAction.prototype.toString = bimapperActionToString;
@@ -1764,8 +1421,12 @@ var Fluture = (function () {
 	    if(!isFunction(rm)) throwInvalidArgument('Future#' + name$$1, 1, 'to be a Function', rm);
 	    return this[_name](lm, rm);
 	  };
-	  Future.prototype[_name] = function uncheckedBimapperTransformation(lm, rm){
-	    return this._transform(new BimapperAction(lm, rm));
+	  Future.prototype[_name] = function uncheckedBimapperTransformation(lmapper, rmapper){
+	    return this._transform(new BimapperAction(
+	      lmapper,
+	      rmapper,
+	      captureActionContext(name$$1, uncheckedBimapperTransformation)
+	    ));
 	  };
 	  return BimapperAction;
 	}
@@ -1776,7 +1437,7 @@ var Fluture = (function () {
 
 	function defineOtherAction(name$$1, prototype){
 	  var _name = '_' + name$$1;
-	  function OtherAction(other){ this.other = other; }
+	  function OtherAction(other, context){ this.other = other; this.context = context; }
 	  OtherAction.prototype = Object.assign(Object.create(Action), prototype);
 	  OtherAction.prototype.name = name$$1;
 	  OtherAction.prototype.toString = otherActionToString;
@@ -1786,7 +1447,10 @@ var Fluture = (function () {
 	    return this[_name](other);
 	  };
 	  Future.prototype[_name] = function uncheckedOtherTransformation(other){
-	    return this._transform(new OtherAction(other));
+	    return this._transform(new OtherAction(
+	      other,
+	      captureActionContext(name$$1, uncheckedOtherTransformation)
+	    ));
 	  };
 	  return OtherAction;
 	}
@@ -1797,6 +1461,11 @@ var Fluture = (function () {
 	    var eager = new Eager(this.other);
 	    var action = new ParallelAction(eager);
 	    function ParallelAction$early(m){ early(m, action); }
+	    action.context = captureContext(
+	      this.context,
+	      name$$1 + ' triggering a parallel Future',
+	      ParallelAction$run
+	    );
 	    action.cancel = eager._interpret(
 	      function ParallelAction$rec(x){ rec(ParallelAction$early, x); },
 	      function ParallelAction$rej(x){ rej(ParallelAction$early, x); },
@@ -1810,35 +1479,35 @@ var Fluture = (function () {
 	function apActionHandler(f){
 	  return isFunction(f) ?
 	         this.other._map(function ApAction$resolved$mapper(x){ return f(x) }) :
-	         new Crashed(typeError(
+	         new Crashed(makeError(typeError(
 	           'Future#' + this.name + ' expects its first argument to be a Future of a Function\n' +
 	           '  Actual: Future.of(' + sanctuaryShow(f) + ')'
-	         ));
+	         ), null, this.context));
 	}
 
 	function chainActionHandler(x){
 	  var m;
-	  try{ m = this.mapper(x); }catch(e){ return new Crashed(e) }
-	  return isFuture(m) ? m : new Crashed(invalidFuture(
+	  try{ m = this.mapper(x); }catch(e){ return new Crashed(makeError(e, null, this.context)) }
+	  return isFuture(m) ? m : new Crashed(makeError(invalidFuture(
 	    'Future#' + this.name,
 	    'the function it\'s given to return a Future',
 	    m,
 	    '\n  From calling: ' + showf(this.mapper) + '\n  With: ' + sanctuaryShow(x)
-	  ));
+	  ), null, this.context));
 	}
 
 	function returnOther(){
 	  return this.other;
 	}
 
-	function mapWith(mapper, create, value){
+	function mapWith(mapper, create, value, context){
 	  var m;
-	  try{ m = create(mapper(value)); }catch(e){ m = new Crashed(e); }
+	  try{ m = create(mapper(value)); }catch(e){ m = new Crashed(makeError(e, null, context)); }
 	  return m;
 	}
 
 	function mapRight(value){
-	  return mapWith(this.rmapper, resolve, value);
+	  return mapWith(this.rmapper, resolve, value, this.context);
 	}
 
 	function earlyCrash(early, x){
@@ -1858,12 +1527,16 @@ var Fluture = (function () {
 	});
 
 	defineMapperAction('map', {
-	  resolved: function MapAction$resolved(x){ return mapWith(this.mapper, resolve, x) }
+	  resolved: function MapAction$resolved(x){
+	    return mapWith(this.mapper, resolve, x, this.context);
+	  }
 	});
 
 	defineBimapperAction('bimap', {
 	  resolved: mapRight,
-	  rejected: function BimapAction$rejected(x){ return mapWith(this.lmapper, reject, x) }
+	  rejected: function BimapAction$rejected(x){
+	    return mapWith(this.lmapper, reject, x, this.context);
+	  }
 	});
 
 	defineMapperAction('chain', {
@@ -1871,7 +1544,9 @@ var Fluture = (function () {
 	});
 
 	defineMapperAction('mapRej', {
-	  rejected: function MapRejAction$rejected(x){ return mapWith(this.mapper, reject, x) }
+	  rejected: function MapRejAction$rejected(x){
+	    return mapWith(this.mapper, reject, x, this.context);
+	  }
 	});
 
 	defineMapperAction('chainRej', {
@@ -1885,7 +1560,9 @@ var Fluture = (function () {
 
 	defineBimapperAction('fold', {
 	  resolved: mapRight,
-	  rejected: function FoldAction$rejected(x){ return mapWith(this.lmapper, resolve, x) }
+	  rejected: function FoldAction$rejected(x){
+	    return mapWith(this.lmapper, resolve, x, this.context);
+	  }
 	});
 
 	var finallyAction = {
@@ -2133,7 +1810,7 @@ var Fluture = (function () {
 	  if(!isFunction(h)) throwInvalidArgument('Future.forkCatch', 2, 'be a function', h);
 	  if(arguments.length === 3) return partial3(forkCatch, f, g, h);
 	  if(!isFuture(m)) throwInvalidFuture('Future.forkCatch', 3, m);
-	  return m._interpret(function forkCatch$recover(x){ f(valueToError(x)); }, g, h);
+	  return m._interpret(f, g, h);
 	}
 
 	function promise(m){
@@ -2165,6 +1842,7 @@ var Fluture = (function () {
 	function After(time, value){
 	  this._time = time;
 	  this._value = value;
+	  this.context = captureContext(nil, 'a Future created with after', After);
 	}
 
 	After.prototype = Object.create(Future.prototype);
@@ -2185,6 +1863,7 @@ var Fluture = (function () {
 	function RejectAfter(time, value){
 	  this._time = time;
 	  this._value = value;
+	  this.context = captureContext(nil, 'a Future created with rejectAfter', After);
 	}
 
 	RejectAfter.prototype = Object.create(Future.prototype);
@@ -2226,6 +1905,7 @@ var Fluture = (function () {
 
 	function Attempt(fn){
 	  this._fn = fn;
+	  this.context = captureContext(nil, 'a Future created with attempt/try', Attempt);
 	}
 
 	Attempt.prototype = Object.create(Future.prototype);
@@ -2372,6 +2052,7 @@ var Fluture = (function () {
 	function Encase(fn, a){
 	  this._fn = fn;
 	  this._a = a;
+	  this.context = captureContext(nil, 'a Future created with encase', Encase);
 	}
 
 	Encase.prototype = Object.create(Future.prototype);
@@ -2397,6 +2078,7 @@ var Fluture = (function () {
 	  this._fn = fn;
 	  this._a = a;
 	  this._b = b;
+	  this.context = captureContext(nil, 'a Future created with encase2', Encase2);
 	}
 
 	Encase2.prototype = Object.create(Future.prototype);
@@ -2427,6 +2109,7 @@ var Fluture = (function () {
 	  this._a = a;
 	  this._b = b;
 	  this._c = c;
+	  this.context = captureContext(nil, 'a Future created with encase3', Encase3);
 	}
 
 	Encase3.prototype = Object.create(Future.prototype);
@@ -2464,12 +2147,14 @@ var Fluture = (function () {
 	function EncaseN(fn, a){
 	  this._fn = fn;
 	  this._a = a;
+	  this.context = captureContext(nil, 'a Future created with encaseN', EncaseN);
 	}
 
 	EncaseN.prototype = Object.create(Future.prototype);
 
 	EncaseN.prototype._interpret = function EncaseN$interpret(rec, rej, res){
 	  var open = false, cont = function(){ open = true; };
+	  var context = captureContext(this.context, 'consuming an encased Future', EncaseN$interpret);
 	  try{
 	    this._fn(this._a, function EncaseN$done(err, val){
 	      cont = err ? function EncaseN3$rej(){
@@ -2484,7 +2169,7 @@ var Fluture = (function () {
 	      }
 	    });
 	  }catch(e){
-	    rec(e);
+	    rec(makeError(e, this, context));
 	    open = false;
 	    return noop;
 	  }
@@ -2506,12 +2191,14 @@ var Fluture = (function () {
 	  this._fn = fn;
 	  this._a = a;
 	  this._b = b;
+	  this.context = captureContext(nil, 'a Future created with encaseN2', EncaseN2);
 	}
 
 	EncaseN2.prototype = Object.create(Future.prototype);
 
 	EncaseN2.prototype._interpret = function EncaseN2$interpret(rec, rej, res){
 	  var open = false, cont = function(){ open = true; };
+	  var context = captureContext(this.context, 'consuming an encased Future', EncaseN2$interpret);
 	  try{
 	    this._fn(this._a, this._b, function EncaseN2$done(err, val){
 	      cont = err ? function EncaseN2$rej(){
@@ -2526,7 +2213,7 @@ var Fluture = (function () {
 	      }
 	    });
 	  }catch(e){
-	    rec(e);
+	    rec(makeError(e, this, context));
 	    open = false;
 	    return noop;
 	  }
@@ -2553,12 +2240,14 @@ var Fluture = (function () {
 	  this._a = a;
 	  this._b = b;
 	  this._c = c;
+	  this.context = captureContext(nil, 'a Future created with encaseN3', EncaseN3);
 	}
 
 	EncaseN3.prototype = Object.create(Future.prototype);
 
 	EncaseN3.prototype._interpret = function EncaseN3$interpret(rec, rej, res){
 	  var open = false, cont = function(){ open = true; };
+	  var context = captureContext(this.context, 'consuming an encased Future', EncaseN3$interpret);
 	  try{
 	    this._fn(this._a, this._b, this._c, function EncaseN3$done(err, val){
 	      cont = err ? function EncaseN3$rej(){
@@ -2573,7 +2262,7 @@ var Fluture = (function () {
 	      }
 	    });
 	  }catch(e){
-	    rec(e);
+	    rec(makeError(e, this, context));
 	    open = false;
 	    return noop;
 	  }
@@ -2615,20 +2304,22 @@ var Fluture = (function () {
 	function EncaseP(fn, a){
 	  this._fn = fn;
 	  this._a = a;
+	  this.context = captureContext(nil, 'a Future created with encaseP', EncaseP);
 	}
 
 	EncaseP.prototype = Object.create(Future.prototype);
 
 	EncaseP.prototype._interpret = function EncaseP$interpret(rec, rej, res){
 	  var open = true, fn = this._fn, a = this._a, p;
+	  var context = captureContext(this.context, 'consuming an encased Future', EncaseP$interpret);
 	  try{
 	    p = fn(a);
 	  }catch(e){
-	    rec(e);
+	    rec(makeError(e, this, context));
 	    return noop;
 	  }
 	  if(!isThenable(p)){
-	    rec(invalidPromise(p, fn, a));
+	    rec(makeError(invalidPromise(p, fn, a), this, context));
 	    return noop;
 	  }
 	  p.then(function EncaseP$res(x){
@@ -2668,20 +2359,22 @@ var Fluture = (function () {
 	  this._fn = fn;
 	  this._a = a;
 	  this._b = b;
+	  this.context = captureContext(nil, 'a Future created with encaseP2', EncaseP2);
 	}
 
 	EncaseP2.prototype = Object.create(Future.prototype);
 
 	EncaseP2.prototype._interpret = function EncaseP2$interpret(rec, rej, res){
 	  var open = true, fn = this._fn, a = this._a, b = this._b, p;
+	  var context = captureContext(this.context, 'consuming an encased Future', EncaseP2$interpret);
 	  try{
 	    p = fn(a, b);
 	  }catch(e){
-	    rec(e);
+	    rec(makeError(e, this, context));
 	    return noop;
 	  }
 	  if(!isThenable(p)){
-	    rec(invalidPromise$1(p, fn, a, b));
+	    rec(makeError(invalidPromise$1(p, fn, a, b), this, context));
 	    return noop;
 	  }
 	  p.then(function EncaseP2$res(x){
@@ -2727,20 +2420,22 @@ var Fluture = (function () {
 	  this._a = a;
 	  this._b = b;
 	  this._c = c;
+	  this.context = captureContext(nil, 'a Future created with encaseP3', EncaseP3);
 	}
 
 	EncaseP3.prototype = Object.create(Future.prototype);
 
 	EncaseP3.prototype._interpret = function EncaseP3$interpret(rec, rej, res){
 	  var open = true, fn = this._fn, a = this._a, b = this._b, c = this._c, p;
+	  var context = captureContext(this.context, 'consuming an encased Future', EncaseP3$interpret);
 	  try{
 	    p = fn(a, b, c);
 	  }catch(e){
-	    rec(e);
+	    rec(makeError(e, this, context));
 	    return noop;
 	  }
 	  if(!isThenable(p)){
-	    rec(invalidPromise$2(p, fn, a, b, c));
+	    rec(makeError(invalidPromise$2(p, fn, a, b, c), this, context));
 	    return noop;
 	  }
 	  p.then(function EncaseP3$res(x){
@@ -2804,30 +2499,48 @@ var Fluture = (function () {
 
 	function Go(generator){
 	  this._generator = generator;
+	  this.context = captureContext(nil, 'a Future created with do-notation', Go);
 	}
 
 	Go.prototype = Object.create(Future.prototype);
 
 	Go.prototype._interpret = function Go$interpret(rec, rej, res){
 
-	  var timing = Undetermined, cancel = noop, state, value, iterator;
+	  var _this = this, timing = Undetermined, cancel = noop, state, value, iterator;
+
+	  var context = captureContext(
+	    _this.context,
+	    'interpreting a Future created with do-notation',
+	    Go$interpret
+	  );
 
 	  try{
-	    iterator = this._generator();
+	    iterator = _this._generator();
 	  }catch(e){
-	    rec(e);
+	    rec(makeError(e, _this, context));
 	    return noop;
 	  }
 
 	  if(!isIterator(iterator)){
-	    rec(invalidArgument('Future.do', 0, 'return an iterator, maybe you forgot the "*"', iterator));
+	    rec(makeError(
+	      invalidArgument('Future.do', 0, 'return an iterator, maybe you forgot the "*"', iterator),
+	      _this,
+	      context
+	    ));
 	    return noop;
 	  }
 
 	  function resolved(x){
 	    value = x;
-	    if(timing === Asynchronous) return drain();
+	    if(timing === Asynchronous){
+	      context = cat(state.value.context, context);
+	      return drain();
+	    }
 	    timing = Synchronous;
+	  }
+
+	  function crash(e){
+	    rec(makeError(e, state.value, cat(state.value.context, context)));
 	  }
 
 	  function drain(){
@@ -2836,13 +2549,13 @@ var Fluture = (function () {
 	      try{
 	        state = iterator.next(value);
 	      }catch(e){
-	        return rec(e);
+	        return rec(makeError(e, _this, context));
 	      }
-	      if(!isIteration(state)) return rec(invalidIteration(state));
+	      if(!isIteration(state)) return rec(makeError(invalidIteration(state), _this, context));
 	      if(state.done) break;
-	      if(!isFuture(state.value)) return rec(invalidState(state.value));
+	      if(!isFuture(state.value)) return rec(makeError(invalidState(state.value), _this, context));
 	      timing = Undetermined;
-	      cancel = state.value._interpret(rec, rej, resolved);
+	      cancel = state.value._interpret(crash, rej, resolved);
 	      if(timing === Undetermined) return timing = Asynchronous;
 	    }
 	    res(state.value);
@@ -2862,8 +2575,6 @@ var Fluture = (function () {
 	  if(!isFunction(generator)) throwInvalidArgument('Future.do', 0, 'be a Function', generator);
 	  return new Go(generator);
 	}
-
-	/* eslint no-param-reassign:0 */
 
 	function invalidDisposal(m, f, x){
 	  return invalidFuture(
@@ -2887,14 +2598,16 @@ var Fluture = (function () {
 	  this._acquire = acquire;
 	  this._dispose = dispose;
 	  this._consume = consume;
+	  this.context = captureContext(nil, 'a Future created with hook', Hook);
 	}
 
 	Hook.prototype = Object.create(Future.prototype);
 
 	Hook.prototype._interpret = function Hook$interpret(rec, rej, res){
 
-	  var _acquire = this._acquire, _dispose = this._dispose, _consume = this._consume;
+	  var _this = this, _acquire = this._acquire, _dispose = this._dispose, _consume = this._consume;
 	  var cancel, cancelConsume = noop, resource, value, cont = noop;
+	  var context = captureContext(_this.context, 'interpreting a hooked Future', Hook$interpret);
 
 	  function Hook$done(){
 	    cont(value);
@@ -2904,24 +2617,25 @@ var Fluture = (function () {
 	    rej(x);
 	  }
 
-	  function Hook$consumptionException(e){
+	  function Hook$consumptionException(report){
 	    var rec_ = rec;
 	    cont = noop;
 	    rej = noop;
 	    rec = noop;
 	    Hook$dispose();
-	    rec_(e);
+	    rec_(report);
 	  }
 
 	  function Hook$dispose(){
+	    context = captureContext(context, 'hook consuming a resource', Hook$dispose);
 	    var disposal;
 	    try{
 	      disposal = _dispose(resource);
 	    }catch(e){
-	      return rec(e);
+	      return rec(makeError(e, _this, context));
 	    }
 	    if(!isFuture(disposal)){
-	      return rec(invalidDisposal(disposal, _dispose, resource));
+	      return rec(makeError(invalidDisposal(disposal, _dispose, resource), _this, context));
 	    }
 	    disposal._interpret(rec, Hook$reject, Hook$done);
 	    cancel = Hook$cancelDisposal;
@@ -2952,15 +2666,20 @@ var Fluture = (function () {
 	  }
 
 	  function Hook$consume(x){
+	    context = captureContext(context, 'hook acquiring a resource', Hook$consume);
 	    resource = x;
 	    var consumption;
 	    try{
 	      consumption = _consume(resource);
 	    }catch(e){
-	      return Hook$consumptionException(e);
+	      return Hook$consumptionException(makeError(e, _this, context));
 	    }
 	    if(!isFuture(consumption)){
-	      return Hook$consumptionException(invalidConsumption(consumption, _consume, resource));
+	      return Hook$consumptionException(makeError(
+	        invalidConsumption(consumption, _consume, resource),
+	        _this,
+	        context
+	      ));
 	    }
 	    cancel = Hook$cancelConsumption;
 	    cancelConsume = consumption._interpret(
@@ -3007,6 +2726,7 @@ var Fluture = (function () {
 
 	function Node(fn){
 	  this._fn = fn;
+	  this.context = captureContext(nil, 'a Future created with node');
 	}
 
 	Node.prototype = Object.create(Future.prototype);
@@ -3027,7 +2747,7 @@ var Fluture = (function () {
 	      }
 	    });
 	  }catch(e){
-	    rec(e);
+	    rec(makeError(e, this, this.context));
 	    open = false;
 	    return noop;
 	  }
@@ -3048,6 +2768,7 @@ var Fluture = (function () {
 	  this._futures = futures;
 	  this._length = futures.length;
 	  this._max = Math.min(this._length, max);
+	  this.context = captureContext(nil, 'a Future created with parallel', Parallel);
 	}
 
 	Parallel.prototype = Object.create(Future.prototype);
@@ -3057,6 +2778,7 @@ var Fluture = (function () {
 	  var _futures = this._futures, _length = this._length, _max = this._max;
 	  var cancels = new Array(_length), out = new Array(_length);
 	  var cursor = 0, running = 0, blocked = false;
+	  var context = captureContext(this.context, 'consuming a parallel Future', Parallel$interpret);
 
 	  function Parallel$cancel(){
 	    cursor = _length;
@@ -3068,7 +2790,7 @@ var Fluture = (function () {
 	    cancels[idx] = _futures[idx]._interpret(function Parallel$rec(e){
 	      cancels[idx] = noop;
 	      Parallel$cancel();
-	      rec(e);
+	      rec(makeError(e, _futures[idx], context));
 	    }, function Parallel$rej(reason){
 	      cancels[idx] = noop;
 	      Parallel$cancel();
@@ -3130,6 +2852,7 @@ var Fluture = (function () {
 
 	function TryP(fn){
 	  this._fn = fn;
+	  this.context = captureContext(nil, 'a Future created with tryP', TryP);
 	}
 
 	TryP.prototype = Object.create(Future.prototype);
@@ -3139,11 +2862,11 @@ var Fluture = (function () {
 	  try{
 	    p = fn();
 	  }catch(e){
-	    rec(e);
+	    rec(makeError(e, this, this.context));
 	    return noop;
 	  }
 	  if(!isThenable(p)){
-	    rec(invalidPromise$3(p, fn));
+	    rec(makeError(invalidPromise$3(p, fn), this, this.context));
 	    return noop;
 	  }
 	  p.then(function TryP$res(x){
@@ -3225,6 +2948,7 @@ var Fluture = (function () {
 		node: node,
 		parallel: parallel,
 		tryP: tryP,
+		debugMode: debugMode,
 		ap: ap,
 		alt: alt,
 		map: map,
