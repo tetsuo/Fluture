@@ -1665,7 +1665,7 @@ will be ignored.
 <details><summary><code>pipe :: Future a b ~> (Future a b -> c) -> c</code></summary>
 
 ```hs
-pipe :: Future a b ~> (Future a b -> c) -> c
+Future.prototype.pipe :: Future a b ~> (Future a b -> c) -> c
 ```
 
 </details>
