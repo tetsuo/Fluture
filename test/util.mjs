@@ -50,16 +50,73 @@ export var failRej = function (x){
 export var assertIsFuture = function (x){ return expect(x).to.be.an.instanceof(Future) };
 
 export var assertEqual = function (a, b){
-  var states = ['pending', 'rejected', 'resolved'];
-  if(!(a instanceof Future && b instanceof Future)){ throw new Error('Both values must be Futures') }
+  var states = ['pending', 'crashed', 'rejected', 'resolved'];
   var astate = 0, aval;
   var bstate = 0, bval;
-  a._interpret(throwit, function (x){astate = 1; aval = x}, function (x){astate = 2; aval = x});
-  b._interpret(throwit, function (x){bstate = 1; bval = x}, function (x){bstate = 2; bval = x});
-  if(astate === 0){ throw new Error('First Future passed to assertEqual did not resolve instantly') }
-  if(bstate === 0){ throw new Error('Second Future passed to assertEqual did not resolve instantly') }
+
+  if(!(a instanceof Future && b instanceof Future)){
+    throw new Error('Both values must be Futures');
+  }
+
+  a._interpret(
+    function (x){
+      if(astate > 0){
+        throw new Error('The first Future ' + states[1] + ' while already ' + states[astate]);
+      }
+      astate = 1;
+      aval = x;
+    },
+    function (x){
+      if(astate > 0){
+        throw new Error('The first Future ' + states[2] + ' while already ' + states[astate]);
+      }
+      astate = 2;
+      aval = x;
+    },
+    function (x){
+      if(astate > 0){
+        throw new Error('The first Future ' + states[3] + ' while already ' + states[astate]);
+      }
+      astate = 3;
+      aval = x;
+    }
+  );
+
+  b._interpret(
+    function (x){
+      if(bstate > 0){
+        throw new Error('The second Future ' + states[1] + ' while already ' + states[bstate]);
+      }
+      bstate = 1;
+      bval = x;
+    },
+    function (x){
+      if(bstate > 0){
+        throw new Error('The second Future ' + states[2] + ' while already ' + states[bstate]);
+      }
+      bstate = 2;
+      bval = x;
+    },
+    function (x){
+      if(bstate > 0){
+        throw new Error('The second Future ' + states[3] + ' while already ' + states[bstate]);
+      }
+      bstate = 3;
+      bval = x;
+    }
+  );
+
+  if(astate === 0){
+    throw new Error('The first Future passed to assertEqual did not resolve instantly');
+  }
+
+  if(bstate === 0){
+    throw new Error('The second Future passed to assertEqual did not resolve instantly');
+  }
+
   if(isFuture(aval) && isFuture(bval)) return assertEqual(aval, bval);
   if(astate === bstate && isDeepStrictEqual(aval, bval)){ return true }
+
   throw new Error(
     '\n    ' + (a.toString()) +
     ' :: Future({ <' + states[astate] + '> ' + show(aval) + ' })' +
