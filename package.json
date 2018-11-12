@@ -78,7 +78,7 @@
     "remark-cli": "^6.0.0",
     "remark-validate-links": "^7.1.0",
     "rimraf": "^2.6.2",
-    "rollup": "^0.66.0",
+    "rollup": "^0.67.0",
     "rollup-plugin-commonjs": "^9.1.6",
     "rollup-plugin-node-resolve": "^3.0.0",
     "sanctuary-benchmark": "^1.0.0",
