@@ -1,18 +1,11 @@
-import chai from 'chai';
-import {Future, race, of} from '../index.mjs';
+import {Future, race} from '../index.mjs';
 import * as U from './util';
 import * as F from './futures';
-import type from 'sanctuary-type-identifiers';
+import {testFunction, futureArg} from './props';
 
-var expect = chai.expect;
+describe('race()', function (){
 
-var testInstance = function (race){
-
-  it('is considered a member of fluture/Fluture', function (){
-    var m1 = Future(function (rej, res){ return void setTimeout(res, 50, 1) });
-    var m2 = Future(function (rej){ return void setTimeout(rej, 5, U.error) });
-    expect(type(race(m1, m2))).to.equal(Future['@@type']);
-  });
+  testFunction('race', race, [futureArg, futureArg], U.assertValidFuture);
 
   describe('#_interpret()', function (){
 
@@ -152,44 +145,5 @@ var testInstance = function (race){
     });
 
   });
-
-};
-
-describe('race()', function (){
-
-  it('is a curried binary function', function (){
-    expect(race).to.be.a('function');
-    expect(race.length).to.equal(2);
-    expect(race(of(1))).to.be.a('function');
-  });
-
-  it('throws when not given a Future as first argument', function (){
-    var f = function (){ return race(1) };
-    expect(f).to.throw(TypeError, /Future.*first/);
-  });
-
-  it('throws when not given a Future as second argument', function (){
-    var f = function (){ return race(of(1), 1) };
-    expect(f).to.throw(TypeError, /Future.*second/);
-  });
-
-  testInstance(function (a, b){ return race(b, a) });
-
-});
-
-describe('Future#race()', function (){
-
-  it('throws when invoked out of context', function (){
-    var f = function (){ return of(1).race.call(null, of(1)) };
-    expect(f).to.throw(TypeError, /Future/);
-  });
-
-  it('throws TypeError when not given a Future', function (){
-    var xs = [NaN, {}, [], 1, 'a', new Date, undefined, null, function (x){ return x }];
-    var fs = xs.map(function (x){ return function (){ return of(1).race(x) } });
-    fs.forEach(function (f){ return expect(f).to.throw(TypeError, /Future/) });
-  });
-
-  testInstance(function (a, b){ return a.race(b) });
 
 });

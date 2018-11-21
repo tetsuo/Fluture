@@ -2,35 +2,14 @@ import chai from 'chai';
 import {Future, of, after, reject} from '../index.mjs';
 import {isIteration} from '../src/internal/iteration';
 import * as U from './util';
-import type from 'sanctuary-type-identifiers';
 
 var expect = chai.expect;
-
-function mockStep (next, done, x){
-  return of(done(x));
-}
 
 describe('chainRec()', function (){
 
   it('is a binary function', function (){
     expect(Future.chainRec).to.be.a('function');
     expect(Future.chainRec.length).to.equal(2);
-  });
-
-  it('returns an instance of Future', function (){
-    expect(Future.chainRec(mockStep, 1)).to.be.an.instanceof(Future);
-  });
-
-});
-
-describe('ChainRec', function (){
-
-  it('extends Future', function (){
-    expect(Future.chainRec(mockStep, 1)).to.be.an.instanceof(Future);
-  });
-
-  it('is considered a member of fluture/Fluture', function (){
-    expect(type(Future.chainRec(mockStep, 1))).to.equal(Future['@@type']);
   });
 
   describe('#_interpret()', function (){

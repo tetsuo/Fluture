@@ -2,7 +2,7 @@ import chai from 'chai';
 import FL from 'fantasy-land';
 import {Future, of} from '../index.mjs';
 import * as U from './util';
-import type from 'sanctuary-type-identifiers';
+import {testFunction, anyArg} from './props';
 
 var expect = chai.expect;
 
@@ -12,28 +12,12 @@ describe('of()', function (){
     expect(of).to.equal(Future[FL.of]);
   });
 
-  it('returns an instance of Future', function (){
-    expect(of(1)).to.be.an.instanceof(Future);
-  });
-
-});
-
-describe('Resolved', function (){
-
-  var m = of(1);
-
-  it('extends Future', function (){
-    expect(m).to.be.an.instanceof(Future);
-  });
-
-  it('is considered a member of fluture/Fluture', function (){
-    expect(type(m)).to.equal(Future['@@type']);
-  });
+  testFunction('of', of, [anyArg], U.assertValidFuture);
 
   describe('#_interpret()', function (){
 
     it('calls success callback with the value', function (){
-      return U.assertResolved(m, 1);
+      return U.assertResolved(of(1), 1);
     });
 
   });
@@ -41,7 +25,7 @@ describe('Resolved', function (){
   describe('#extractRight()', function (){
 
     it('returns array with the value', function (){
-      expect(m.extractRight()).to.deep.equal([1]);
+      expect(of(1).extractRight()).to.deep.equal([1]);
     });
 
   });
@@ -49,7 +33,7 @@ describe('Resolved', function (){
   describe('#toString()', function (){
 
     it('returns the code to create the Resolved', function (){
-      expect(m.toString()).to.equal('Future.of(1)');
+      expect(of(1).toString()).to.equal('Future.of(1)');
     });
 
   });

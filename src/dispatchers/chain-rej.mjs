@@ -4,12 +4,12 @@ import {isFunction} from '../internal/predicates';
 import {throwInvalidArgument, throwInvalidFuture} from '../internal/throw';
 
 function chainRej$chainer(chainer, m){
-  if(!isFuture(m)) throwInvalidFuture('Future.chainRej', 1, m);
+  if(!isFuture(m)) throwInvalidFuture('chainRej', 1, m);
   return m.chainRej(chainer);
 }
 
 export function chainRej(chainer, m){
-  if(!isFunction(chainer)) throwInvalidArgument('Future.chainRej', 0, 'be a Function', chainer);
+  if(!isFunction(chainer)) throwInvalidArgument('chainRej', 0, 'be a Function', chainer);
   if(arguments.length === 1) return partial1(chainRej$chainer, chainer);
   return chainRej$chainer(chainer, m);
 }

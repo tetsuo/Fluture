@@ -42,7 +42,7 @@ EncaseN3.prototype._interpret = function EncaseN3$interpret(rec, rej, res){
 };
 
 EncaseN3.prototype.toString = function EncaseN3$toString(){
-  return 'Future.encaseN3('
+  return 'encaseN3('
        + showf(this._fn)
        + ', '
        + show(this._a)
@@ -54,7 +54,7 @@ EncaseN3.prototype.toString = function EncaseN3$toString(){
 };
 
 export function encaseN3(f, x, y, z){
-  if(!isFunction(f)) throwInvalidArgument('Future.encaseN3', 0, 'be a function', f);
+  if(!isFunction(f)) throwInvalidArgument('encaseN3', 0, 'be a Function', f);
 
   switch(arguments.length){
     case 1: return partial1(encaseN3, f);

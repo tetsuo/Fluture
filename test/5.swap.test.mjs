@@ -1,15 +1,10 @@
-import chai from 'chai';
-import {Future, swap, of, reject} from '../index.mjs';
+import {swap, of, reject} from '../index.mjs';
 import * as U from './util';
-import type from 'sanctuary-type-identifiers';
+import {testFunction, futureArg} from './props';
 
-var expect = chai.expect;
+describe('swap()', function (){
 
-var testInstance = function (swap){
-
-  it('is considered a member of fluture/Fluture', function (){
-    expect(type(swap(of(1)))).to.equal(Future['@@type']);
-  });
+  testFunction('swap', swap, [futureArg], U.assertValidFuture);
 
   describe('#_interpret()', function (){
 
@@ -24,32 +19,5 @@ var testInstance = function (swap){
     });
 
   });
-
-};
-
-describe('swap()', function (){
-
-  it('throws when not given a Future', function (){
-    var f = function (){ return swap(1) };
-    expect(f).to.throw(TypeError, /Future/);
-  });
-
-  testInstance(function (m){ return swap(m) });
-
-});
-
-describe('Future#swap()', function (){
-
-  it('throws when invoked out of context', function (){
-    var f = function (){ return of(1).swap.call(null) };
-    expect(f).to.throw(TypeError, /Future/);
-  });
-
-  it('swaps Computation', function (){
-    var m = Future(function (rej){ return rej(1) });
-    return U.assertResolved(m.swap(), 1);
-  });
-
-  testInstance(function (m){ return m.swap() });
 
 });

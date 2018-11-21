@@ -2,46 +2,20 @@ import chai from 'chai';
 import {Future, hook, of, reject} from '../index.mjs';
 import * as U from './util';
 import * as F from './futures';
-import type from 'sanctuary-type-identifiers';
+import {testFunction, futureArg, functionArg} from './props';
 
 var expect = chai.expect;
 
 describe('hook()', function (){
 
-  it('is a curried ternary function', function (){
-    expect(hook).to.be.a('function');
-    expect(hook.length).to.equal(3);
-    expect(hook(of(1))).to.be.a('function');
-    expect(hook(of(1))(U.noop)).to.be.a('function');
-    expect(hook(of(1), U.noop)).to.be.a('function');
-  });
-
-  it('throws when not given a Future as first argument', function (){
-    var f = function (){ return hook(1) };
-    expect(f).to.throw(TypeError, /Future.*first/);
-  });
-
-  it('throws when not given a Function as second argument', function (){
-    var f = function (){ return hook(of(1), 1) };
-    expect(f).to.throw(TypeError, /Future.*second/);
-  });
-
-  it('throws when not given a Function as third argument', function (){
-    var f = function (){ return hook(of(1), U.add(1), 1) };
-    expect(f).to.throw(TypeError, /Future.*third/);
-  });
-
-  it('is considered a member of fluture/Fluture', function (){
-    var m = hook(of(1), function (){ return of(2) }, function (){ return of(3) });
-    expect(type(m)).to.equal(Future['@@type']);
-  });
+  testFunction('hook', hook, [futureArg, functionArg, functionArg], U.assertValidFuture);
 
   describe('#_interpret()', function (){
 
     it('crashes when the first function does not return Future', function (){
       var m = hook(F.resolved, function (){ return 1 }, function (){ return F.resolved });
       return U.assertCrashed(m, new TypeError(
-        'Future.hook expects the first function it\'s given to return a Future.\n' +
+        'hook() expects the first function it\'s given to return a Future.\n' +
         '  Actual: 1 :: Number\n' +
         '  From calling: function (){ return 1 }\n' +
         '  With: "resolved"'
@@ -56,7 +30,7 @@ describe('hook()', function (){
     it('crashes when the second function does not return Future', function (){
       var m = hook(F.resolved, function (){ return F.resolved }, function (){ return 1 });
       return U.assertCrashed(m, new TypeError(
-        'Future.hook expects the second function it\'s given to return a Future.\n' +
+        'hook() expects the second function it\'s given to return a Future.\n' +
         '  Actual: 1 :: Number\n' +
         '  From calling: function (){ return 1 }\n' +
         '  With: "resolved"'
@@ -176,7 +150,7 @@ describe('hook()', function (){
       var d = function (){ return of(2) };
       var c = function (){ return of(3) };
       var m = hook(a, d, c);
-      var expected = 'Future.hook(' + a.toString() + ', ' + d.toString() + ', ' + c.toString() + ')';
+      var expected = 'hook(' + a.toString() + ', ' + d.toString() + ', ' + c.toString() + ')';
       expect(m.toString()).to.equal(expected);
     });
 

@@ -3,20 +3,13 @@ import {Future, cache, of, reject, after} from '../index.mjs';
 import {Cached} from '../src/cache';
 import * as U from './util';
 import * as F from './futures';
-import type from 'sanctuary-type-identifiers';
+import {testFunction, futureArg} from './props';
 
 var expect = chai.expect;
 
 describe('cache()', function (){
 
-  it('throws when not given a Future', function (){
-    var f = function (){ return cache(1) };
-    expect(f).to.throw(TypeError, /Future/);
-  });
-
-  it('is considered a member of fluture/Fluture', function (){
-    expect(type(cache(of(1)))).to.equal(Future['@@type']);
-  });
+  testFunction('cache', cache, [futureArg], U.assertValidFuture);
 
   describe('#_interpret()', function (){
 
@@ -208,7 +201,7 @@ describe('cache()', function (){
 
     it('returns the code to create the Cached', function (){
       var m = cache(of(1));
-      var s = 'Future.cache(Future.of(1))';
+      var s = 'cache(Future.of(1))';
       expect(m.toString()).to.equal(s);
     });
 

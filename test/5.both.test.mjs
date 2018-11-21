@@ -1,16 +1,11 @@
-import chai from 'chai';
-import {Future, both, of, node} from '../index.mjs';
+import {Future, both, node} from '../index.mjs';
 import * as U from './util';
 import * as F from './futures';
-import type from 'sanctuary-type-identifiers';
+import {testFunction, futureArg} from './props';
 
-var expect = chai.expect;
+describe('both()', function (){
 
-var testInstance = function (both){
-
-  it('is considered a member of fluture/Fluture', function (){
-    expect(type(both(F.resolved, F.resolvedSlow))).to.equal(Future['@@type']);
-  });
+  testFunction('both', both, [futureArg, futureArg], U.assertValidFuture);
 
   describe('#_interpret()', function (){
 
@@ -142,44 +137,5 @@ var testInstance = function (both){
     });
 
   });
-
-};
-
-describe('both()', function (){
-
-  it('is a curried binary function', function (){
-    expect(both).to.be.a('function');
-    expect(both.length).to.equal(2);
-    expect(both(of(1))).to.be.a('function');
-  });
-
-  it('throws when not given a Future as first argument', function (){
-    var f = function (){ return both(1) };
-    expect(f).to.throw(TypeError, /Future.*first/);
-  });
-
-  it('throws when not given a Future as second argument', function (){
-    var f = function (){ return both(of(1), 1) };
-    expect(f).to.throw(TypeError, /Future.*second/);
-  });
-
-  testInstance(function (a, b){ return both(a, b) });
-
-});
-
-describe('Future#both()', function (){
-
-  it('throws when invoked out of context', function (){
-    var f = function (){ return of(1).both.call(null, of(1)) };
-    expect(f).to.throw(TypeError, /Future/);
-  });
-
-  it('throws TypeError when not given a Future', function (){
-    var xs = [NaN, {}, [], 1, 'a', new Date, undefined, null, function (x){ return x }];
-    var fs = xs.map(function (x){ return function (){ return of(1).both(x) } });
-    fs.forEach(function (f){ return expect(f).to.throw(TypeError, /Future/) });
-  });
-
-  testInstance(function (a, b){ return a.both(b) });
 
 });

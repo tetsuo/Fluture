@@ -26,7 +26,7 @@ function isParallel(x){
 }
 
 function seq(par){
-  if(!isParallel(par)) throwInvalidArgument('Future.seq', 0, 'to be a Par', par);
+  if(!isParallel(par)) throwInvalidArgument('seq', 0, 'be a ConcurrentFuture', par);
   return par.sequential;
 }
 

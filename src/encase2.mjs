@@ -22,11 +22,11 @@ Encase2.prototype._interpret = function Encase2$interpret(rec, rej, res){
 };
 
 Encase2.prototype.toString = function Encase2$toString(){
-  return 'Future.encase2(' + showf(this._fn) + ', ' + show(this._a) + ', ' + show(this._b) + ')';
+  return 'encase2(' + showf(this._fn) + ', ' + show(this._a) + ', ' + show(this._b) + ')';
 };
 
 export function encase2(f, x, y){
-  if(!isFunction(f)) throwInvalidArgument('Future.encase2', 0, 'be a function', f);
+  if(!isFunction(f)) throwInvalidArgument('encase2', 0, 'be a Function', f);
 
   switch(arguments.length){
     case 1: return partial1(encase2, f);

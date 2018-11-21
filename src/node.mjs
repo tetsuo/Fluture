@@ -38,10 +38,10 @@ Node.prototype._interpret = function Node$interpret(rec, rej, res){
 };
 
 Node.prototype.toString = function Node$toString(){
-  return 'Future.node(' + showf(this._fn) + ')';
+  return 'node(' + showf(this._fn) + ')';
 };
 
 export function node(f){
-  if(!isFunction(f)) throwInvalidArgument('Future.node', 0, 'be a function', f);
+  if(!isFunction(f)) throwInvalidArgument('node', 0, 'be a Function', f);
   return new Node(f);
 }

@@ -6,26 +6,6 @@ import Z from 'sanctuary-type-classes';
 
 var expect = chai.expect;
 
-describe('alt()', function (){
-
-  it('is a curried binary function', function (){
-    expect(alt).to.be.a('function');
-    expect(alt.length).to.equal(2);
-    expect(alt(Par.of(1))).to.be.a('function');
-  });
-
-  it('throws when not given a Function as first argument', function (){
-    var f = function (){ return alt(1) };
-    expect(f).to.throw(TypeError, /alt.*first/);
-  });
-
-  it('throws when not given a Future as second argument', function (){
-    var f = function (){ return alt(Par.of(1), 1) };
-    expect(f).to.throw(TypeError, /alt.*second/);
-  });
-
-});
-
 describe('Par()', function (){
 
   it('is a unary function', function (){
@@ -35,7 +15,10 @@ describe('Par()', function (){
 
   it('throws when not given a Future', function (){
     var f = function (){ return Par(1) };
-    expect(f).to.throw(TypeError, /Future/);
+    U.throws(f, new TypeError(
+      'ConcurrentFuture expects its first argument to be of type "Future"\n' +
+      '  Actual: 1'
+    ));
   });
 
   describe('.of()', function (){
@@ -67,7 +50,7 @@ describe('Par()', function (){
     it('throws TypeError when the Future does not resolve to a Function', function (){
       var m = seq(ap(Par(of(1)), Par(F.resolved)));
       return U.assertCrashed(m, new TypeError(
-        'Future#_parallelAp expects its first argument to be a Future of a Function\n' +
+        'Future#_parallelAp() expects its first argument to be a Future of a Function\n' +
         '  Actual: Future.of(1)'
       ));
     });
@@ -109,7 +92,7 @@ describe('Par()', function (){
 
     it('shows a reasonable representation when cast to string', function (){
       var m = ap(Par(of(1)), Par(reject(0)));
-      var s = 'ConcurrentFuture(Future.of(1)._parallelAp(Future.reject(0)))';
+      var s = 'ConcurrentFuture(Future.of(1)._parallelAp(reject(0)))';
       expect(m.toString()).to.equal(s);
     });
 

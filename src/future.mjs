@@ -42,28 +42,28 @@ Future.prototype[FL.chain] = function Future$FL$chain(mapper){
 
 Future.prototype.pipe = function Future$pipe(f){
   if(!isFuture(this)) throwInvalidContext('Future#pipe', this);
-  if(!isFunction(f)) throwInvalidArgument('Future#pipe', 0, 'to be a Function', f);
+  if(!isFunction(f)) throwInvalidArgument('Future#pipe', 0, 'be a Function', f);
   return f(this);
 };
 
 Future.prototype.fork = function Future$fork(rej, res){
   if(!isFuture(this)) throwInvalidContext('Future#fork', this);
-  if(!isFunction(rej)) throwInvalidArgument('Future#fork', 0, 'to be a Function', rej);
-  if(!isFunction(res)) throwInvalidArgument('Future#fork', 1, 'to be a Function', res);
+  if(!isFunction(rej)) throwInvalidArgument('Future#fork', 0, 'be a Function', rej);
+  if(!isFunction(res)) throwInvalidArgument('Future#fork', 1, 'be a Function', res);
   return this._interpret(raise, rej, res);
 };
 
 Future.prototype.forkCatch = function Future$forkCatch(rec, rej, res){
-  if(!isFuture(this)) throwInvalidContext('Future#fork', this);
-  if(!isFunction(rec)) throwInvalidArgument('Future#fork', 0, 'to be a Function', rec);
-  if(!isFunction(rej)) throwInvalidArgument('Future#fork', 1, 'to be a Function', rej);
-  if(!isFunction(res)) throwInvalidArgument('Future#fork', 2, 'to be a Function', res);
+  if(!isFuture(this)) throwInvalidContext('Future#forkCatch', this);
+  if(!isFunction(rec)) throwInvalidArgument('Future#forkCatch', 0, 'be a Function', rec);
+  if(!isFunction(rej)) throwInvalidArgument('Future#forkCatch', 1, 'be a Function', rej);
+  if(!isFunction(res)) throwInvalidArgument('Future#forkCatch', 2, 'be a Function', res);
   return this._interpret(rec, rej, res);
 };
 
 Future.prototype.value = function Future$value(res){
   if(!isFuture(this)) throwInvalidContext('Future#value', this);
-  if(!isFunction(res)) throwInvalidArgument('Future#value', 0, 'to be a Function', res);
+  if(!isFunction(res)) throwInvalidArgument('Future#value', 0, 'be a Function', res);
   var _this = this;
   return _this._interpret(raise, function Future$value$rej(x){
     raise(error(
@@ -76,13 +76,14 @@ Future.prototype.value = function Future$value(res){
 
 Future.prototype.done = function Future$done(callback){
   if(!isFuture(this)) throwInvalidContext('Future#done', this);
-  if(!isFunction(callback)) throwInvalidArgument('Future#done', 0, 'to be a Function', callback);
+  if(!isFunction(callback)) throwInvalidArgument('Future#done', 0, 'be a Function', callback);
   return this._interpret(raise,
                          function Future$done$rej(x){ callback(x) },
                          function Future$done$res(x){ callback(null, x) });
 };
 
 Future.prototype.promise = function Future$promise(){
+  if(!isFuture(this)) throwInvalidContext('Future#promise', this);
   var _this = this;
   return new Promise(function Future$promise$computation(res, rej){
     _this._interpret(raise, rej, res);
@@ -356,7 +357,7 @@ Rejected.prototype.extractLeft = function Rejected$extractLeft(){
 };
 
 Rejected.prototype.toString = function Rejected$toString(){
-  return 'Future.reject(' + show(this._value) + ')';
+  return 'reject(' + show(this._value) + ')';
 };
 
 export function reject(x){
@@ -397,7 +398,7 @@ Never.prototype._interpret = function Never$interpret(){
 };
 
 Never.prototype.toString = function Never$toString(){
-  return 'Future.never';
+  return 'never';
 };
 
 export var never = new Never();
@@ -492,7 +493,7 @@ function defineMapperAction(name, prototype){
   MapperAction.prototype.toString = mapperActionToString;
   Future.prototype[name] = function checkedMapperTransformation(mapper){
     if(!isFuture(this)) throwInvalidContext('Future#' + name, this);
-    if(!isFunction(mapper)) throwInvalidArgument('Future#' + name, 0, 'to be a Function', mapper);
+    if(!isFunction(mapper)) throwInvalidArgument('Future#' + name, 0, 'be a Function', mapper);
     return this[_name](mapper);
   };
   Future.prototype[_name] = function uncheckedMapperTransformation(mapper){
@@ -520,8 +521,8 @@ function defineBimapperAction(name, prototype){
   BimapperAction.prototype.toString = bimapperActionToString;
   Future.prototype[name] = function checkedBimapperTransformation(lm, rm){
     if(!isFuture(this)) throwInvalidContext('Future#' + name, this);
-    if(!isFunction(lm)) throwInvalidArgument('Future#' + name, 0, 'to be a Function', lm);
-    if(!isFunction(rm)) throwInvalidArgument('Future#' + name, 1, 'to be a Function', rm);
+    if(!isFunction(lm)) throwInvalidArgument('Future#' + name, 0, 'be a Function', lm);
+    if(!isFunction(rm)) throwInvalidArgument('Future#' + name, 1, 'be a Function', rm);
     return this[_name](lm, rm);
   };
   Future.prototype[_name] = function uncheckedBimapperTransformation(lmapper, rmapper){
@@ -583,7 +584,7 @@ function apActionHandler(f){
   return isFunction(f) ?
          this.other._map(function ApAction$resolved$mapper(x){ return f(x) }) :
          new Crashed(makeError(typeError(
-           'Future#' + this.name + ' expects its first argument to be a Future of a Function\n' +
+           'Future#' + this.name + '() expects its first argument to be a Future of a Function\n' +
            '  Actual: Future.of(' + show(f) + ')'
          ), null, this.context));
 }

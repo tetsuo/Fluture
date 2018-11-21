@@ -1,8 +1,8 @@
-import chai from 'chai';
-var expect = chai.expect;
-import {Future, isFuture} from '../index.mjs';
 import show from 'sanctuary-show';
+import type from 'sanctuary-type-identifiers';
+import {Future, isFuture} from '../index.mjs';
 import {AssertionError, strictEqual, deepStrictEqual} from 'assert';
+export * from '../src/internal/predicates';
 
 export var STACKSIZE = (function r (){try{return 1 + r()}catch(e){return 1}}());
 export var noop = function (){};
@@ -22,6 +22,16 @@ export var eq = function eq (actual, expected){
     return;
   }
   deepStrictEqual(actual, expected);
+};
+
+export var throws = function throws (f, expected){
+  try{
+    f();
+  }catch(actual){
+    eq(actual, expected);
+    return;
+  }
+  throw new Error('Expected the function to throw');
 };
 
 export var isDeepStrictEqual = function isDeepStrictEqual (actual, expected){
@@ -47,16 +57,43 @@ export var failRej = function (x){
   throw new Error(('Invalidly entered rejection branch with value ' + x));
 };
 
-export var assertIsFuture = function (x){ return expect(x).to.be.an.instanceof(Future) };
+export var assertIsFuture = function (x){
+  eq(isFuture(x), true);
+  eq(x instanceof Future, true);
+  eq(x.constructor, Future);
+  eq(isFuture(x), true);
+  eq(type(x), Future['@@type']);
+};
+
+export var assertValidFuture = function (x){
+  assertIsFuture(x);
+
+  eq(typeof x.extractLeft, 'function');
+  eq(x.extractLeft.length, 0);
+  eq(Array.isArray(x.extractLeft()), true);
+
+  eq(typeof x.extractRight, 'function');
+  eq(x.extractRight.length, 0);
+  eq(Array.isArray(x.extractRight()), true);
+
+  eq(typeof x._transform, 'function');
+  eq(x._transform.length, 1);
+
+  eq(typeof x._interpret, 'function');
+  eq(typeof x._interpret(noop, noop, noop), 'function');
+  eq(x._interpret(noop, noop, noop).length, 0);
+  eq(x._interpret(noop, noop, noop)(), undefined);
+
+  return true;
+};
 
 export var assertEqual = function (a, b){
   var states = ['pending', 'crashed', 'rejected', 'resolved'];
   var astate = 0, aval;
   var bstate = 0, bval;
 
-  if(!(a instanceof Future && b instanceof Future)){
-    throw new Error('Both values must be Futures');
-  }
+  assertIsFuture(a);
+  assertIsFuture(b);
 
   a._interpret(
     function (x){
@@ -155,7 +192,7 @@ export var assertCrashed = function (m, x){
     m, function (e){
       if(e.message === x.message) res();
       else rej(new AssertionError({
-        message: 'Expected the Future to crash with ' + show(x) + '; got: ' + show(e)
+        message: 'Expected the Future to crash with message ' + show(x.message) + '; got: ' + show(e.message)
       }));
     }, function (e){
       rej(new Error('Expected the Future to crash. Instead rejected with: ' + show(e)));

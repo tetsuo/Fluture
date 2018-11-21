@@ -2,20 +2,13 @@ import chai from 'chai';
 import {Future, go, of, after} from '../index.mjs';
 import * as U from './util';
 import * as F from './futures';
+import {testFunction, functionArg} from './props';
 
 var expect = chai.expect;
 
 describe('go()', function (){
 
-  it('throws TypeError when not given a function', function (){
-    var xs = [NaN, {}, [], 1, 'a', new Date, undefined, null];
-    var fs = xs.map(function (x){ return function (){ return go(x) } });
-    fs.forEach(function (f){ return expect(f).to.throw(TypeError, /Future/) });
-  });
-
-});
-
-describe('Go', function (){
+  testFunction('go', go, [functionArg], U.assertValidFuture);
 
   describe('#_interpret()', function (){
 
@@ -27,8 +20,8 @@ describe('Go', function (){
     it('crashes when the given function does not return an interator', function (){
       var m = go(function (){ return null });
       return U.assertCrashed(m, new TypeError(
-        'Future.do expects its first argument to return an iterator, maybe you forgot the "*"\n' +
-        '  Actual: null'
+        'go() expects its first argument to return an iterator, maybe you forgot the "*".\n' +
+        '  Actual: null :: Null'
       ));
     });
 
@@ -48,7 +41,7 @@ describe('Go', function (){
     it('crashes when the returned iterator produces something other than a Future', function (){
       var m = go(function (){ return {next: function (){ return {done: false, value: null} }} });
       return U.assertCrashed(m, new TypeError(
-        'Future.do expects the iterator to produce only valid Futures.\n' +
+        'go() expects the iterator to produce only valid Futures.\n' +
         '  Actual: null :: Null\n' +
         '  Tip: If you\'re using a generator, make sure you always yield a Future'
       ));
@@ -113,7 +106,7 @@ describe('Go', function (){
     it('returns the code to create the Go', function (){
       var f = function*(){};
       var m = go(f);
-      var s = 'Future.do(' + (f.toString()) + ')';
+      var s = 'go(' + (f.toString()) + ')';
       expect(m.toString()).to.equal(s);
     });
 

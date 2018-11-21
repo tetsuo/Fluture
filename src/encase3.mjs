@@ -23,7 +23,7 @@ Encase3.prototype._interpret = function Encase3$interpret(rec, rej, res){
 };
 
 Encase3.prototype.toString = function Encase3$toString(){
-  return 'Future.encase3('
+  return 'encase3('
        + showf(this._fn)
        + ', '
        + show(this._a)
@@ -35,7 +35,7 @@ Encase3.prototype.toString = function Encase3$toString(){
 };
 
 export function encase3(f, x, y, z){
-  if(!isFunction(f)) throwInvalidArgument('Future.encase3', 0, 'be a function', f);
+  if(!isFunction(f)) throwInvalidArgument('encase3', 0, 'be a Function', f);
 
   switch(arguments.length){
     case 1: return partial1(encase3, f);

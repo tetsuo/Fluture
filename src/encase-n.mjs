@@ -40,11 +40,11 @@ EncaseN.prototype._interpret = function EncaseN$interpret(rec, rej, res){
 };
 
 EncaseN.prototype.toString = function EncaseN$toString(){
-  return 'Future.encaseN(' + showf(this._fn) + ', ' + show(this._a) + ')';
+  return 'encaseN(' + showf(this._fn) + ', ' + show(this._a) + ')';
 };
 
 export function encaseN(f, x){
-  if(!isFunction(f)) throwInvalidArgument('Future.encaseN', 0, 'be a function', f);
+  if(!isFunction(f)) throwInvalidArgument('encaseN', 0, 'be a Function', f);
   if(arguments.length === 1) return partial1(encaseN, f);
   return new EncaseN(f, x);
 }

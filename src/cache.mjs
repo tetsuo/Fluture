@@ -117,10 +117,10 @@ Cached.prototype._interpret = function Cached$interpret(rec, rej, res){
 };
 
 Cached.prototype.toString = function Cached$toString(){
-  return 'Future.cache(' + this._pure.toString() + ')';
+  return 'cache(' + this._pure.toString() + ')';
 };
 
 export function cache(m){
-  if(!isFuture(m)) throwInvalidFuture('Future.cache', 0, m);
+  if(!isFuture(m)) throwInvalidFuture('cache', 0, m);
   return new Cached(m);
 }

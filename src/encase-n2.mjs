@@ -41,11 +41,11 @@ EncaseN2.prototype._interpret = function EncaseN2$interpret(rec, rej, res){
 };
 
 EncaseN2.prototype.toString = function EncaseN2$toString(){
-  return 'Future.encaseN2(' + showf(this._fn) + ', ' + show(this._a) + ', ' + show(this._b) + ')';
+  return 'encaseN2(' + showf(this._fn) + ', ' + show(this._a) + ', ' + show(this._b) + ')';
 };
 
 export function encaseN2(f, x, y){
-  if(!isFunction(f)) throwInvalidArgument('Future.encaseN2', 0, 'be a function', f);
+  if(!isFunction(f)) throwInvalidArgument('encaseN2', 0, 'be a Function', f);
 
   switch(arguments.length){
     case 1: return partial1(encaseN2, f);
