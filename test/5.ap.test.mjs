@@ -3,7 +3,7 @@ import {Future, ap, of, reject, after} from '../index.mjs';
 import * as U from './util';
 import * as F from './futures';
 import type from 'sanctuary-type-identifiers';
-import R from 'ramda';
+import {ap as rap} from 'ramda';
 
 var expect = chai.expect;
 
@@ -113,6 +113,6 @@ describe('Future#ap()', function (){
 
 describe('Ramda#ap()', function (){
 
-  testInstance(function (a, b){ return R.ap(b, a) });
+  testInstance(function (a, b){ return rap(b, a) });
 
 });
