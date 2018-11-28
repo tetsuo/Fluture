@@ -14,13 +14,14 @@ export function typeError(message){
 
 export function invalidArgument(it, at, expected, actual){
   return typeError(
-    it + ' expects its ' + ordinal[at] + ' argument to ' + expected + '\n  Actual: ' + show(actual)
+    it + '() expects its ' + ordinal[at] + ' argument to ' + expected + '.' +
+    '\n  Actual: ' + show(actual) + ' :: ' + type.parse(type(actual)).name
   );
 }
 
 export function invalidContext(it, actual){
   return typeError(
-    it + ' was invoked outside the context of a Future. You might want to use'
+    it + '() was invoked outside the context of a Future. You might want to use'
   + ' a dispatcher instead\n  Called on: ' + show(actual)
   );
 }
@@ -51,8 +52,9 @@ export function invalidFuture(it, at, m, s){
   : id.version !== version ? invalidVersion(m, id.version)
   : 'Nothing seems wrong. Contact the Fluture maintainers.') : '';
   return typeError(
-    it + ' expects ' + (ordinal[at] ? 'its ' + ordinal[at] + ' argument to be a valid Future' : at)
-  + '.' + info + '\n  Actual: ' + show(m) + ' :: ' + id.name + (s || '')
+    it + '() expects ' +
+    (ordinal[at] ? 'its ' + ordinal[at] + ' argument to be a valid Future' : at) +
+    '.' + info + '\n  Actual: ' + show(m) + ' :: ' + id.name + (s || '')
   );
 }
 

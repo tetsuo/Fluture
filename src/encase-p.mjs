@@ -9,7 +9,7 @@ import {captureContext} from './internal/debug';
 
 function invalidPromise(p, f, a){
   return typeError(
-    'Future.encaseP expects the function it\'s given to return a Promise/Thenable'
+    'encaseP() expects the function it\'s given to return a Promise/Thenable'
     + '\n  Actual: ' + (show(p)) + '\n  From calling: ' + (showf(f))
     + '\n  With: ' + (show(a))
   );
@@ -51,11 +51,11 @@ EncaseP.prototype._interpret = function EncaseP$interpret(rec, rej, res){
 };
 
 EncaseP.prototype.toString = function EncaseP$toString(){
-  return 'Future.encaseP(' + showf(this._fn) + ', ' + show(this._a) + ')';
+  return 'encaseP(' + showf(this._fn) + ', ' + show(this._a) + ')';
 };
 
 export function encaseP(f, x){
-  if(!isFunction(f)) throwInvalidArgument('Future.encaseP', 0, 'be a function', f);
+  if(!isFunction(f)) throwInvalidArgument('encaseP', 0, 'be a Function', f);
   if(arguments.length === 1) return partial1(encaseP, f);
   return new EncaseP(f, x);
 }

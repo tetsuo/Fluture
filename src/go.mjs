@@ -19,7 +19,7 @@ export function invalidIteration(o){
 
 export function invalidState(x){
   return invalidFuture(
-    'Future.do',
+    'go',
     'the iterator to produce only valid Futures',
     x,
     '\n  Tip: If you\'re using a generator, make sure you always yield a Future'
@@ -52,7 +52,7 @@ Go.prototype._interpret = function Go$interpret(rec, rej, res){
 
   if(!isIterator(iterator)){
     rec(makeError(
-      invalidArgument('Future.do', 0, 'return an iterator, maybe you forgot the "*"', iterator),
+      invalidArgument('go', 0, 'return an iterator, maybe you forgot the "*"', iterator),
       _this,
       context
     ));
@@ -97,10 +97,10 @@ Go.prototype._interpret = function Go$interpret(rec, rej, res){
 };
 
 Go.prototype.toString = function Go$toString(){
-  return 'Future.do(' + showf(this._generator) + ')';
+  return 'go(' + showf(this._generator) + ')';
 };
 
 export function go(generator){
-  if(!isFunction(generator)) throwInvalidArgument('Future.do', 0, 'be a Function', generator);
+  if(!isFunction(generator)) throwInvalidArgument('go', 0, 'be a Function', generator);
   return new Go(generator);
 }

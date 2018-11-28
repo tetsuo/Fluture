@@ -8,7 +8,7 @@ import {captureContext} from './internal/debug';
 
 function invalidDisposal(m, f, x){
   return invalidFuture(
-    'Future.hook',
+    'hook',
     'the first function it\'s given to return a Future',
     m,
     '\n  From calling: ' + showf(f) + '\n  With: ' + show(x)
@@ -17,7 +17,7 @@ function invalidDisposal(m, f, x){
 
 function invalidConsumption(m, f, x){
   return invalidFuture(
-    'Future.hook',
+    'hook',
     'the second function it\'s given to return a Future',
     m,
     '\n  From calling: ' + showf(f) + '\n  With: ' + show(x)
@@ -127,7 +127,7 @@ Hook.prototype._interpret = function Hook$interpret(rec, rej, res){
 };
 
 Hook.prototype.toString = function Hook$toString(){
-  return 'Future.hook('
+  return 'hook('
        + this._acquire.toString()
        + ', '
        + showf(this._dispose)
@@ -137,18 +137,18 @@ Hook.prototype.toString = function Hook$toString(){
 };
 
 function hook$acquire$cleanup(acquire, cleanup, consume){
-  if(!isFunction(consume)) throwInvalidArgument('Future.hook', 2, 'be a Future', consume);
+  if(!isFunction(consume)) throwInvalidArgument('hook', 2, 'be a Function', consume);
   return new Hook(acquire, cleanup, consume);
 }
 
 function hook$acquire(acquire, cleanup, consume){
-  if(!isFunction(cleanup)) throwInvalidArgument('Future.hook', 1, 'be a function', cleanup);
+  if(!isFunction(cleanup)) throwInvalidArgument('hook', 1, 'be a Function', cleanup);
   if(arguments.length === 2) return partial2(hook$acquire$cleanup, acquire, cleanup);
   return hook$acquire$cleanup(acquire, cleanup, consume);
 }
 
 export function hook(acquire, cleanup, consume){
-  if(!isFuture(acquire)) throwInvalidFuture('Future.hook', 0, acquire);
+  if(!isFuture(acquire)) throwInvalidFuture('hook', 0, acquire);
   if(arguments.length === 1) return partial1(hook$acquire, acquire);
   if(arguments.length === 2) return hook$acquire(acquire, cleanup);
   return hook$acquire(acquire, cleanup, consume);

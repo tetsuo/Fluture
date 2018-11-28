@@ -2,45 +2,13 @@ import chai from 'chai';
 import {Future, parallel, of, reject, after} from '../index.mjs';
 import * as U from './util';
 import * as F from './futures';
-import type from 'sanctuary-type-identifiers';
+import {testFunction, positiveIntegerArg, futureArrayArg} from './props';
 
 var expect = chai.expect;
 
 describe('parallel()', function (){
 
-  it('is a curried binary function', function (){
-    expect(parallel).to.be.a('function');
-    expect(parallel.length).to.equal(2);
-    expect(parallel(1)).to.be.a('function');
-  });
-
-  it('throws when given something other than PositiveInteger as a first argument', function (){
-    var xs = [0, -1, 1.5, NaN, '1', 'one'];
-    var fs = xs.map(function (x){ return function (){ return parallel(x)([]) } });
-    fs.forEach(function (f){ return expect(f).to.throw(TypeError, /Future/) });
-  });
-
-  it('throws when given something other than Array as second argument', function (){
-    var xs = [NaN, {}, 1, 'a', new Date, undefined, null, F.resolved];
-    var fs = xs.map(function (x){ return function (){ return parallel(1)(x) } });
-    fs.forEach(function (f){ return expect(f).to.throw(TypeError, /Future/) });
-  });
-
-  it('returns an instance of Future', function (){
-    expect(parallel(1, [])).to.be.an.instanceof(Future);
-  });
-
-});
-
-describe('Parallel', function (){
-
-  it('extends Future', function (){
-    expect(parallel(1, [])).to.be.an.instanceof(Future);
-  });
-
-  it('is considered a member of fluture/Fluture', function (){
-    expect(type(parallel(1, []))).to.equal(Future['@@type']);
-  });
+  testFunction('parallel', parallel, [positiveIntegerArg, futureArrayArg], U.assertValidFuture);
 
   describe('#_interpret()', function (){
 
@@ -243,7 +211,7 @@ describe('Parallel', function (){
 
     it('returns the code to create the Parallel', function (){
       var m = parallel(Infinity, [of(1), of(2)]);
-      var s = 'Future.parallel(2, [Future.of(1), Future.of(2)])';
+      var s = 'parallel(2, [Future.of(1), Future.of(2)])';
       expect(m.toString()).to.equal(s);
     });
 

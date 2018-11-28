@@ -1,8 +1,9 @@
 import chai from 'chai';
-import Future from '../index.mjs';
-import {assertEqual as eq, I, B, noop, STACKSIZE, error, bang} from './util';
 import FL from 'fantasy-laws';
 import Z from 'sanctuary-type-classes';
+import Future from '../index.mjs';
+import {assertEqual as eq, B, noop, STACKSIZE, bang} from './util';
+import {anyFuture, _of} from './props';
 import jsc from 'jsverify';
 
 var expect = chai.expect;
@@ -15,58 +16,9 @@ var Chain = FL.Chain;
 var ChainRec = FL.ChainRec;
 var Monad = FL.Monad;
 
-var bool = jsc.bool;
 var _k = jsc.constant;
-var falsy = jsc.falsy;
-var fn = jsc.fn;
-var letrec = jsc.letrec;
 var nat = jsc.nat;
 var number = jsc.number;
-var oneof = jsc.oneof;
-var property = jsc.property;
-var string = jsc.string;
-
-//  FutureArb :: Arbitrary a -> Arbitrary b -> Arbitrary (Future a b)
-var FutureArb = function (larb, rarb){
-  var toStr = function (m){ return m.toString() };
-  var getLeft = function (m){
-    var x;
-    m.fork(function (y){ x = y }, function (){ throw error });
-    return x;
-  };
-  var getRight = function (m){
-    var x;
-    m.fork(function (){ throw error }, function (y){ x = y });
-    return x;
-  };
-  return oneof(
-    larb.smap(Future.reject, getLeft, toStr),
-    rarb.smap(Future.of, getRight, toStr),
-    larb.smap(function (x){ return Future.reject(x).map(I) }, getLeft, toStr),
-    rarb.smap(function (x){ return Future.of(x).map(I) }, getLeft, toStr)
-  );
-};
-
-//  anyFuture :: Arbitrary (Future Any Any)
-var {anyFuture} = letrec(function (tie){
-  return {
-    anyFuture: FutureArb(tie('any'), tie('any')),
-    any: oneof(
-      number,
-      string,
-      bool,
-      falsy,
-      _k(error),
-      fn(tie('any')),
-      tie('anyFuture')
-    )
-  };
-});
-
-//  _of :: a -> Arbitrary (Future String a)
-var _of = function (rarb){
-  return FutureArb(string, rarb);
-};
 
 //  query :: String -> String
 var query = function (x){
@@ -154,7 +106,7 @@ describe('Future Compliance', function (){
     var chainRec = Future.chainRec;
 
     var test = function (name, f){
-      return property(name, 'number | nat', function (o){ return f(o.value) });
+      return jsc.property(name, 'number | nat', function (o){ return f(o.value) });
     };
 
     describe('Functor', function (){

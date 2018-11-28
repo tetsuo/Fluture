@@ -23,7 +23,7 @@ After.prototype.extractRight = function After$extractRight(){
 };
 
 After.prototype.toString = function After$toString(){
-  return 'Future.after(' + show(this._time) + ', ' + show(this._value) + ')';
+  return 'after(' + show(this._time) + ', ' + show(this._value) + ')';
 };
 
 export function RejectAfter(time, value){
@@ -44,7 +44,7 @@ RejectAfter.prototype.extractLeft = function RejectAfter$extractLeft(){
 };
 
 RejectAfter.prototype.toString = function RejectAfter$toString(){
-  return 'Future.rejectAfter(' + show(this._time) + ', ' + show(this._value) + ')';
+  return 'rejectAfter(' + show(this._time) + ', ' + show(this._value) + ')';
 };
 
 function after$time(time, value){
@@ -52,7 +52,7 @@ function after$time(time, value){
 }
 
 export function after(time, value){
-  if(!isUnsigned(time)) throwInvalidArgument('Future.after', 0, 'be a positive integer', time);
+  if(!isUnsigned(time)) throwInvalidArgument('after', 0, 'be a positive Integer', time);
   if(arguments.length === 1) return partial1(after$time, time);
   return after$time(time, value);
 }
@@ -63,7 +63,7 @@ function rejectAfter$time(time, reason){
 
 export function rejectAfter(time, reason){
   if(!isUnsigned(time)){
-    throwInvalidArgument('Future.rejectAfter', 0, 'be a positive integer', time);
+    throwInvalidArgument('rejectAfter', 0, 'be a positive Integer', time);
   }
   if(arguments.length === 1) return partial1(rejectAfter$time, time);
   return rejectAfter$time(time, reason);

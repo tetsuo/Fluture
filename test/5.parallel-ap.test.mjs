@@ -1,15 +1,14 @@
-import chai from 'chai';
-import {Future, of} from '../index.mjs';
+import Future from '../index.cjs';
+import {of} from '../index.mjs';
 import * as U from './util';
 import * as F from './futures';
-import type from 'sanctuary-type-identifiers';
 
-var expect = chai.expect;
+var parallelAp = function (a, b){ return b._parallelAp(a) };
 
-var testInstance = function (pap){
+describe('parallelAp()', function (){
 
-  it('is considered a member of fluture/Fluture', function (){
-    expect(type(pap(of(1), of(U.add(1))))).to.equal(Future['@@type']);
+  it('is not currently exposed as a static function', function (){
+    U.eq(Future.parallelAp, undefined);
   });
 
   describe('#_interpret()', function (){
@@ -19,11 +18,11 @@ var testInstance = function (pap){
     describe('(Crashed, Resolved)', function (){
 
       it('crashes if left settles first', function (){
-        return U.assertCrashed(pap(F.crashed, mapf(F.resolvedSlow)), U.error);
+        return U.assertCrashed(parallelAp(F.crashed, mapf(F.resolvedSlow)), U.error);
       });
 
       it('crashes if left settles last', function (){
-        return U.assertCrashed(pap(F.crashedSlow, mapf(F.resolved)), U.error);
+        return U.assertCrashed(parallelAp(F.crashedSlow, mapf(F.resolved)), U.error);
       });
 
     });
@@ -31,11 +30,11 @@ var testInstance = function (pap){
     describe('(Crashed, Rejected)', function (){
 
       it('crashes if left settles first', function (){
-        return U.assertCrashed(pap(F.crashed, mapf(F.rejectedSlow)), U.error);
+        return U.assertCrashed(parallelAp(F.crashed, mapf(F.rejectedSlow)), U.error);
       });
 
       it('rejects if left settles last', function (){
-        return U.assertRejected(pap(F.crashedSlow, mapf(F.rejected)), 'rejected');
+        return U.assertRejected(parallelAp(F.crashedSlow, mapf(F.rejected)), 'rejected');
       });
 
     });
@@ -43,11 +42,11 @@ var testInstance = function (pap){
     describe('(Resolved, Crashed)', function (){
 
       it('crashes if left settles first', function (){
-        return U.assertCrashed(pap(F.resolved, mapf(F.crashedSlow)), U.error);
+        return U.assertCrashed(parallelAp(F.resolved, mapf(F.crashedSlow)), U.error);
       });
 
       it('crashes if left settles last', function (){
-        return U.assertCrashed(pap(F.resolvedSlow, mapf(F.crashed)), new Error(
+        return U.assertCrashed(parallelAp(F.resolvedSlow, mapf(F.crashed)), new Error(
           'Intentional error for unit testing'
         ));
       });
@@ -57,11 +56,11 @@ var testInstance = function (pap){
     describe('(Rejected, Crashed)', function (){
 
       it('rejects if left settles first', function (){
-        return U.assertRejected(pap(F.rejected, mapf(F.crashedSlow)), 'rejected');
+        return U.assertRejected(parallelAp(F.rejected, mapf(F.crashedSlow)), 'rejected');
       });
 
       it('crashes if left settles last', function (){
-        return U.assertCrashed(pap(F.rejectedSlow, mapf(F.crashed)), new Error(
+        return U.assertCrashed(parallelAp(F.rejectedSlow, mapf(F.crashed)), new Error(
           'Intentional error for unit testing'
         ));
       });
@@ -70,12 +69,12 @@ var testInstance = function (pap){
 
     describe('(Resolved, Resolved)', function (){
 
-      it('resolves with pap if left settles first', function (){
-        return U.assertResolved(pap(F.resolved, mapf(F.resolvedSlow)), ['resolvedSlow', 'resolved']);
+      it('resolves with parallelAp if left settles first', function (){
+        return U.assertResolved(parallelAp(F.resolved, mapf(F.resolvedSlow)), ['resolvedSlow', 'resolved']);
       });
 
-      it('resolves with pap if left settles last', function (){
-        return U.assertResolved(pap(F.resolvedSlow, mapf(F.resolved)), ['resolved', 'resolvedSlow']);
+      it('resolves with parallelAp if left settles last', function (){
+        return U.assertResolved(parallelAp(F.resolvedSlow, mapf(F.resolved)), ['resolved', 'resolvedSlow']);
       });
 
     });
@@ -83,11 +82,11 @@ var testInstance = function (pap){
     describe('(Rejected, Rejected)', function (){
 
       it('rejects with right if right rejects first', function (){
-        return U.assertRejected(pap(F.rejectedSlow, mapf(F.rejected)), 'rejected');
+        return U.assertRejected(parallelAp(F.rejectedSlow, mapf(F.rejected)), 'rejected');
       });
 
       it('rejects with left if right rejects last', function (){
-        return U.assertRejected(pap(F.rejected, mapf(F.rejectedSlow)), 'rejected');
+        return U.assertRejected(parallelAp(F.rejected, mapf(F.rejectedSlow)), 'rejected');
       });
 
     });
@@ -95,11 +94,11 @@ var testInstance = function (pap){
     describe('(Rejected, Resolved)', function (){
 
       it('rejects with left if right settles first', function (){
-        return U.assertRejected(pap(F.rejectedSlow, mapf(F.resolved)), 'rejectedSlow');
+        return U.assertRejected(parallelAp(F.rejectedSlow, mapf(F.resolved)), 'rejectedSlow');
       });
 
       it('rejects with left if right settles last', function (){
-        return U.assertRejected(pap(F.rejected, mapf(F.resolvedSlow)), 'rejected');
+        return U.assertRejected(parallelAp(F.rejected, mapf(F.resolvedSlow)), 'rejected');
       });
 
     });
@@ -107,34 +106,28 @@ var testInstance = function (pap){
     describe('(Resolved, Rejected)', function (){
 
       it('rejects with right if left settles first', function (){
-        return U.assertRejected(pap(F.resolved, mapf(F.rejectedSlow)), 'rejectedSlow');
+        return U.assertRejected(parallelAp(F.resolved, mapf(F.rejectedSlow)), 'rejectedSlow');
       });
 
       it('rejects with right if left settles last', function (){
-        return U.assertRejected(pap(F.resolvedSlow, mapf(F.rejected)), 'rejected');
+        return U.assertRejected(parallelAp(F.resolvedSlow, mapf(F.rejected)), 'rejected');
       });
 
     });
 
     it('crashes when the other does not resolve to a Function', function (){
-      var m = pap(of(1), of(null));
+      var m = parallelAp(of(1), of(null));
       return U.assertCrashed(m, new TypeError(
-        'Future#_parallelAp expects its first argument to be a Future of a Function\n' +
+        'Future#_parallelAp() expects its first argument to be a Future of a Function\n' +
         '  Actual: Future.of(null)'
       ));
     });
 
     it('calls the function contained in the given Future to its contained value', function (){
-      var actual = pap(of(1), of(U.add(1)));
+      var actual = parallelAp(of(1), of(U.add(1)));
       return U.assertResolved(actual, 2);
     });
 
   });
-
-};
-
-describe('Future#_parallelAp()', function (){
-
-  testInstance(function (a, b){ return b._parallelAp(a) });
 
 });

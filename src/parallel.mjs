@@ -59,28 +59,27 @@ Parallel.prototype._interpret = function Parallel$interpret(rec, rej, res){
 };
 
 Parallel.prototype.toString = function Parallel$toString(){
-  return 'Future.parallel(' + this._max + ', ' + show(this._futures) + ')';
+  return 'parallel(' + this._max + ', ' + show(this._futures) + ')';
 };
 
 var emptyArray = new Resolved([]);
 
-function validateNthFuture(m, i){
+function validateNthFuture(m, xs){
   if(!isFuture(m)) throwInvalidFuture(
-    'Future.parallel',
-    'its second argument to be an array of valid Futures. ' +
-    'The value at position ' + i + ' in the array is not a Future',
-    m
+    'parallel',
+    'its second argument to be an Array of valid Futures',
+    xs
   );
 }
 
 function parallel$max(max, xs){
-  if(!isArray(xs)) throwInvalidArgument('Future.parallel', 1, 'be an array', xs);
-  for(var idx = 0; idx < xs.length; idx++) validateNthFuture(xs[idx], idx);
+  if(!isArray(xs)) throwInvalidArgument('parallel', 1, 'be an Array of valid Futures', xs);
+  for(var idx = 0; idx < xs.length; idx++) validateNthFuture(xs[idx], xs);
   return xs.length === 0 ? emptyArray : new Parallel(max, xs);
 }
 
 export function parallel(max, xs){
-  if(!isUnsigned(max)) throwInvalidArgument('Future.parallel', 0, 'be a positive integer', max);
+  if(!isUnsigned(max)) throwInvalidArgument('parallel', 0, 'be a positive Integer', max);
   if(arguments.length === 1) return partial1(parallel$max, max);
   return parallel$max(max, xs);
 }

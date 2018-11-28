@@ -20,10 +20,10 @@ Attempt.prototype._interpret = function Attempt$interpret(rec, rej, res){
 };
 
 Attempt.prototype.toString = function Attempt$toString(){
-  return 'Future.try(' + showf(this._fn) + ')';
+  return 'attempt(' + showf(this._fn) + ')';
 };
 
 export function attempt(f){
-  if(!isFunction(f)) throwInvalidArgument('Future.try', 0, 'be a function', f);
+  if(!isFunction(f)) throwInvalidArgument('attempt', 0, 'be a Function', f);
   return new Attempt(f);
 }

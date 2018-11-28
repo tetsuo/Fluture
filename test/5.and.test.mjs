@@ -2,14 +2,25 @@ import chai from 'chai';
 import {Future, and, of} from '../index.mjs';
 import * as U from './util';
 import * as F from './futures';
-import type from 'sanctuary-type-identifiers';
+import {testFunction, futureArg} from './props';
 
 var expect = chai.expect;
 
-var testInstance = function (and){
+describe('and()', function (){
 
-  it('is considered a member of fluture/Fluture', function (){
-    expect(type(and(F.resolved, F.resolvedSlow))).to.equal(Future['@@type']);
+  testFunction('and', and, [futureArg, futureArg], U.assertValidFuture);
+
+  it('allows for the implementation of `all` in terms of reduce', function (){
+    var all = function (ms){ return ms.reduce(and, of(true)) };
+    return Promise.all([
+      U.assertResolved(all([]), true),
+      U.assertRejected(all([F.rejected, F.resolved]), 'rejected'),
+      U.assertRejected(all([F.resolved, F.rejected]), 'rejected'),
+      U.assertResolved(all([F.resolvedSlow, F.resolved]), 'resolved'),
+      U.assertResolved(all([F.resolved, F.resolvedSlow]), 'resolvedSlow'),
+      U.assertRejected(all([F.rejected, F.rejectedSlow]), 'rejected'),
+      U.assertRejected(all([F.rejectedSlow, F.rejected]), 'rejectedSlow')
+    ]);
   });
 
   describe('#_interpret()', function (){
@@ -79,57 +90,5 @@ var testInstance = function (and){
     });
 
   });
-
-};
-
-describe('and()', function (){
-
-  it('is a curried binary function', function (){
-    expect(and).to.be.a('function');
-    expect(and.length).to.equal(2);
-    expect(and(F.resolved)).to.be.a('function');
-  });
-
-  it('throws when not given a Future as first argument', function (){
-    var f = function (){ return and(1) };
-    expect(f).to.throw(TypeError, /Future.*first/);
-  });
-
-  it('throws when not given a Future as second argument', function (){
-    var f = function (){ return and(of(1), 1) };
-    expect(f).to.throw(TypeError, /Future.*second/);
-  });
-
-  testInstance(function (a, b){ return and(a, b) });
-
-  it('allows for the implementation of `all` in terms of reduce', function (){
-    var all = function (ms){ return ms.reduce(and, of(true)) };
-    return Promise.all([
-      U.assertResolved(all([]), true),
-      U.assertRejected(all([F.rejected, F.resolved]), 'rejected'),
-      U.assertRejected(all([F.resolved, F.rejected]), 'rejected'),
-      U.assertResolved(all([F.resolvedSlow, F.resolved]), 'resolved'),
-      U.assertResolved(all([F.resolved, F.resolvedSlow]), 'resolvedSlow'),
-      U.assertRejected(all([F.rejected, F.rejectedSlow]), 'rejected'),
-      U.assertRejected(all([F.rejectedSlow, F.rejected]), 'rejectedSlow')
-    ]);
-  });
-
-});
-
-describe('Future#and()', function (){
-
-  it('throws when invoked out of context', function (){
-    var f = function (){ return of(1).and.call(null, of(1)) };
-    expect(f).to.throw(TypeError, /Future/);
-  });
-
-  it('throw TypeError when not given a Future', function (){
-    var xs = [NaN, {}, [], 1, 'a', new Date, undefined, null, function (x){ return x }];
-    var fs = xs.map(function (x){ return function (){ return of(1).and(x) } });
-    fs.forEach(function (f){ return expect(f).to.throw(TypeError, /Future/) });
-  });
-
-  testInstance(function (a, b){ return a.and(b) });
 
 });

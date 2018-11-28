@@ -9,7 +9,7 @@ import {captureContext} from './internal/debug';
 
 function invalidPromise(p, f){
   return typeError(
-    'Future.tryP expects the function it\'s given to return a Promise/Thenable'
+    'tryP() expects the function it\'s given to return a Promise/Thenable'
     + '\n  Actual: ' + show(p) + '\n  From calling: ' + showf(f)
   );
 }
@@ -48,10 +48,10 @@ TryP.prototype._interpret = function TryP$interpret(rec, rej, res){
 };
 
 TryP.prototype.toString = function TryP$toString(){
-  return 'Future.tryP(' + show(this._fn) + ')';
+  return 'tryP(' + show(this._fn) + ')';
 };
 
 export function tryP(f){
-  if(!isFunction(f)) throwInvalidArgument('Future.tryP', 0, 'be a function', f);
+  if(!isFunction(f)) throwInvalidArgument('tryP', 0, 'be a Function', f);
   return new TryP(f);
 }

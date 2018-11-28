@@ -1,6 +1,6 @@
 import {Future, of, after} from '../index.mjs';
 import chai from 'chai';
-import {add, bang, noop, error, assertResolved, assertRejected, assertCrashed} from './util';
+import {add, bang, noop, error, assertResolved, assertRejected, assertCrashed, assertValidFuture} from './util';
 import {resolved, rejected, resolvedSlow} from './futures';
 import {Transformation} from '../src/future';
 import {nil} from '../src/internal/list';
@@ -14,6 +14,11 @@ describe('Transformation', function (){
   var dummy = new Transformation(resolved, nil);
   var rejectedDummy = new Transformation(rejected, nil);
   var throwing = function (){ throw error };
+
+  it('behaves', function (){
+    assertValidFuture(dummy);
+    assertValidFuture(rejectedDummy);
+  });
 
   describe('ap', function (){
 
