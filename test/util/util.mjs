@@ -1,7 +1,7 @@
 import show from 'sanctuary-show';
 import type from 'sanctuary-type-identifiers';
-import {Future, isFuture} from '../../index.mjs';
-import {AssertionError, strictEqual, deepStrictEqual} from 'assert';
+import {Future, isFuture, reject, resolve} from '../../index.mjs';
+import {strictEqual, deepStrictEqual} from 'assert';
 export * from '../../src/internal/predicates';
 
 export var STACKSIZE = (function r (){try{return 1 + r()}catch(e){return 1}}());
@@ -61,7 +61,6 @@ export var assertIsFuture = function (x){
   eq(isFuture(x), true);
   eq(x instanceof Future, true);
   eq(x.constructor, Future);
-  eq(isFuture(x), true);
   eq(type(x), Future['@@type']);
 };
 
@@ -87,155 +86,109 @@ export var assertValidFuture = function (x){
   return true;
 };
 
-export var assertEqual = function (a, b){
-  var states = ['pending', 'crashed', 'rejected', 'resolved'];
-  var astate = 0, aval;
-  var bstate = 0, bval;
+var states = ['pending', 'crashed', 'rejected', 'resolved'];
 
-  assertIsFuture(a);
-  assertIsFuture(b);
+export function makeAssertEqual (equals){
+  return function assertEqual (ma, mb){
+    var astate = 0, bstate = 0, val;
+    return new Promise(function (pass, fail){
+      assertIsFuture(ma);
+      assertIsFuture(mb);
 
-  a._interpret(
-    function (x){
-      if(astate > 0){
-        throw new Error('The first Future ' + states[1] + ' while already ' + states[astate]);
+      function twice (m, x, s1, s2){
+        fail(new Error(
+          'A Future ' + states[s2] + ' after already having ' + states[s1] + '.\n' +
+          '  First: Future({ <' + states[s1] + '> ' + show(val) + ' })\n' +
+          '  Second: Future({ <' + states[s1] + '> ' + show(x) + ' })\n' +
+          '  Future: ' + m.toString()
+        ));
       }
-      astate = 1;
-      aval = x;
-    },
-    function (x){
-      if(astate > 0){
-        throw new Error('The first Future ' + states[2] + ' while already ' + states[astate]);
+
+      function assertInnerEqual (a, b){
+        if(astate === bstate){
+          if(isFuture(a) && isFuture(b)){
+            assertEqual(a, b).then(pass, fail);
+            return;
+          } else if (equals(a, b)){
+            pass(true);
+            return;
+          }
+        }
+        fail(new Error(
+          '\n    ' + ma.toString() +
+          ' :: Future({ <' + states[astate] + '> ' + show(a) + ' })' +
+          '\n    does not equal:\n    ' + mb.toString() +
+          ' :: Future({ <' + states[bstate] + '> ' + show(b) + ' })\n  '
+        ));
       }
-      astate = 2;
-      aval = x;
-    },
-    function (x){
-      if(astate > 0){
-        throw new Error('The first Future ' + states[3] + ' while already ' + states[astate]);
-      }
-      astate = 3;
-      aval = x;
-    }
-  );
 
-  b._interpret(
-    function (x){
-      if(bstate > 0){
-        throw new Error('The second Future ' + states[1] + ' while already ' + states[bstate]);
-      }
-      bstate = 1;
-      bval = x;
-    },
-    function (x){
-      if(bstate > 0){
-        throw new Error('The second Future ' + states[2] + ' while already ' + states[bstate]);
-      }
-      bstate = 2;
-      bval = x;
-    },
-    function (x){
-      if(bstate > 0){
-        throw new Error('The second Future ' + states[3] + ' while already ' + states[bstate]);
-      }
-      bstate = 3;
-      bval = x;
-    }
-  );
+      ma._interpret(function (x){
+        if(astate > 0) twice(ma, x, astate, 1);
+        else {
+          astate = 1;
+          if(bstate > 0) assertInnerEqual(x, val);
+          else val = x;
+        }
+      }, function (x){
+        if(astate > 0) twice(ma, x, astate, 2);
+        else {
+          astate = 2;
+          if(bstate > 0) assertInnerEqual(x, val);
+          else val = x;
+        }
+      }, function (x){
+        if(astate > 0) twice(ma, x, astate, 3);
+        else {
+          astate = 3;
+          if(bstate > 0) assertInnerEqual(x, val);
+          else val = x;
+        }
+      });
 
-  if(astate === 0){
-    throw new Error('The first Future passed to assertEqual did not resolve instantly');
-  }
+      mb._interpret(function (x){
+        if(bstate > 0) twice(mb, x, bstate, 1);
+        else {
+          bstate = 1;
+          if(astate > 0) assertInnerEqual(val, x);
+          else val = x;
+        }
+      }, function (x){
+        if(bstate > 0) twice(mb, x, bstate, 2);
+        else {
+          bstate = 2;
+          if(astate > 0) assertInnerEqual(val, x);
+          else val = x;
+        }
+      }, function (x){
+        if(bstate > 0) twice(mb, x, bstate, 3);
+        else {
+          bstate = 3;
+          if(astate > 0) assertInnerEqual(val, x);
+          else val = x;
+        }
+      });
+    });
+  };
+}
 
-  if(bstate === 0){
-    throw new Error('The second Future passed to assertEqual did not resolve instantly');
-  }
+export var assertEqual = makeAssertEqual(isDeepStrictEqual);
 
-  if(isFuture(aval) && isFuture(bval)) return assertEqual(aval, bval);
-  if(astate === bstate && isDeepStrictEqual(aval, bval)){ return true }
-
-  throw new Error(
-    '\n    ' + (a.toString()) +
-    ' :: Future({ <' + states[astate] + '> ' + show(aval) + ' })' +
-    '\n    does not equal:\n    ' + b.toString() +
-    ' :: Future({ <' + states[bstate] + '> ' + show(bval) + ' })\n  '
-  );
-};
-
-export var interpertAndGuard = function (m, rec, rej, res){
-  var rejected = false, resolved = false, crashed = false;
-  m._interpret(function (e){
-    if(crashed){ throw new Error(m.toString() + ' crashed twice with: ' + show(e)) }
-    if(rejected){ throw new Error(m.toString() + ' crashed after rejecting: ' + show(e)) }
-    if(resolved){ throw new Error(m.toString() + ' crashed after resolving: ' + show(e)) }
-    crashed = true;
-    setTimeout(rec, 20, e);
-  }, function (e){
-    if(crashed){ throw new Error(m.toString() + ' rejected after crashing: ' + show(e)) }
-    if(rejected){ throw new Error(m.toString() + ' rejected twice with: ' + show(e)) }
-    if(resolved){ throw new Error(m.toString() + ' rejected after resolving: ' + show(e)) }
-    rejected = true;
-    setTimeout(rej, 20, e);
-  }, function (x){
-    if(crashed){ throw new Error(m.toString() + ' resolved after crashing: ' + show(x)) }
-    if(rejected){ throw new Error(m.toString() + ' resolved twice with: ' + show(x)) }
-    if(resolved){ throw new Error(m.toString() + ' resolved after rejecting: ' + show(x)) }
-    resolved = true;
-    setTimeout(res, 20, x);
-  });
-};
+var assertEqualByErrorMessage = makeAssertEqual(function (a, b){
+  return a.message === b.message;
+});
 
 export var assertCrashed = function (m, x){
- return new Promise(function (res, rej){
-  assertIsFuture(m);
-  interpertAndGuard(
-    m, function (e){
-      if(e.message === x.message) res();
-      else rej(new AssertionError({
-        message: 'Expected the Future to crash with message ' + show(x.message) + '; got: ' + show(e.message)
-      }));
-    }, function (e){
-      rej(new Error('Expected the Future to crash. Instead rejected with: ' + show(e)));
-    }, function (x){
-      rej(new Error('Expected the Future to crash. Instead resolved with: ' + show(x)));
-    });
-  });
+  return assertEqualByErrorMessage(m, Future(function (){
+    throw x;
+  }));
 };
 
 export var assertRejected = function (m, x){
- return new Promise(function (res, rej){
-  assertIsFuture(m);
-  interpertAndGuard(
-    m, function (e){
-      rej(new Error('Expected the Future to reject. Instead crashed with: ' + show(e)));
-    }, function (e){
-      isDeepStrictEqual(x, e) ? res() : rej(new AssertionError({
-        expected: x,
-        actual: e,
-        message: 'Expected the Future to reject with ' + show(x) + '; got: ' + show(e)
-      }));
-    }, function (x){
-      rej(new Error('Expected the Future to reject. Instead resolved with: ' + show(x)));
-    });
-  });
+  return assertEqual(m, reject(x));
 };
 
 export var assertResolved = function (m, x){
- return new Promise(function (res, rej){
-  assertIsFuture(m);
-  interpertAndGuard(
-    m, function (e){
-      rej(new Error('Expected the Future to resolve. Instead crashed with: ' + show(e)));
-    }, function (e){
-      rej(new Error('Expected the Future to resolve. Instead rejected with: ' + show(e)));
-    }, function (y){
-      isDeepStrictEqual(x, y) ? res() : rej(new AssertionError({
-        expected: x,
-        actual: y,
-        message: 'Expected the Future to resolve with ' + show(x) + '; got: ' + show(y)
-      }));
-    });
-  });
+ return assertEqual(m, resolve(x));
 };
 
 export var onceOrError = function (f){
