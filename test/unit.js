@@ -54,4 +54,3 @@ import './unit/5.try-p.mjs';
 import './unit/6.go.mjs';
 import './unit/6.par.mjs';
 import './unit/6.seq.mjs';
-import './unit/7.compliance.mjs';

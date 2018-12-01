@@ -19,10 +19,11 @@
     "lint": "eslint --ext mjs src test index.mjs index.cjs.mjs README.md",
     "lint:readme": "remark --no-stdout --frail -u remark-validate-links README.md",
     "release": "npm outdated --long; xyz --edit --repo git@github.com:fluture-js/Fluture.git --tag 'X.Y.Z' --script scripts/distribute --increment",
-    "test": "npm run lint && npm run lint:readme && npm run test:unit && npm run test:types && npm run test:build",
+    "test": "npm run lint && npm run lint:readme && npm run test:unit && npm run test:prop && npm run test:types && npm run test:build",
     "test:unit": "npm run clean && mocha --require esm --ui bdd --reporter list --full-trace --check-leaks --bail test/unit.js",
+    "test:prop": "npm run clean && mocha --require esm --ui bdd --reporter list --full-trace --bail test/prop.js",
     "test:build": "npm run clean && npm run build && es-check es5 index.js && mocha --require esm --ui bdd --reporter dot --bail test/build.js",
-    "test:coverage": "npm run clean && nyc --extension .mjs --include src mocha --require esm --ui bdd --reporter dot test/unit.js || true",
+    "test:coverage": "npm run clean && nyc --extension .mjs --include src mocha --require esm --ui bdd --reporter dot test/unit.js test/prop.js || true",
     "coverage:upload": "nyc report --reporter=text-lcov > coverage.lcov && codecov",
     "coverage:report": "nyc report --reporter=html",
     "test:types": "tsc --lib es6 index.d.ts"

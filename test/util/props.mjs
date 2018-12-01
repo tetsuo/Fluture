@@ -9,7 +9,7 @@ import {ordinal} from '../../src/internal/const';
 export var array = jsc.array;
 export var nearray = jsc.nearray;
 export var bool = jsc.bool;
-export var _k = jsc.constant;
+export var constant = jsc.constant;
 export var falsy = jsc.falsy;
 export var fn = jsc.fn;
 export var letrec = jsc.letrec;
@@ -67,7 +67,7 @@ export var {
       string,
       bool,
       falsy,
-      _k(error),
+      constant(error),
       tie('anyFunction')
     ),
     any: oneof(
@@ -112,7 +112,7 @@ export var functorArg = {
 export var functionArg = {
   name: 'Function',
   valid: anyFunction,
-  invalid: oneof(number, string, bool, falsy, _k(error)),
+  invalid: oneof(number, string, bool, falsy, constant(error)),
 };
 
 export var futureArg = {
@@ -130,7 +130,7 @@ export var resolvedFutureArg = {
 export var positiveIntegerArg = {
   name: 'positive Integer',
   valid: jsc.suchthat(nat, function (x){ return x > 0 }),
-  invalid: oneof(_k(NaN), bool, _k(0.5)),
+  invalid: oneof(constant(NaN), bool, constant(0.5)),
 };
 
 export var futureArrayArg = {
