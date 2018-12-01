@@ -110,12 +110,20 @@ describe('Future prototype', function (){
     testMethod(instance, 'lastly', [futureArg]);
   });
 
+  describe('finally()', function (){
+    testMethod(instance, 'finally', [futureArg]);
+  });
+
   describe('map()', function (){
     testMethod(instance, 'map', [functionArg]);
   });
 
   describe('mapRej()', function (){
     testMethod(instance, 'mapRej', [functionArg]);
+  });
+
+  describe('alt()', function (){
+    testMethod(instance, 'alt', [futureArg]);
   });
 
   describe('or()', function (){

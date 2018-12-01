@@ -1,17 +1,21 @@
 import chai from 'chai';
-import {Future, or, of, reject, after} from '../index.mjs';
+import {Future, alt, of, reject, after, or} from '../index.mjs';
 import * as U from './util';
 import * as F from './futures';
-import {testFunction, futureArg} from './props';
+import {testFunction, altArg} from './props';
 
 var expect = chai.expect;
 
-describe('or()', function (){
+describe('alt()', function (){
 
-  testFunction('or', or, [futureArg, futureArg], U.assertValidFuture);
+  testFunction('alt', alt, [altArg, altArg], U.assertValidFuture);
+
+  it('is an alias of "or"', function (){
+    U.eq(alt, or);
+  });
 
   it('allows for the implementation of `any` in terms of reduce', function (){
-    var any = function (ms){ return ms.reduce(or, reject('empty list')) };
+    var any = function (ms){ return ms.reduce(alt, reject('empty list')) };
     return Promise.all([
       U.assertRejected(any([]), 'empty list'),
       U.assertRejected(any([reject(1)]), 1),
@@ -25,11 +29,11 @@ describe('or()', function (){
     describe('(res, res)', function (){
 
       it('resolves with left if left resolves first', function (){
-        return U.assertResolved(or(F.resolved, F.resolvedSlow), 'resolved');
+        return U.assertResolved(alt(F.resolved, F.resolvedSlow), 'resolved');
       });
 
       it('resolves with left if left resolves last', function (){
-        return U.assertResolved(or(F.resolvedSlow, F.resolved), 'resolvedSlow');
+        return U.assertResolved(alt(F.resolvedSlow, F.resolved), 'resolvedSlow');
       });
 
     });
@@ -37,11 +41,11 @@ describe('or()', function (){
     describe('(rej, rej)', function (){
 
       it('rejects with right if right rejects first', function (){
-        return U.assertRejected(or(F.rejectedSlow, F.rejected), 'rejected');
+        return U.assertRejected(alt(F.rejectedSlow, F.rejected), 'rejected');
       });
 
       it('rejects with right if right rejects last', function (){
-        return U.assertRejected(or(F.rejected, F.rejectedSlow), 'rejectedSlow');
+        return U.assertRejected(alt(F.rejected, F.rejectedSlow), 'rejectedSlow');
       });
 
     });
@@ -49,11 +53,11 @@ describe('or()', function (){
     describe('(rej, res)', function (){
 
       it('resolves with right if right resolves first', function (){
-        return U.assertResolved(or(F.rejectedSlow, F.resolved), 'resolved');
+        return U.assertResolved(alt(F.rejectedSlow, F.resolved), 'resolved');
       });
 
       it('resolves with right if right resolves last', function (){
-        return U.assertResolved(or(F.rejected, F.resolvedSlow), 'resolvedSlow');
+        return U.assertResolved(alt(F.rejected, F.resolvedSlow), 'resolvedSlow');
       });
 
     });
@@ -61,18 +65,18 @@ describe('or()', function (){
     describe('(res, rej)', function (){
 
       it('resolves with left if left resolves first', function (){
-        return U.assertResolved(or(F.resolved, F.rejectedSlow), 'resolved');
+        return U.assertResolved(alt(F.resolved, F.rejectedSlow), 'resolved');
       });
 
       it('resolves with left if left resolves last', function (){
-        return U.assertResolved(or(F.resolvedSlow, F.rejected), 'resolvedSlow');
+        return U.assertResolved(alt(F.resolvedSlow, F.rejected), 'resolvedSlow');
       });
 
     });
 
     it('cancels the running Future', function (done){
       var m = Future(function (){ return function (){ return done() } });
-      var cancel = or(m, m)._interpret(done, U.noop, U.noop);
+      var cancel = alt(m, m)._interpret(done, U.noop, U.noop);
       cancel();
     });
 
@@ -82,10 +86,11 @@ describe('or()', function (){
 
     it('returns the code to create the data-structure', function (){
       var m = Future(function (){ return function (){} });
-      var actual = or(m, m).toString();
-      expect(actual).to.equal(((m.toString()) + '.or(' + (m.toString()) + ')'));
+      var actual = alt(m, m).toString();
+      expect(actual).to.equal(((m.toString()) + '.alt(' + (m.toString()) + ')'));
     });
 
   });
 
 });
+

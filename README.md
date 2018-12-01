@@ -104,7 +104,8 @@ This script will add `Fluture` to the global scope.
 [<img src="https://raw.githubusercontent.com/rpominov/static-land/master/logo/logo.png" align="right" height="82" alt="Static Land" />][6]
 
 * `Future` implements [Fantasy Land][FL] and [Static Land][6] -compatible
-  `Bifunctor`, `Monad` and `ChainRec` (`of`, `ap`, `map`, `bimap`, `chain`, `chainRec`).
+  `Alt`, `Bifunctor`, `Monad`, and `ChainRec`
+  (`of`, `ap`, `alt`, `map`, `bimap`, `chain`, `chainRec`).
   All versions of Fantasy Land are supported.
 * `Future.Par` implements [Fantasy Land 3][FL] and [Static Land][6] -compatible
   `Alternative` (`of`, `zero`, `map`, `ap`, `alt`).
@@ -182,7 +183,7 @@ for sponsoring the project.
 - [`fold`: Coerce success and failure values into the same success value](#fold)
 - [`ap`: Combine the success values of multiple Futures using a function](#ap)
 - [`and`: Logical *and* for Futures](#and)
-- [`or`: Logical *or* for Futures](#or)
+- [`alt`: Logical *or* for Futures](#alt)
 - [`finally`: Run a Future after the previous settles](#finally)
 - [`race`: Race two Futures against each other](#race)
 - [`both`: Await both success values from two Futures](#both)
@@ -206,6 +207,7 @@ for sponsoring the project.
 - [`both`: Await both success values from two Futures](#both)
 - [`parallel`: Await all success values from many Futures](#parallel)
 - [`ConcurrentFuture`: A separate data-type for doing algebraic concurrency](#concurrentfuture)
+- [`alt`: Behaves like `race` on `ConcurrentFuture` instances](#alt)
 
 </details>
 
@@ -1094,7 +1096,7 @@ Returns a new Future which either rejects with the first rejection reason, or
 resolves with the last resolution value once and if both Futures resolve. We
 can use it if we want a computation to run only after another has succeeded.
 
-See also [`or`](#or) and [`finally`](#finally).
+See also [`alt`](#alt) and [`finally`](#finally).
 
 ```js
 Future.after(300, null)
@@ -1113,28 +1115,37 @@ all([Future.after(20, 1), Future.of(2)]).value(console.log);
 //> 2
 ```
 
-#### or
+#### alt
 
-<details><summary><code>or :: Future a b -> Future a b -> Future a b</code></summary>
+<details><summary><code>alt :: Alt f => f a -> f a -> f a</code></summary>
 
 ```hs
-or                  :: Future a b -> Future a b -> Future a b
-Future.prototype.or :: Future a b ~> Future a b -> Future a b
+alt                  :: Alt f => f a -> f a -> f a
+or                   :: Alt f => f a -> f a -> f a
+Future.alt           :: Alt f => f a -> f a -> f a
+Par.alt              :: Alt f => f a -> f a -> f a
+Future.prototype.alt :: Future a b ~> Future a b -> Future a b
+Future.prototype.or  :: Future a b ~> Future a b -> Future a b
 ```
 
 </details>
 
-Logical *or* for Futures.
+Select one of two [Alts](#types).
 
-Returns a new Future which either resolves with the first resolution value, or
-rejects with the last rejection value once and if both Futures reject. We can
-use it if we want a computation to run only if another has failed.
+Behaves like logical *or* on [`Future`](#future) instances, returning a new
+Future which either resolves with the first resolution value, or rejects with
+the last rejection reason. We can use it if we want a computation to run only
+if another has failed.
+
+Behaves like [`race`](#race) on [`ConcurrentFuture`](#concurrentfuture) instances.
+
+This function has an alias `or` for legacy reasons.
 
 See also [`and`](#and) and [`finally`](#finally).
 
 ```js
 Future.rejectAfter(300, new Error('Failed'))
-.or(Future.of('hello'))
+.alt(Future.of('hello'))
 .fork(console.error, console.log);
 //> "hello"
 ```
@@ -1144,7 +1155,7 @@ where the resulting Future will be the leftmost to resolve, or the rightmost
 to reject.
 
 ```js
-var any = ms => ms.reduce(Future.or, Future.reject('empty list'));
+var any = ms => ms.reduce(Future.alt, Future.reject('empty list'));
 any([Future.reject(1), Future.after(20, 2), Future.of(3)]).value(console.log);
 //> 2
 ```
@@ -1174,7 +1185,7 @@ in place.
 This function has an alias `lastly`, for environments where `finally` is
 reserved.
 
-See also [`and`](#and) and [`or`](#or).
+See also [`and`](#and) and [`alt`](#alt).
 
 ```js
 Future.of('Hello')
@@ -1580,31 +1591,6 @@ seq :: ConcurrentFuture a b -> Future a b
 ```
 
 </details>
-
-##### alt
-
-Select one of two [Alts](#types). In terms of the `ConcurrentFuture`
-type, this means racing the two against one another with the same
-semantics as [`race`](#race).
-
-<details><summary><code>alt :: Alt f => f a -> f a -> f a</code></summary>
-
-```hs
-alt     :: Alt f => f a -> f a -> f a
-Par.alt :: Alt f => f a -> f a -> f a
-```
-
-</details>
-
-```js
-import {Future, Par, seq, alt} from 'fluture';
-
-seq(alt(Par.zero, Par.of(1))).value(console.log);
-//> 1
-
-seq(alt(Par(Future.after(20, 1)), Future.after(10, 2))).value(console.log);
-//> 2
-```
 
 ### Resource management
 

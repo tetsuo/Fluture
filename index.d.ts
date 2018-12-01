@@ -63,6 +63,9 @@ declare module 'fluture' {
     /** Logical and for Futures. See https://github.com/fluture-js/Fluture#and */
     and<RB>(right: FutureInstance<L, RB>): FutureInstance<L, RB>
 
+    /** Logical or for Futures. See https://github.com/fluture-js/Fluture#alt */
+    alt(right: FutureInstance<L, R>): FutureInstance<L, R>
+
     /** Apply the function in this Future to the value in another. See https://github.com/fluture-js/Fluture#ap */
     ap<A, B>(this: FutureInstance<L, (value: A) => B>, right: FutureInstance<L, A>): FutureInstance<L, B>
 
@@ -111,7 +114,7 @@ declare module 'fluture' {
     /** Map over the rejection reason in this Future. See https://github.com/fluture-js/Fluture#maprej */
     mapRej<LB>(mapper: (reason: L) => LB): FutureInstance<LB, R>
 
-    /** Logical or for Futures. See https://github.com/fluture-js/Fluture#or */
+    /** Logical or for Futures. See https://github.com/fluture-js/Fluture#alt */
     or(right: FutureInstance<L, R>): FutureInstance<L, R>
 
     /** Fork the Future into a Promise. See https://github.com/fluture-js/Fluture#promise */
@@ -135,6 +138,10 @@ declare module 'fluture' {
   /** Logical and for Futures. See https://github.com/fluture-js/Fluture#and */
   export function and<L, R>(left: FutureInstance<L, any>, right: FutureInstance<L, R>): FutureInstance<L, R>
   export function and<L, R>(left: FutureInstance<L, any>): (right: FutureInstance<L, R>) => FutureInstance<L, R>
+
+  /** Logical or for Futures. See https://github.com/fluture-js/Fluture#alt */
+  export function alt<L, R>(left: FutureInstance<L, R>, right: FutureInstance<L, R>): FutureInstance<L, R>
+  export function alt<L, R>(left: FutureInstance<L, R>): (right: FutureInstance<L, R>) => FutureInstance<L, R>
 
   /** Race two ConcurrentFutures. See https://github.com/fluture-js/Fluture#alt */
   export function alt<L, R>(left: ConcurrentFutureInstance<L, R>, right: ConcurrentFutureInstance<L, R>): ConcurrentFutureInstance<L, R>
@@ -285,7 +292,7 @@ declare module 'fluture' {
   /** Create a Future with the given resolution value. See https://github.com/fluture-js/Fluture#of */
   export function resolve<L, R>(value: R): FutureInstance<L, R>
 
-  /** Logical or for Futures. See https://github.com/fluture-js/Fluture#or */
+  /** Logical or for Futures. See https://github.com/fluture-js/Fluture#alt */
   export function or<L, R>(left: FutureInstance<L, R>, right: FutureInstance<L, R>): FutureInstance<L, R>
   export function or<L, R>(left: FutureInstance<L, R>): (right: FutureInstance<L, R>) => FutureInstance<L, R>
 
