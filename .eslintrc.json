@@ -33,7 +33,7 @@
   },
   "overrides": [
     {
-      "files": ["test/*"],
+      "files": ["test/**"],
       "env": {"node": true, "mocha": true},
       "globals": {"Promise": false},
       "rules": {
