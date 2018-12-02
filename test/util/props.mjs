@@ -2,7 +2,7 @@ import type from 'sanctuary-type-identifiers';
 import show from 'sanctuary-show';
 import jsc from 'jsverify';
 
-import {resolve, reject, Par, seq} from '../../';
+import {Future, resolve, reject, Par, seq} from '../../';
 import {eq, error, throws} from '../util/util';
 import {ordinal} from '../../src/internal/const';
 
@@ -21,24 +21,45 @@ export var property = jsc.property;
 
 var R_VOWEL = /^[aeiouyAEIOUY]/;
 
+function value (m){
+  return m._value;
+}
+
+function immediatelyResolve (x){
+  var m = Future(function (rej, res){ setImmediate(res, x) });
+  m._value = x;
+  return m;
+}
+
+function immediatelyReject (x){
+  var m = Future(function (rej){ setImmediate(rej, x) });
+  m._value = x;
+  return m;
+}
+
+export function AsyncResolvedFutureArb (arb){
+  return arb.smap(immediatelyResolve, value, show);
+}
+
+export function AsyncRejectedFutureArb (arb){
+  return arb.smap(immediatelyReject, value, show);
+}
+
 export function ResolvedFutureArb (arb){
-  return arb.smap(resolve, function (m){
-    var x;
-    m.fork(function (){ throw error }, function (y){ x = y });
-    return x;
-  }, show);
+  return arb.smap(resolve, value, show);
 }
 
 export function RejectedFutureArb (arb){
-  return arb.smap(reject, function (m){
-    var x;
-    m.fork(function (y){ x = y }, function (){ throw error });
-    return x;
-  }, show);
+  return arb.smap(reject, value, show);
 }
 
 export function FutureArb (larb, rarb){
-  return oneof(RejectedFutureArb(larb), ResolvedFutureArb(rarb));
+  return oneof(
+    RejectedFutureArb(larb),
+    ResolvedFutureArb(rarb),
+    AsyncRejectedFutureArb(larb),
+    AsyncResolvedFutureArb(rarb)
+  );
 }
 
 export function _of (rarb){
@@ -58,8 +79,8 @@ export var {
   anyFunction,
 } = letrec(function (tie){
   return {
-    anyRejectedFuture: RejectedFutureArb(tie('any')),
-    anyResolvedFuture: ResolvedFutureArb(tie('any')),
+    anyRejectedFuture: oneof(AsyncRejectedFutureArb(tie('any')), RejectedFutureArb(tie('any'))),
+    anyResolvedFuture: oneof(AsyncResolvedFutureArb(tie('any')), ResolvedFutureArb(tie('any'))),
     anyFuture: oneof(tie('anyRejectedFuture'), tie('anyResolvedFuture')),
     anyFunction: fn(tie('any')),
     anyNonFuture: oneof(
