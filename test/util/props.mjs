@@ -21,6 +21,14 @@ export var property = jsc.property;
 
 var R_VOWEL = /^[aeiouyAEIOUY]/;
 
+export function f (x){
+  return {f: x};
+}
+
+export function g (x){
+  return {g: x};
+}
+
 function value (m){
   return m._value;
 }
