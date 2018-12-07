@@ -149,7 +149,7 @@ for sponsoring the project.
 - [`tryP`: Create a Future using a Promise-returning function](#tryp)
 - [`node`: Create a Future using a Node-style callback](#node)
 - [`encase`: Convert a possibly throwing function to a Future function](#encase)
-- [`encaseP`: Convert a Promise-retuning function to a Future function](#encasep)
+- [`encaseP`: Convert a Promise-returning function to a Future function](#encasep)
 - [`encaseN`: Convert a Nodeback function to a Future function](#encasen)
 
 </details>
@@ -165,7 +165,7 @@ for sponsoring the project.
 <details><summary>Converting between Promises and Futures</summary>
 
 - [`tryP`: Create a Future using a Promise-returning function](#tryp)
-- [`encaseP`: Convert a Promise-retuning function to a Future function](#encasep)
+- [`encaseP`: Convert a Promise-returning function to a Future function](#encasep)
 - [`promise`: Convert a Future to a Promise](#promise)
 
 </details>
