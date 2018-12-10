@@ -1,5 +1,5 @@
 /**
- * Fluture bundled; version 10.2.0
+ * Fluture bundled; version 10.3.0
  */
 
 var Fluture = (function () {
@@ -762,13 +762,14 @@ var Fluture = (function () {
 
 	function invalidArgument(it, at, expected, actual){
 	  return typeError(
-	    it + ' expects its ' + ordinal[at] + ' argument to ' + expected + '\n  Actual: ' + sanctuaryShow(actual)
+	    it + '() expects its ' + ordinal[at] + ' argument to ' + expected + '.' +
+	    '\n  Actual: ' + sanctuaryShow(actual) + ' :: ' + sanctuaryTypeIdentifiers.parse(sanctuaryTypeIdentifiers(actual)).name
 	  );
 	}
 
 	function invalidContext(it, actual){
 	  return typeError(
-	    it + ' was invoked outside the context of a Future. You might want to use'
+	    it + '() was invoked outside the context of a Future. You might want to use'
 	  + ' a dispatcher instead\n  Called on: ' + sanctuaryShow(actual)
 	  );
 	}
@@ -799,8 +800,9 @@ var Fluture = (function () {
 	  : id.version !== version ? invalidVersion(m, id.version)
 	  : 'Nothing seems wrong. Contact the Fluture maintainers.') : '';
 	  return typeError(
-	    it + ' expects ' + (ordinal[at] ? 'its ' + ordinal[at] + ' argument to be a valid Future' : at)
-	  + '.' + info + '\n  Actual: ' + sanctuaryShow(m) + ' :: ' + id.name + (s || '')
+	    it + '() expects ' +
+	    (ordinal[at] ? 'its ' + ordinal[at] + ' argument to be a valid Future' : at) +
+	    '.' + info + '\n  Actual: ' + sanctuaryShow(m) + ' :: ' + id.name + (s || '')
 	  );
 	}
 
@@ -937,30 +939,34 @@ var Fluture = (function () {
 	  return this._chain(mapper);
 	};
 
+	Future.prototype[FL.alt] = function Future$FL$alt(other){
+	  return this._alt(other);
+	};
+
 	Future.prototype.pipe = function Future$pipe(f){
 	  if(!isFuture(this)) throwInvalidContext('Future#pipe', this);
-	  if(!isFunction(f)) throwInvalidArgument('Future#pipe', 0, 'to be a Function', f);
+	  if(!isFunction(f)) throwInvalidArgument('Future#pipe', 0, 'be a Function', f);
 	  return f(this);
 	};
 
 	Future.prototype.fork = function Future$fork(rej, res){
 	  if(!isFuture(this)) throwInvalidContext('Future#fork', this);
-	  if(!isFunction(rej)) throwInvalidArgument('Future#fork', 0, 'to be a Function', rej);
-	  if(!isFunction(res)) throwInvalidArgument('Future#fork', 1, 'to be a Function', res);
+	  if(!isFunction(rej)) throwInvalidArgument('Future#fork', 0, 'be a Function', rej);
+	  if(!isFunction(res)) throwInvalidArgument('Future#fork', 1, 'be a Function', res);
 	  return this._interpret(raise, rej, res);
 	};
 
 	Future.prototype.forkCatch = function Future$forkCatch(rec, rej, res){
-	  if(!isFuture(this)) throwInvalidContext('Future#fork', this);
-	  if(!isFunction(rec)) throwInvalidArgument('Future#fork', 0, 'to be a Function', rec);
-	  if(!isFunction(rej)) throwInvalidArgument('Future#fork', 1, 'to be a Function', rej);
-	  if(!isFunction(res)) throwInvalidArgument('Future#fork', 2, 'to be a Function', res);
+	  if(!isFuture(this)) throwInvalidContext('Future#forkCatch', this);
+	  if(!isFunction(rec)) throwInvalidArgument('Future#forkCatch', 0, 'be a Function', rec);
+	  if(!isFunction(rej)) throwInvalidArgument('Future#forkCatch', 1, 'be a Function', rej);
+	  if(!isFunction(res)) throwInvalidArgument('Future#forkCatch', 2, 'be a Function', res);
 	  return this._interpret(rec, rej, res);
 	};
 
 	Future.prototype.value = function Future$value(res){
 	  if(!isFuture(this)) throwInvalidContext('Future#value', this);
-	  if(!isFunction(res)) throwInvalidArgument('Future#value', 0, 'to be a Function', res);
+	  if(!isFunction(res)) throwInvalidArgument('Future#value', 0, 'be a Function', res);
 	  var _this = this;
 	  return _this._interpret(raise, function Future$value$rej(x){
 	    raise(error(
@@ -973,13 +979,14 @@ var Fluture = (function () {
 
 	Future.prototype.done = function Future$done(callback){
 	  if(!isFuture(this)) throwInvalidContext('Future#done', this);
-	  if(!isFunction(callback)) throwInvalidArgument('Future#done', 0, 'to be a Function', callback);
+	  if(!isFunction(callback)) throwInvalidArgument('Future#done', 0, 'be a Function', callback);
 	  return this._interpret(raise,
 	                         function Future$done$rej(x){ callback(x); },
 	                         function Future$done$res(x){ callback(null, x); });
 	};
 
 	Future.prototype.promise = function Future$promise(){
+	  if(!isFuture(this)) throwInvalidContext('Future#promise', this);
 	  var _this = this;
 	  return new Promise(function Future$promise$computation(res, rej){
 	    _this._interpret(raise, rej, res);
@@ -1253,7 +1260,7 @@ var Fluture = (function () {
 	};
 
 	Rejected.prototype.toString = function Rejected$toString(){
-	  return 'Future.reject(' + sanctuaryShow(this._value) + ')';
+	  return 'reject(' + sanctuaryShow(this._value) + ')';
 	};
 
 	function reject(x){
@@ -1294,7 +1301,7 @@ var Fluture = (function () {
 	};
 
 	Never.prototype.toString = function Never$toString(){
-	  return 'Future.never';
+	  return 'never';
 	};
 
 	var never = new Never();
@@ -1389,7 +1396,7 @@ var Fluture = (function () {
 	  MapperAction.prototype.toString = mapperActionToString;
 	  Future.prototype[name$$1] = function checkedMapperTransformation(mapper){
 	    if(!isFuture(this)) throwInvalidContext('Future#' + name$$1, this);
-	    if(!isFunction(mapper)) throwInvalidArgument('Future#' + name$$1, 0, 'to be a Function', mapper);
+	    if(!isFunction(mapper)) throwInvalidArgument('Future#' + name$$1, 0, 'be a Function', mapper);
 	    return this[_name](mapper);
 	  };
 	  Future.prototype[_name] = function uncheckedMapperTransformation(mapper){
@@ -1417,8 +1424,8 @@ var Fluture = (function () {
 	  BimapperAction.prototype.toString = bimapperActionToString;
 	  Future.prototype[name$$1] = function checkedBimapperTransformation(lm, rm){
 	    if(!isFuture(this)) throwInvalidContext('Future#' + name$$1, this);
-	    if(!isFunction(lm)) throwInvalidArgument('Future#' + name$$1, 0, 'to be a Function', lm);
-	    if(!isFunction(rm)) throwInvalidArgument('Future#' + name$$1, 1, 'to be a Function', rm);
+	    if(!isFunction(lm)) throwInvalidArgument('Future#' + name$$1, 0, 'be a Function', lm);
+	    if(!isFunction(rm)) throwInvalidArgument('Future#' + name$$1, 1, 'be a Function', rm);
 	    return this[_name](lm, rm);
 	  };
 	  Future.prototype[_name] = function uncheckedBimapperTransformation(lmapper, rmapper){
@@ -1480,7 +1487,7 @@ var Fluture = (function () {
 	  return isFunction(f) ?
 	         this.other._map(function ApAction$resolved$mapper(x){ return f(x) }) :
 	         new Crashed(makeError(typeError(
-	           'Future#' + this.name + ' expects its first argument to be a Future of a Function\n' +
+	           'Future#' + this.name + '() expects its first argument to be a Future of a Function\n' +
 	           '  Actual: Future.of(' + sanctuaryShow(f) + ')'
 	         ), null, this.context));
 	}
@@ -1577,9 +1584,12 @@ var Fluture = (function () {
 	  resolved: returnOther
 	});
 
-	defineOtherAction('or', {
+	var altAction = {
 	  rejected: returnOther
-	});
+	};
+
+	defineOtherAction('or', altAction);
+	defineOtherAction('alt', altAction);
 
 	defineParallelAction('_parallelAp', earlyCrash, earlyReject, noop, {
 	  resolved: apActionHandler
@@ -1612,12 +1622,12 @@ var Fluture = (function () {
 	}
 
 	function ap$mval(mval, mfunc){
-	  if(!isApply(mfunc)) throwInvalidArgument('Future.ap', 1, 'be an Apply', mfunc);
+	  if(!isApply(mfunc)) throwInvalidArgument('ap', 1, 'be an Apply', mfunc);
 	  return mfunc[FL.ap](mval);
 	}
 
 	function ap(mval, mfunc){
-	  if(!isApply(mval)) throwInvalidArgument('Future.ap', 0, 'be an Apply', mval);
+	  if(!isApply(mval)) throwInvalidArgument('ap', 0, 'be an Apply', mval);
 	  if(arguments.length === 1) return partial1(ap$mval, mval);
 	  return ap$mval(mval, mfunc);
 	}
@@ -1634,208 +1644,197 @@ var Fluture = (function () {
 	}
 
 	function map$mapper(mapper, m){
-	  if(!isFunctor(m)) throwInvalidArgument('Future.map', 1, 'be a Functor', m);
+	  if(!isFunctor(m)) throwInvalidArgument('map', 1, 'be a Functor', m);
 	  return m[FL.map](mapper);
 	}
 
 	function map(mapper, m){
-	  if(!isFunction(mapper)) throwInvalidArgument('Future.map', 0, 'be a Function', mapper);
+	  if(!isFunction(mapper)) throwInvalidArgument('map', 0, 'be a Function', mapper);
 	  if(arguments.length === 1) return partial1(map$mapper, mapper);
 	  return map$mapper(mapper, m);
 	}
 
 	function bimap$lmapper$rmapper(lmapper, rmapper, m){
-	  if(!isBifunctor(m)) throwInvalidArgument('Future.bimap', 2, 'be a Bifunctor', m);
+	  if(!isBifunctor(m)) throwInvalidArgument('bimap', 2, 'be a Bifunctor', m);
 	  return m[FL.bimap](lmapper, rmapper);
 	}
 
 	function bimap$lmapper(lmapper, rmapper, m){
-	  if(!isFunction(rmapper)) throwInvalidArgument('Future.bimap', 1, 'be a Function', rmapper);
+	  if(!isFunction(rmapper)) throwInvalidArgument('bimap', 1, 'be a Function', rmapper);
 	  if(arguments.length === 2) return partial2(bimap$lmapper$rmapper, lmapper, rmapper);
 	  return bimap$lmapper$rmapper(lmapper, rmapper, m);
 	}
 
 	function bimap(lmapper, rmapper, m){
-	  if(!isFunction(lmapper)) throwInvalidArgument('Future.bimap', 0, 'be a Function', lmapper);
+	  if(!isFunction(lmapper)) throwInvalidArgument('bimap', 0, 'be a Function', lmapper);
 	  if(arguments.length === 1) return partial1(bimap$lmapper, lmapper);
 	  if(arguments.length === 2) return bimap$lmapper(lmapper, rmapper);
 	  return bimap$lmapper(lmapper, rmapper, m);
 	}
 
 	function chain$chainer(chainer, m){
-	  if(!isChain(m)) throwInvalidArgument('Future.chain', 1, 'be a Chain', m);
+	  if(!isChain(m)) throwInvalidArgument('chain', 1, 'be a Chain', m);
 	  return m[FL.chain](chainer);
 	}
 
 	function chain(chainer, m){
-	  if(!isFunction(chainer)) throwInvalidArgument('Future.chain', 0, 'be a Function', chainer);
+	  if(!isFunction(chainer)) throwInvalidArgument('chain', 0, 'be a Function', chainer);
 	  if(arguments.length === 1) return partial1(chain$chainer, chainer);
 	  return chain$chainer(chainer, m);
 	}
 
 	function mapRej$mapper(mapper, m){
-	  if(!isFuture(m)) throwInvalidFuture('Future.mapRej', 1, m);
+	  if(!isFuture(m)) throwInvalidFuture('mapRej', 1, m);
 	  return m.mapRej(mapper);
 	}
 
 	function mapRej(mapper, m){
-	  if(!isFunction(mapper)) throwInvalidArgument('Future.mapRej', 0, 'be a Function', mapper);
+	  if(!isFunction(mapper)) throwInvalidArgument('mapRej', 0, 'be a Function', mapper);
 	  if(arguments.length === 1) return partial1(mapRej$mapper, mapper);
 	  return mapRej$mapper(mapper, m);
 	}
 
 	function chainRej$chainer(chainer, m){
-	  if(!isFuture(m)) throwInvalidFuture('Future.chainRej', 1, m);
+	  if(!isFuture(m)) throwInvalidFuture('chainRej', 1, m);
 	  return m.chainRej(chainer);
 	}
 
 	function chainRej(chainer, m){
-	  if(!isFunction(chainer)) throwInvalidArgument('Future.chainRej', 0, 'be a Function', chainer);
+	  if(!isFunction(chainer)) throwInvalidArgument('chainRej', 0, 'be a Function', chainer);
 	  if(arguments.length === 1) return partial1(chainRej$chainer, chainer);
 	  return chainRej$chainer(chainer, m);
 	}
 
 	function lastly$right(right, left){
-	  if(!isFuture(left)) throwInvalidFuture('Future.finally', 1, left);
-	  return left.finally(right);
+	  if(!isFuture(left)) throwInvalidFuture('lastly', 1, left);
+	  return left.lastly(right);
 	}
 
 	function lastly(right, left){
-	  if(!isFuture(right)) throwInvalidFuture('Future.finally', 0, right);
+	  if(!isFuture(right)) throwInvalidFuture('lastly', 0, right);
 	  if(arguments.length === 1) return partial1(lastly$right, right);
 	  return lastly$right(right, left);
 	}
 
 	function and$left(left, right){
-	  if(!isFuture(right)) throwInvalidFuture('Future.and', 1, right);
+	  if(!isFuture(right)) throwInvalidFuture('and', 1, right);
 	  return left.and(right);
 	}
 
 	function and(left, right){
-	  if(!isFuture(left)) throwInvalidFuture('Future.and', 0, left);
+	  if(!isFuture(left)) throwInvalidFuture('and', 0, left);
 	  if(arguments.length === 1) return partial1(and$left, left);
 	  return and$left(left, right);
 	}
 
 	function both$left(left, right){
-	  if(!isFuture(right)) throwInvalidFuture('Future.both', 1, right);
+	  if(!isFuture(right)) throwInvalidFuture('both', 1, right);
 	  return left.both(right);
 	}
 
 	function both(left, right){
-	  if(!isFuture(left)) throwInvalidFuture('Future.both', 0, left);
+	  if(!isFuture(left)) throwInvalidFuture('both', 0, left);
 	  if(arguments.length === 1) return partial1(both$left, left);
 	  return both$left(left, right);
 	}
 
-	function or$left(left, right){
-	  if(!isFuture(right)) throwInvalidFuture('Future.or', 1, right);
-	  return left.or(right);
-	}
-
-	function or(left, right){
-	  if(!isFuture(left)) throwInvalidFuture('Future.or', 0, left);
-	  if(arguments.length === 1) return partial1(or$left, left);
-	  return or$left(left, right);
-	}
-
 	function race$right(right, left){
-	  if(!isFuture(left)) throwInvalidFuture('Future.race', 1, left);
+	  if(!isFuture(left)) throwInvalidFuture('race', 1, left);
 	  return left.race(right);
 	}
 
 	function race(right, left){
-	  if(!isFuture(right)) throwInvalidFuture('Future.race', 0, right);
+	  if(!isFuture(right)) throwInvalidFuture('race', 0, right);
 	  if(arguments.length === 1) return partial1(race$right, right);
 	  return race$right(right, left);
 	}
 
 	function swap(m){
-	  if(!isFuture(m)) throwInvalidFuture('Future.swap', 0, m);
+	  if(!isFuture(m)) throwInvalidFuture('swap', 0, m);
 	  return m.swap();
 	}
 
 	function fold$f$g(f, g, m){
-	  if(!isFuture(m)) throwInvalidFuture('Future.fold', 2, m);
+	  if(!isFuture(m)) throwInvalidFuture('fold', 2, m);
 	  return m.fold(f, g);
 	}
 
 	function fold$f(f, g, m){
-	  if(!isFunction(g)) throwInvalidArgument('Future.fold', 1, 'be a function', g);
+	  if(!isFunction(g)) throwInvalidArgument('fold', 1, 'be a Function', g);
 	  if(arguments.length === 2) return partial2(fold$f$g, f, g);
 	  return fold$f$g(f, g, m);
 	}
 
 	function fold(f, g, m){
-	  if(!isFunction(f)) throwInvalidArgument('Future.fold', 0, 'be a function', f);
+	  if(!isFunction(f)) throwInvalidArgument('fold', 0, 'be a Function', f);
 	  if(arguments.length === 1) return partial1(fold$f, f);
 	  if(arguments.length === 2) return fold$f(f, g);
 	  return fold$f(f, g, m);
 	}
 
 	function done$callback(callback, m){
-	  if(!isFuture(m)) throwInvalidFuture('Future.done', 1, m);
+	  if(!isFuture(m)) throwInvalidFuture('done', 1, m);
 	  return m.done(callback);
 	}
 
 	function done(callback, m){
-	  if(!isFunction(callback)) throwInvalidArgument('Future.done', 0, 'be a Function', callback);
+	  if(!isFunction(callback)) throwInvalidArgument('done', 0, 'be a Function', callback);
 	  if(arguments.length === 1) return partial1(done$callback, callback);
 	  return done$callback(callback, m);
 	}
 
 	function fork$f$g(f, g, m){
-	  if(!isFuture(m)) throwInvalidFuture('Future.fork', 2, m);
+	  if(!isFuture(m)) throwInvalidFuture('fork', 2, m);
 	  return m._interpret(raise, f, g);
 	}
 
 	function fork$f(f, g, m){
-	  if(!isFunction(g)) throwInvalidArgument('Future.fork', 1, 'be a function', g);
+	  if(!isFunction(g)) throwInvalidArgument('fork', 1, 'be a Function', g);
 	  if(arguments.length === 2) return partial2(fork$f$g, f, g);
 	  return fork$f$g(f, g, m);
 	}
 
 	function fork(f, g, m){
-	  if(!isFunction(f)) throwInvalidArgument('Future.fork', 0, 'be a function', f);
+	  if(!isFunction(f)) throwInvalidArgument('fork', 0, 'be a Function', f);
 	  if(arguments.length === 1) return partial1(fork$f, f);
 	  if(arguments.length === 2) return fork$f(f, g);
 	  return fork$f(f, g, m);
 	}
 
 	function forkCatch(f, g, h, m){
-	  if(!isFunction(f)) throwInvalidArgument('Future.forkCatch', 0, 'be a function', f);
+	  if(!isFunction(f)) throwInvalidArgument('forkCatch', 0, 'be a Function', f);
 	  if(arguments.length === 1) return partial1(forkCatch, f);
-	  if(!isFunction(g)) throwInvalidArgument('Future.forkCatch', 1, 'be a function', g);
+	  if(!isFunction(g)) throwInvalidArgument('forkCatch', 1, 'be a Function', g);
 	  if(arguments.length === 2) return partial2(forkCatch, f, g);
-	  if(!isFunction(h)) throwInvalidArgument('Future.forkCatch', 2, 'be a function', h);
+	  if(!isFunction(h)) throwInvalidArgument('forkCatch', 2, 'be a Function', h);
 	  if(arguments.length === 3) return partial3(forkCatch, f, g, h);
-	  if(!isFuture(m)) throwInvalidFuture('Future.forkCatch', 3, m);
+	  if(!isFuture(m)) throwInvalidFuture('forkCatch', 3, m);
 	  return m._interpret(f, g, h);
 	}
 
 	function promise(m){
-	  if(!isFuture(m)) throwInvalidFuture('Future.promise', 0, m);
+	  if(!isFuture(m)) throwInvalidFuture('promise', 0, m);
 	  return m.promise();
 	}
 
 	function value$cont(cont, m){
-	  if(!isFuture(m)) throwInvalidFuture('Future.value', 1, m);
+	  if(!isFuture(m)) throwInvalidFuture('value', 1, m);
 	  return m.value(cont);
 	}
 
 	function value(cont, m){
-	  if(!isFunction(cont)) throwInvalidArgument('Future.value', 0, 'be a Function', cont);
+	  if(!isFunction(cont)) throwInvalidArgument('value', 0, 'be a Function', cont);
 	  if(arguments.length === 1) return partial1(value$cont, cont);
 	  return value$cont(cont, m);
 	}
 
 	function extractLeft(m){
-	  if(!isFuture(m)) throwInvalidFuture('Future.extractLeft', 0, m);
+	  if(!isFuture(m)) throwInvalidFuture('extractLeft', 0, m);
 	  return m.extractLeft();
 	}
 
 	function extractRight(m){
-	  if(!isFuture(m)) throwInvalidFuture('Future.extractRight', 0, m);
+	  if(!isFuture(m)) throwInvalidFuture('extractRight', 0, m);
 	  return m.extractRight();
 	}
 
@@ -1857,7 +1856,7 @@ var Fluture = (function () {
 	};
 
 	After.prototype.toString = function After$toString(){
-	  return 'Future.after(' + sanctuaryShow(this._time) + ', ' + sanctuaryShow(this._value) + ')';
+	  return 'after(' + sanctuaryShow(this._time) + ', ' + sanctuaryShow(this._value) + ')';
 	};
 
 	function RejectAfter(time, value){
@@ -1878,7 +1877,7 @@ var Fluture = (function () {
 	};
 
 	RejectAfter.prototype.toString = function RejectAfter$toString(){
-	  return 'Future.rejectAfter(' + sanctuaryShow(this._time) + ', ' + sanctuaryShow(this._value) + ')';
+	  return 'rejectAfter(' + sanctuaryShow(this._time) + ', ' + sanctuaryShow(this._value) + ')';
 	};
 
 	function after$time(time, value){
@@ -1886,7 +1885,7 @@ var Fluture = (function () {
 	}
 
 	function after(time, value){
-	  if(!isUnsigned(time)) throwInvalidArgument('Future.after', 0, 'be a positive integer', time);
+	  if(!isUnsigned(time)) throwInvalidArgument('after', 0, 'be a positive Integer', time);
 	  if(arguments.length === 1) return partial1(after$time, time);
 	  return after$time(time, value);
 	}
@@ -1897,7 +1896,7 @@ var Fluture = (function () {
 
 	function rejectAfter(time, reason){
 	  if(!isUnsigned(time)){
-	    throwInvalidArgument('Future.rejectAfter', 0, 'be a positive integer', time);
+	    throwInvalidArgument('rejectAfter', 0, 'be a positive Integer', time);
 	  }
 	  if(arguments.length === 1) return partial1(rejectAfter$time, time);
 	  return rejectAfter$time(time, reason);
@@ -1918,11 +1917,11 @@ var Fluture = (function () {
 	};
 
 	Attempt.prototype.toString = function Attempt$toString(){
-	  return 'Future.try(' + showf(this._fn) + ')';
+	  return 'attempt(' + showf(this._fn) + ')';
 	};
 
 	function attempt(f){
-	  if(!isFunction(f)) throwInvalidArgument('Future.try', 0, 'be a function', f);
+	  if(!isFunction(f)) throwInvalidArgument('attempt', 0, 'be a Function', f);
 	  return new Attempt(f);
 	}
 
@@ -2041,11 +2040,11 @@ var Fluture = (function () {
 	};
 
 	Cached.prototype.toString = function Cached$toString(){
-	  return 'Future.cache(' + this._pure.toString() + ')';
+	  return 'cache(' + this._pure.toString() + ')';
 	};
 
 	function cache(m){
-	  if(!isFuture(m)) throwInvalidFuture('Future.cache', 0, m);
+	  if(!isFuture(m)) throwInvalidFuture('cache', 0, m);
 	  return new Cached(m);
 	}
 
@@ -2065,11 +2064,11 @@ var Fluture = (function () {
 	};
 
 	Encase.prototype.toString = function Encase$toString(){
-	  return 'Future.encase(' + showf(this._fn) + ', ' + sanctuaryShow(this._a) + ')';
+	  return 'encase(' + showf(this._fn) + ', ' + sanctuaryShow(this._a) + ')';
 	};
 
 	function encase(f, x){
-	  if(!isFunction(f)) throwInvalidArgument('Future.encase', 0, 'be a function', f);
+	  if(!isFunction(f)) throwInvalidArgument('encase', 0, 'be a Function', f);
 	  if(arguments.length === 1) return partial1(encase, f);
 	  return new Encase(f, x);
 	}
@@ -2091,11 +2090,11 @@ var Fluture = (function () {
 	};
 
 	Encase2.prototype.toString = function Encase2$toString(){
-	  return 'Future.encase2(' + showf(this._fn) + ', ' + sanctuaryShow(this._a) + ', ' + sanctuaryShow(this._b) + ')';
+	  return 'encase2(' + showf(this._fn) + ', ' + sanctuaryShow(this._a) + ', ' + sanctuaryShow(this._b) + ')';
 	};
 
 	function encase2(f, x, y){
-	  if(!isFunction(f)) throwInvalidArgument('Future.encase2', 0, 'be a function', f);
+	  if(!isFunction(f)) throwInvalidArgument('encase2', 0, 'be a Function', f);
 
 	  switch(arguments.length){
 	    case 1: return partial1(encase2, f);
@@ -2122,7 +2121,7 @@ var Fluture = (function () {
 	};
 
 	Encase3.prototype.toString = function Encase3$toString(){
-	  return 'Future.encase3('
+	  return 'encase3('
 	       + showf(this._fn)
 	       + ', '
 	       + sanctuaryShow(this._a)
@@ -2134,7 +2133,7 @@ var Fluture = (function () {
 	};
 
 	function encase3(f, x, y, z){
-	  if(!isFunction(f)) throwInvalidArgument('Future.encase3', 0, 'be a function', f);
+	  if(!isFunction(f)) throwInvalidArgument('encase3', 0, 'be a Function', f);
 
 	  switch(arguments.length){
 	    case 1: return partial1(encase3, f);
@@ -2178,11 +2177,11 @@ var Fluture = (function () {
 	};
 
 	EncaseN.prototype.toString = function EncaseN$toString(){
-	  return 'Future.encaseN(' + showf(this._fn) + ', ' + sanctuaryShow(this._a) + ')';
+	  return 'encaseN(' + showf(this._fn) + ', ' + sanctuaryShow(this._a) + ')';
 	};
 
 	function encaseN(f, x){
-	  if(!isFunction(f)) throwInvalidArgument('Future.encaseN', 0, 'be a function', f);
+	  if(!isFunction(f)) throwInvalidArgument('encaseN', 0, 'be a Function', f);
 	  if(arguments.length === 1) return partial1(encaseN, f);
 	  return new EncaseN(f, x);
 	}
@@ -2222,11 +2221,11 @@ var Fluture = (function () {
 	};
 
 	EncaseN2.prototype.toString = function EncaseN2$toString(){
-	  return 'Future.encaseN2(' + showf(this._fn) + ', ' + sanctuaryShow(this._a) + ', ' + sanctuaryShow(this._b) + ')';
+	  return 'encaseN2(' + showf(this._fn) + ', ' + sanctuaryShow(this._a) + ', ' + sanctuaryShow(this._b) + ')';
 	};
 
 	function encaseN2(f, x, y){
-	  if(!isFunction(f)) throwInvalidArgument('Future.encaseN2', 0, 'be a function', f);
+	  if(!isFunction(f)) throwInvalidArgument('encaseN2', 0, 'be a Function', f);
 
 	  switch(arguments.length){
 	    case 1: return partial1(encaseN2, f);
@@ -2271,7 +2270,7 @@ var Fluture = (function () {
 	};
 
 	EncaseN3.prototype.toString = function EncaseN3$toString(){
-	  return 'Future.encaseN3('
+	  return 'encaseN3('
 	       + showf(this._fn)
 	       + ', '
 	       + sanctuaryShow(this._a)
@@ -2283,7 +2282,7 @@ var Fluture = (function () {
 	};
 
 	function encaseN3(f, x, y, z){
-	  if(!isFunction(f)) throwInvalidArgument('Future.encaseN3', 0, 'be a function', f);
+	  if(!isFunction(f)) throwInvalidArgument('encaseN3', 0, 'be a Function', f);
 
 	  switch(arguments.length){
 	    case 1: return partial1(encaseN3, f);
@@ -2295,7 +2294,7 @@ var Fluture = (function () {
 
 	function invalidPromise(p, f, a){
 	  return typeError(
-	    'Future.encaseP expects the function it\'s given to return a Promise/Thenable'
+	    'encaseP() expects the function it\'s given to return a Promise/Thenable'
 	    + '\n  Actual: ' + (sanctuaryShow(p)) + '\n  From calling: ' + (showf(f))
 	    + '\n  With: ' + (sanctuaryShow(a))
 	  );
@@ -2337,18 +2336,18 @@ var Fluture = (function () {
 	};
 
 	EncaseP.prototype.toString = function EncaseP$toString(){
-	  return 'Future.encaseP(' + showf(this._fn) + ', ' + sanctuaryShow(this._a) + ')';
+	  return 'encaseP(' + showf(this._fn) + ', ' + sanctuaryShow(this._a) + ')';
 	};
 
 	function encaseP(f, x){
-	  if(!isFunction(f)) throwInvalidArgument('Future.encaseP', 0, 'be a function', f);
+	  if(!isFunction(f)) throwInvalidArgument('encaseP', 0, 'be a Function', f);
 	  if(arguments.length === 1) return partial1(encaseP, f);
 	  return new EncaseP(f, x);
 	}
 
 	function invalidPromise$1(p, f, a, b){
 	  return typeError(
-	    'Future.encaseP2 expects the function it\'s given to return a Promise/Thenable'
+	    'encaseP2() expects the function it\'s given to return a Promise/Thenable'
 	    + '\n  Actual: ' + (sanctuaryShow(p)) + '\n  From calling: ' + (showf(f))
 	    + '\n  With 1: ' + (sanctuaryShow(a))
 	    + '\n  With 2: ' + (sanctuaryShow(b))
@@ -2392,11 +2391,11 @@ var Fluture = (function () {
 	};
 
 	EncaseP2.prototype.toString = function EncaseP2$toString(){
-	  return 'Future.encaseP2(' + showf(this._fn) + ', ' + sanctuaryShow(this._a) + ', ' + sanctuaryShow(this._b) + ')';
+	  return 'encaseP2(' + showf(this._fn) + ', ' + sanctuaryShow(this._a) + ', ' + sanctuaryShow(this._b) + ')';
 	};
 
 	function encaseP2(f, x, y){
-	  if(!isFunction(f)) throwInvalidArgument('Future.encaseP2', 0, 'be a function', f);
+	  if(!isFunction(f)) throwInvalidArgument('encaseP2', 0, 'be a Function', f);
 
 	  switch(arguments.length){
 	    case 1: return partial1(encaseP2, f);
@@ -2407,7 +2406,7 @@ var Fluture = (function () {
 
 	function invalidPromise$2(p, f, a, b, c){
 	  return typeError(
-	    'Future.encaseP3 expects the function it\'s given to return a Promise/Thenable'
+	    'encaseP3() expects the function it\'s given to return a Promise/Thenable'
 	    + '\n  Actual: ' + (sanctuaryShow(p)) + '\n  From calling: ' + (showf(f))
 	    + '\n  With 1: ' + (sanctuaryShow(a))
 	    + '\n  With 2: ' + (sanctuaryShow(b))
@@ -2453,7 +2452,7 @@ var Fluture = (function () {
 	};
 
 	EncaseP3.prototype.toString = function EncaseP3$toString(){
-	  return 'Future.encaseP3('
+	  return 'encaseP3('
 	       + showf(this._fn)
 	       + ', '
 	       + sanctuaryShow(this._a)
@@ -2465,7 +2464,7 @@ var Fluture = (function () {
 	};
 
 	function encaseP3(f, x, y, z){
-	  if(!isFunction(f)) throwInvalidArgument('Future.encaseP3', 0, 'be a function', f);
+	  if(!isFunction(f)) throwInvalidArgument('encaseP3', 0, 'be a Function', f);
 
 	  switch(arguments.length){
 	    case 1: return partial1(encaseP3, f);
@@ -2490,7 +2489,7 @@ var Fluture = (function () {
 
 	function invalidState(x){
 	  return invalidFuture(
-	    'Future.do',
+	    'go',
 	    'the iterator to produce only valid Futures',
 	    x,
 	    '\n  Tip: If you\'re using a generator, make sure you always yield a Future'
@@ -2523,7 +2522,7 @@ var Fluture = (function () {
 
 	  if(!isIterator(iterator)){
 	    rec(makeError(
-	      invalidArgument('Future.do', 0, 'return an iterator, maybe you forgot the "*"', iterator),
+	      invalidArgument('go', 0, 'return an iterator, maybe you forgot the "*"', iterator),
 	      _this,
 	      context
 	    ));
@@ -2568,17 +2567,17 @@ var Fluture = (function () {
 	};
 
 	Go.prototype.toString = function Go$toString(){
-	  return 'Future.do(' + showf(this._generator) + ')';
+	  return 'go(' + showf(this._generator) + ')';
 	};
 
 	function go(generator){
-	  if(!isFunction(generator)) throwInvalidArgument('Future.do', 0, 'be a Function', generator);
+	  if(!isFunction(generator)) throwInvalidArgument('go', 0, 'be a Function', generator);
 	  return new Go(generator);
 	}
 
 	function invalidDisposal(m, f, x){
 	  return invalidFuture(
-	    'Future.hook',
+	    'hook',
 	    'the first function it\'s given to return a Future',
 	    m,
 	    '\n  From calling: ' + showf(f) + '\n  With: ' + sanctuaryShow(x)
@@ -2587,7 +2586,7 @@ var Fluture = (function () {
 
 	function invalidConsumption(m, f, x){
 	  return invalidFuture(
-	    'Future.hook',
+	    'hook',
 	    'the second function it\'s given to return a Future',
 	    m,
 	    '\n  From calling: ' + showf(f) + '\n  With: ' + sanctuaryShow(x)
@@ -2697,7 +2696,7 @@ var Fluture = (function () {
 	};
 
 	Hook.prototype.toString = function Hook$toString(){
-	  return 'Future.hook('
+	  return 'hook('
 	       + this._acquire.toString()
 	       + ', '
 	       + showf(this._dispose)
@@ -2707,18 +2706,18 @@ var Fluture = (function () {
 	};
 
 	function hook$acquire$cleanup(acquire, cleanup, consume){
-	  if(!isFunction(consume)) throwInvalidArgument('Future.hook', 2, 'be a Future', consume);
+	  if(!isFunction(consume)) throwInvalidArgument('hook', 2, 'be a Function', consume);
 	  return new Hook(acquire, cleanup, consume);
 	}
 
 	function hook$acquire(acquire, cleanup, consume){
-	  if(!isFunction(cleanup)) throwInvalidArgument('Future.hook', 1, 'be a function', cleanup);
+	  if(!isFunction(cleanup)) throwInvalidArgument('hook', 1, 'be a Function', cleanup);
 	  if(arguments.length === 2) return partial2(hook$acquire$cleanup, acquire, cleanup);
 	  return hook$acquire$cleanup(acquire, cleanup, consume);
 	}
 
 	function hook(acquire, cleanup, consume){
-	  if(!isFuture(acquire)) throwInvalidFuture('Future.hook', 0, acquire);
+	  if(!isFuture(acquire)) throwInvalidFuture('hook', 0, acquire);
 	  if(arguments.length === 1) return partial1(hook$acquire, acquire);
 	  if(arguments.length === 2) return hook$acquire(acquire, cleanup);
 	  return hook$acquire(acquire, cleanup, consume);
@@ -2756,11 +2755,11 @@ var Fluture = (function () {
 	};
 
 	Node.prototype.toString = function Node$toString(){
-	  return 'Future.node(' + showf(this._fn) + ')';
+	  return 'node(' + showf(this._fn) + ')';
 	};
 
 	function node(f){
-	  if(!isFunction(f)) throwInvalidArgument('Future.node', 0, 'be a function', f);
+	  if(!isFunction(f)) throwInvalidArgument('node', 0, 'be a Function', f);
 	  return new Node(f);
 	}
 
@@ -2817,35 +2816,34 @@ var Fluture = (function () {
 	};
 
 	Parallel.prototype.toString = function Parallel$toString(){
-	  return 'Future.parallel(' + this._max + ', ' + sanctuaryShow(this._futures) + ')';
+	  return 'parallel(' + this._max + ', ' + sanctuaryShow(this._futures) + ')';
 	};
 
 	var emptyArray = new Resolved([]);
 
-	function validateNthFuture(m, i){
+	function validateNthFuture(m, xs){
 	  if(!isFuture(m)) throwInvalidFuture(
-	    'Future.parallel',
-	    'its second argument to be an array of valid Futures. ' +
-	    'The value at position ' + i + ' in the array is not a Future',
-	    m
+	    'parallel',
+	    'its second argument to be an Array of valid Futures',
+	    xs
 	  );
 	}
 
 	function parallel$max(max, xs){
-	  if(!isArray(xs)) throwInvalidArgument('Future.parallel', 1, 'be an array', xs);
-	  for(var idx = 0; idx < xs.length; idx++) validateNthFuture(xs[idx], idx);
+	  if(!isArray(xs)) throwInvalidArgument('parallel', 1, 'be an Array of valid Futures', xs);
+	  for(var idx = 0; idx < xs.length; idx++) validateNthFuture(xs[idx], xs);
 	  return xs.length === 0 ? emptyArray : new Parallel(max, xs);
 	}
 
 	function parallel(max, xs){
-	  if(!isUnsigned(max)) throwInvalidArgument('Future.parallel', 0, 'be a positive integer', max);
+	  if(!isUnsigned(max)) throwInvalidArgument('parallel', 0, 'be a positive Integer', max);
 	  if(arguments.length === 1) return partial1(parallel$max, max);
 	  return parallel$max(max, xs);
 	}
 
 	function invalidPromise$3(p, f){
 	  return typeError(
-	    'Future.tryP expects the function it\'s given to return a Promise/Thenable'
+	    'tryP() expects the function it\'s given to return a Promise/Thenable'
 	    + '\n  Actual: ' + sanctuaryShow(p) + '\n  From calling: ' + showf(f)
 	  );
 	}
@@ -2884,11 +2882,11 @@ var Fluture = (function () {
 	};
 
 	TryP.prototype.toString = function TryP$toString(){
-	  return 'Future.tryP(' + sanctuaryShow(this._fn) + ')';
+	  return 'tryP(' + sanctuaryShow(this._fn) + ')';
 	};
 
 	function tryP(f){
-	  if(!isFunction(f)) throwInvalidArgument('Future.tryP', 0, 'be a function', f);
+	  if(!isFunction(f)) throwInvalidArgument('tryP', 0, 'be a Function', f);
 	  return new TryP(f);
 	}
 
@@ -2896,6 +2894,7 @@ var Fluture = (function () {
 	Future.chainRec = Future[FL.chainRec] = chainRec;
 	Future.reject = reject;
 	Future.ap = ap;
+	Future.alt = alt;
 	Future.map = map;
 	Future.bimap = bimap;
 	Future.chain = chain;
@@ -2912,7 +2911,7 @@ var Fluture = (function () {
 	}
 
 	function seq(par){
-	  if(!isParallel(par)) throwInvalidArgument('Future.seq', 0, 'to be a Par', par);
+	  if(!isParallel(par)) throwInvalidArgument('seq', 0, 'be a ConcurrentFuture', par);
 	  return par.sequential;
 	}
 
@@ -2951,6 +2950,7 @@ var Fluture = (function () {
 		debugMode: debugMode,
 		ap: ap,
 		alt: alt,
+		or: alt,
 		map: map,
 		bimap: bimap,
 		chain: chain,
@@ -2960,7 +2960,6 @@ var Fluture = (function () {
 		finally: lastly,
 		and: and,
 		both: both,
-		or: or,
 		race: race,
 		swap: swap,
 		fold: fold,
