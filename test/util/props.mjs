@@ -18,6 +18,8 @@ export var number = jsc.number;
 export var oneof = jsc.oneof;
 export var string = jsc.string;
 export var property = jsc.property;
+export var elements = jsc.elements;
+export var nil = elements([null, undefined]);
 
 var R_VOWEL = /^[aeiouyAEIOUY]/;
 
@@ -95,7 +97,7 @@ export var {
       number,
       string,
       bool,
-      falsy,
+      nil,
       constant(error),
       tie('anyFunction')
     ),
@@ -159,7 +161,7 @@ export var resolvedFutureArg = {
 export var positiveIntegerArg = {
   name: 'positive Integer',
   valid: jsc.suchthat(nat, function (x){ return x > 0 }),
-  invalid: oneof(constant(NaN), bool, constant(0.5)),
+  invalid: oneof(bool, constant(0.5)),
 };
 
 export var futureArrayArg = {
