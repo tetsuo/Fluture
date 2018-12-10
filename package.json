@@ -79,7 +79,7 @@
     "rimraf": "^2.6.2",
     "rollup": "^0.67.0",
     "rollup-plugin-commonjs": "^9.1.6",
-    "rollup-plugin-node-resolve": "^3.0.0",
+    "rollup-plugin-node-resolve": "^4.0.0",
     "sanctuary-benchmark": "^1.0.0",
     "sanctuary-type-classes": "^9.0.0",
     "typescript": "^3.0.3",
