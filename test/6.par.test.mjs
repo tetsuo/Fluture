@@ -118,7 +118,7 @@ describe('Par()', function (){
 
   });
 
-  describe('#alt', function (){
+  describe('#alt()', function (){
 
     it('rejects when the first one rejects', function (){
       var m1 = Par(Future(function (rej, res){ return void setTimeout(res, 50, 1) }));

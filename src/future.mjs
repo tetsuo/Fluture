@@ -40,6 +40,10 @@ Future.prototype[FL.chain] = function Future$FL$chain(mapper){
   return this._chain(mapper);
 };
 
+Future.prototype[FL.alt] = function Future$FL$alt(other){
+  return this._alt(other);
+};
+
 Future.prototype.pipe = function Future$pipe(f){
   if(!isFuture(this)) throwInvalidContext('Future#pipe', this);
   if(!isFunction(f)) throwInvalidArgument('Future#pipe', 0, 'be a Function', f);
@@ -681,9 +685,12 @@ defineOtherAction('and', {
   resolved: returnOther
 });
 
-defineOtherAction('or', {
+var altAction = {
   rejected: returnOther
-});
+};
+
+defineOtherAction('or', altAction);
+defineOtherAction('alt', altAction);
 
 defineParallelAction('_parallelAp', earlyCrash, earlyReject, noop, {
   resolved: apActionHandler

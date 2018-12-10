@@ -81,8 +81,8 @@ export var anyParallel = anyFuture.smap(Par, seq, show);
 
 export var altArg = {
   name: 'Alt',
-  valid: anyParallel,
-  invalid: any,
+  valid: anyFuture,
+  invalid: anyNonFuture,
 };
 
 export var applyArg = {

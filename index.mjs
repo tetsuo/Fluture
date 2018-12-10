@@ -10,6 +10,7 @@ Future.resolve = Future.of = Future[FL.of] = resolve;
 Future.chainRec = Future[FL.chainRec] = chainRec;
 Future.reject = reject;
 Future.ap = ap;
+Future.alt = alt;
 Future.map = map;
 Future.bimap = bimap;
 Future.chain = chain;

@@ -9,6 +9,7 @@ import jsc from 'jsverify';
 var expect = chai.expect;
 
 var Functor = FL.Functor;
+var Alt = FL.Alt;
 var Bifunctor = FL.Bifunctor;
 var Apply = FL.Apply;
 var Applicative = FL.Applicative;
@@ -50,6 +51,11 @@ describe('Future Compliance', function (){
     describe('Functor', function (){
       test(Functor(eq), 'identity', anyFuture);
       test(Functor(eq), 'composition', _of(number), _k(sub3), _k(mul3));
+    });
+
+    describe('Alt', function (){
+      test(Alt(eq), 'associativity', anyFuture, anyFuture, anyFuture);
+      test(Alt(eq), 'distributivity', _of(number), _of(number), _k(sub3));
     });
 
     describe('Bifunctor', function (){
@@ -100,6 +106,7 @@ describe('Future Compliance', function (){
 
     var of = Future.of;
     var ap = Future.ap;
+    var alt = Future.alt;
     var map = Future.map;
     var bimap = Future.bimap;
     var chain = Future.chain;
@@ -115,6 +122,20 @@ describe('Future Compliance', function (){
       });
       test('composition', function (x){
         return eq(map(B(sub3)(mul3), of(x)), map(sub3, map(mul3, of(x))));
+      });
+    });
+
+    describe('Alt', function (){
+      test('associativity', function (x){
+        var a = of(x);
+        var b = of(sub3(x));
+        var c = of(mul3(x));
+        return eq(alt(alt(a, b), c), alt(a, alt(b, c)));
+      });
+      test('composition', function (x){
+        var a = of(x);
+        var b = of(sub3(x));
+        return eq(map(mul3, alt(a, b)), alt(map(mul3, a), map(mul3, b)));
       });
     });
 
@@ -161,7 +182,6 @@ describe('Future Compliance', function (){
     });
 
     describe('ChainRec', function (){
-
       test('equivalence', function (x){
         var p = function (v){ return v < 1 };
         var d = of;
@@ -170,7 +190,6 @@ describe('Future Compliance', function (){
         var b = (function step (v){ return p(v) ? d(v) : chain(step, n(v)) }(x));
         return eq(a, b);
       });
-
       it('stack-safety', function (){
         var p = function (v){ return v > (STACKSIZE + 1) };
         var d = of;
@@ -178,7 +197,6 @@ describe('Future Compliance', function (){
         var a = chainRec(function (l, r, v){ return p(v) ? map(r, d(v)) : map(l, n(v)) }, 0);
         expect(function (){ return a._interpret(noop, noop, noop) }).to.not.throw();
       });
-
     });
 
     describe('Monad', function (){

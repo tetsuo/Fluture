@@ -1,5 +1,5 @@
 export {ap} from './ap';
-export {alt} from './alt';
+export {alt, alt as or} from './alt';
 export {map} from './map';
 export {bimap} from './bimap';
 export {chain} from './chain';
@@ -10,7 +10,6 @@ export {lastly, lastly as finally} from './lastly';
 
 export {and} from './and';
 export {both} from './both';
-export {or} from './or';
 export {race} from './race';
 
 export {swap} from './swap';
