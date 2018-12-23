@@ -12,6 +12,7 @@ export var bang = function (s){ return (s + '!') };
 export var I = function (x){ return x };
 export var B = function (f){ return function (g){ return function (x){ return f(g(x)) } } };
 export var K = function (x){ return function (){ return x } };
+export var T = function (x){ return function (f){ return f(x) } };
 export var error = new Error('Intentional error for unit testing');
 export var throwit = function (it){ throw it };
 
