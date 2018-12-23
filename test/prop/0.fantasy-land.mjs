@@ -1,26 +1,34 @@
 import FL from 'fantasy-laws';
 import Z from 'sanctuary-type-classes';
-import Future from '../../index.mjs';
-import {assertEqual as eq, B, noop, STACKSIZE, bang} from '../util/util';
-import {anyFuture, _of, nat, number, constant as _k} from '../util/props';
-
-var Functor = FL.Functor;
-var Alt = FL.Alt;
-var Bifunctor = FL.Bifunctor;
-var Apply = FL.Apply;
-var Applicative = FL.Applicative;
-var Chain = FL.Chain;
-var ChainRec = FL.ChainRec;
-var Monad = FL.Monad;
-
-var I = function (x){ return x };
-var sub3 = function (x){ return x - 3 };
-var mul3 = function (x){ return x * 3 };
-var query = function (x){ return x + '?' };
+import show from 'sanctuary-show';
+import {Future, bimap} from '../../index.mjs';
+import {assertEqual as eq, I, B, T, K, noop, STACKSIZE} from '../util/util';
+import {
+  FutureArb,
+  _of,
+  any as _x,
+  anyFuture as _mx,
+  constant as _k,
+  elements,
+  f,
+  g,
+  nat,
+  suchthat,
+} from '../util/props';
 
 var of = function (x){
   return Z.of(Future, x);
 };
+
+var _f = elements([f, g, I, of]);
+var _mf = _of(_f);
+var _fm = FutureArb(_f, _f).smap(function (m){
+  return function (x){
+    return bimap(T(x), T(x), m);
+  };
+}, function (f){
+  return bimap(K, K, f());
+}, show);
 
 function test (laws, name){
   var args = Array.prototype.slice.call(arguments, 2);
@@ -33,42 +41,42 @@ describe('Fantasy Land', function (){
   this.timeout(5000);
 
   describe('Functor', function (){
-    test(Functor(eq), 'identity', anyFuture);
-    test(Functor(eq), 'composition', _of(number), _k(sub3), _k(mul3));
+    test(FL.Functor(eq), 'identity', _mx);
+    test(FL.Functor(eq), 'composition', _mx, _f, _f);
   });
 
   describe('Alt', function (){
-    test(Alt(eq), 'associativity', anyFuture, anyFuture, anyFuture);
-    test(Alt(eq), 'distributivity', _of(number), _of(number), _k(sub3));
+    test(FL.Alt(eq), 'associativity', _mx, _mx, _mx);
+    test(FL.Alt(eq), 'distributivity', _mx, _mx, _f);
   });
 
   describe('Bifunctor', function (){
-    test(Bifunctor(eq), 'identity', anyFuture);
-    test(Bifunctor(eq), 'composition', _of(number), _k(bang), _k(query), _k(sub3), _k(mul3));
+    test(FL.Bifunctor(eq), 'identity', _mx);
+    test(FL.Bifunctor(eq), 'composition', _mx, _f, _f, _f, _f);
   });
 
   describe('Apply', function (){
-    test(Apply(eq), 'composition', _of(_k(sub3)), _of(_k(mul3)), _of(number));
+    test(FL.Apply(eq), 'composition', _mf, _mf, _mx);
   });
 
   describe('Applicative', function (){
-    test(Applicative(eq, Future), 'identity', _of(number));
-    test(Applicative(eq, Future), 'homomorphism', _k(sub3), number);
-    test(Applicative(eq, Future), 'interchange', _of(_k(sub3)), number);
+    test(FL.Applicative(eq, Future), 'identity', _mx);
+    test(FL.Applicative(eq, Future), 'homomorphism', _f, _x);
+    test(FL.Applicative(eq, Future), 'interchange', _mf, _x);
   });
 
   describe('Chain', function (){
-    test(Chain(eq), 'associativity', _of(number), _k(B(of)(sub3)), _k(B(of)(mul3)));
+    test(FL.Chain(eq), 'associativity', _mx, _fm, _fm);
   });
 
   describe('ChainRec', function (){
     test(
-      ChainRec(eq, Future),
+      FL.ChainRec(eq, Future),
       'equivalence',
       _k(function (v){ return v < 1 }),
       _k(B(of)(function (v){ return v - 1 })),
       _k(of),
-      nat.smap(x => Math.min(x, 100), I)
+      suchthat(nat, function (x){ return x < 100 })
     );
     it('stack-safety', function (){
       var p = function (v){ return v > (STACKSIZE + 1) };
@@ -80,8 +88,8 @@ describe('Fantasy Land', function (){
   });
 
   describe('Monad', function (){
-    test(Monad(eq, Future), 'leftIdentity', _k(B(of)(sub3)), _of(number));
-    test(Monad(eq, Future), 'rightIdentity', anyFuture);
+    test(FL.Monad(eq, Future), 'leftIdentity', _fm, _mx);
+    test(FL.Monad(eq, Future), 'rightIdentity', _mx);
   });
 
 });
