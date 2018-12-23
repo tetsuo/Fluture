@@ -1,29 +1,26 @@
-import chai from 'chai';
-import {noop} from '../util/util';
+import {noop, eq} from '../util/util';
 import * as Fluture from '../../index.mjs';
 import Future from '../../index.js';
-
-var expect = chai.expect;
 
 describe('CommonJS build output', function (){
 
   it('exports the Future constructor by default', function (){
-    expect(Future).to.be.a('function');
-    expect(Future(noop)).to.be.an.instanceof(Future);
+    eq(typeof Future, 'function');
+    eq(Future(noop) instanceof Future, true);
   });
 
   it('has a Future property that refers to itself for import destructuring', function (){
-    expect(Future.Future).to.equal(Future);
+    eq(Future.Future, Future);
   });
 
-  it('has all desired properties', function (){
-    Object.keys(Fluture).forEach(key => {
-      expect(typeof Future[key] === typeof Fluture[key]);
+  Object.keys(Fluture).forEach(key => {
+    it('has a ' + key + ' property of type ' + typeof Fluture[key], function (){
+      eq(typeof Future[key], typeof Fluture[key]);
     });
   });
 
   it('exports Future with the correct name property', function (){
-    expect(Future.name).to.equal(Fluture.Future.name);
+    eq(Future.name, Fluture.Future.name);
   });
 
 });
