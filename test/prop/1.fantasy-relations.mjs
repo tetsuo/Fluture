@@ -31,10 +31,6 @@ var make = oneof(constant(resolve), constant(reject));
 
 describe('Prop', function (){
 
-  property('swap(swap(m)) = m', anyFuture, function (m){
-    return eq(swap(swap(m)), m);
-  });
-
   property('Rejected m => swap(m) = chainRej(resolve, m)', anyRejectedFuture, function (m){
     return eq(swap(m), chainRej(resolve, m));
   });

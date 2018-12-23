@@ -23,7 +23,7 @@ var stringNumberFuture = FutureArb(string, number);
 var stringSquareFuture = FutureArb(string, constant(square));
 var make = oneof(constant(resolve), constant(reject));
 
-describe('Prop', function (){
+describe('Libs', function (){
 
   property('Z.of(Future, x) = Future.of(x)', any, function (x){
     return assertEqual(Z.of(Future, x), Future.of(x));
