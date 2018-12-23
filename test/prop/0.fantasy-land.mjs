@@ -13,6 +13,7 @@ import {
   f,
   g,
   nat,
+  property,
   suchthat,
 } from '../util/props';
 
@@ -36,9 +37,6 @@ function test (laws, name){
 }
 
 describe('Fantasy Land', function (){
-
-  this.slow(200);
-  this.timeout(5000);
 
   describe('Functor', function (){
     test(FL.Functor(eq), 'identity', _mx);
@@ -90,6 +88,24 @@ describe('Fantasy Land', function (){
   describe('Monad', function (){
     test(FL.Monad(eq, Future), 'leftIdentity', _fm, _mx);
     test(FL.Monad(eq, Future), 'rightIdentity', _mx);
+  });
+
+  describe('Derivations', function (){
+    property('map from ap and of', _mx, _f, function (m, f){
+      return eq(Z.map(f, m), Z.ap(of(f), m));
+    });
+
+    property('map from chain and of', _mx, _f, function (m, f){
+      return eq(Z.map(f, m), Z.chain(B(of)(f), m));
+    });
+
+    property('map from bimap', _mx, _f, function (m, f){
+      return eq(Z.map(f, m), Z.bimap(I, f, m));
+    });
+
+    property('ap from chain and map', _mx, _mf, function (mx, mf){
+      return eq(Z.ap(mf, mx), Z.chain(function (f){ return Z.map(f, mx) }, mf));
+    });
   });
 
 });
