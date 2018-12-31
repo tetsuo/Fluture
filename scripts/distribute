@@ -3,4 +3,5 @@ set -euxo pipefail
 
 npm run build
 ./node_modules/.bin/rollup -c rollup.config.dist.js
-git add dist
+sed --in-place "s/Fluture@$PREVIOUS_VERSION/Fluture@$VERSION/" README.md
+git add dist README.md
