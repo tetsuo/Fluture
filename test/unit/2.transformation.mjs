@@ -101,7 +101,8 @@ describe('Transformation', function (){
 
   describe('chain', function (){
 
-    var seq = dummy.chain(function (x){ return of(bang(x)) });
+    var f = function (x){ return of(bang(x)) };
+    var seq = dummy.chain(f);
 
     describe('#_interpret()', function (){
 
@@ -118,7 +119,7 @@ describe('Transformation', function (){
     describe('#toString()', function (){
 
       it('returns code to create the same data-structure', function (){
-        expect(seq.toString()).to.equal('Future.of("resolved").chain(function (x){ return of(bang(x)) })');
+        expect(seq.toString()).to.equal('Future.of("resolved").chain(' + f.toString() + ')');
       });
 
     });
@@ -153,7 +154,8 @@ describe('Transformation', function (){
 
   describe('chainRej', function (){
 
-    var seq = dummy.chainRej(function (){ return of(1) });
+    var f = function (){ return of(1) };
+    var seq = dummy.chainRej(f);
 
     describe('#_interpret()', function (){
 
@@ -170,7 +172,7 @@ describe('Transformation', function (){
     describe('#toString()', function (){
 
       it('returns code to create the same data-structure', function (){
-        expect(seq.toString()).to.equal('Future.of("resolved").chainRej(function (){ return of(1) })');
+        expect(seq.toString()).to.equal('Future.of("resolved").chainRej(' + f.toString() + ')');
       });
 
     });

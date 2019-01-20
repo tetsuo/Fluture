@@ -9,7 +9,8 @@ describe('CommonJS build output', function (){
     eq(Future(noop) instanceof Future, true);
   });
 
-  it('has a Future property that refers to itself for import destructuring', function (){
+  // Skipped until the problem with esm is fixed or we can use native mjs
+  it.skip('has a Future property that refers to itself for import destructuring', function (){
     eq(Future.Future, Future);
   });
 
