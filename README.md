@@ -12,7 +12,7 @@
 [Dependency Status]: https://img.shields.io/david/fluture-js/Fluture.svg
 [NPM Package]: https://img.shields.io/npm/v/fluture.svg
 [Gitter Chat]: https://img.shields.io/gitter/room/fluture-js/Fluture.svg?colorB=blue
-[Questions and Answers]: https://img.shields.io/stackexchange/stackoverflow/t/fluture.svg?label=questions
+[Questions and Answers]: https://img.shields.io/stackexchange/stackoverflow/t/fluture.svg?label=questions&colorB=blue
 
 Fluture offers a control structure similar to Promises, Tasks, Deferreds, and
 what-have-you. Let's call them Futures.
