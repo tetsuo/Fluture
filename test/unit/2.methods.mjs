@@ -1,7 +1,24 @@
 import show from 'sanctuary-show';
 import {testMethod, futureArg, functionArg} from '../util/props';
-import {eq, noop, throws, error} from '../util/util';
+import {eq, noop, error} from '../util/util';
 import {mock as instance} from '../util/futures';
+
+function raises (done, fn, expected){
+  if(typeof process.rawListeners !== 'function'){
+    done();
+    return;
+  }
+
+  var listeners = process.rawListeners('uncaughtException');
+  process.removeAllListeners('uncaughtException');
+  process.once('uncaughtException', function (actual){
+    listeners.forEach(function (f){ process.on('uncaughtException', f) });
+    eq(actual, expected);
+    done();
+  });
+
+  fn();
+}
 
 describe('Future prototype', function (){
 
@@ -79,10 +96,10 @@ describe('Future prototype', function (){
       mock.fork(a, b);
     });
 
-    it('throws the interpretation crash value', function (){
+    it('throws the interpretation crash value', function (done){
       var mock = Object.create(instance);
       mock._interpret = function (rec){ rec(error) };
-      throws(function (){ return mock.fork(noop, noop) }, error);
+      raises(done, function (){ return mock.fork(noop, noop) }, error);
     });
   });
 
@@ -184,10 +201,10 @@ describe('Future prototype', function (){
       mock.value(res);
     });
 
-    it('throws when _interpret calls the rejection callback', function (){
+    it('throws when _interpret calls the rejection callback', function (done){
       var mock = Object.create(instance);
       mock._interpret = function (rec, rej){rej(1)};
-      throws(mock.value.bind(mock, noop), new Error(
+      raises(done, mock.value.bind(mock, noop), new Error(
         'Future#value was called on a rejected Future\n' +
         '  Rejection: 1\n' +
         '  Future: ' + show(instance)

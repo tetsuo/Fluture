@@ -1,5 +1,8 @@
 import show from 'sanctuary-show';
 
+/* istanbul ignore next: non v8 compatibility */
+var setImmediate = typeof setImmediate === 'undefined' ? setImmediateFallback : setImmediate;
+
 export {show};
 export function noop(){}
 export function moop(){ return this }
@@ -28,6 +31,12 @@ export function partial3(f, a, b, c){
   };
 }
 
+export function setImmediateFallback(f, x){
+  return setTimeout(f, 0, x);
+}
+
 export function raise(x){
-  throw x;
+  setImmediate(function rethrowErrorDelayedToEscapePromiseCatch(){
+    throw x;
+  });
 }
