@@ -1,5 +1,5 @@
 /**
- * Fluture bundled; version 10.3.0
+ * Fluture bundled; version 10.3.1
  */
 
 var Fluture = (function () {
@@ -630,6 +630,8 @@ var Fluture = (function () {
 	//. [SS]: https://github.com/sanctuary-js/sanctuary-show
 	});
 
+	/* istanbul ignore next: non v8 compatibility */
+	var setImmediate = typeof setImmediate === 'undefined' ? setImmediateFallback : setImmediate;
 	function noop(){}
 	function moop(){ return this }
 	function padf(sf, s){ return s.replace(/^/gm, sf).replace(sf, '') }
@@ -657,8 +659,14 @@ var Fluture = (function () {
 	  };
 	}
 
+	function setImmediateFallback(f, x){
+	  return setTimeout(f, 0, x);
+	}
+
 	function raise(x){
-	  throw x;
+	  setImmediate(function rethrowErrorDelayedToEscapePromiseCatch(){
+	    throw x;
+	  });
 	}
 
 	var FL = {
