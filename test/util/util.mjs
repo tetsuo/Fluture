@@ -36,6 +36,23 @@ export var throws = function throws (f, expected){
   throw new Error('Expected the function to throw');
 };
 
+export var raises = function raises (done, fn, expected){
+  if(typeof process.rawListeners !== 'function'){
+    done();
+    return;
+  }
+
+  var listeners = process.rawListeners('uncaughtException');
+  process.removeAllListeners('uncaughtException');
+  process.once('uncaughtException', function (actual){
+    listeners.forEach(function (f){ process.on('uncaughtException', f) });
+    eq(actual.message, expected.message);
+    done();
+  });
+
+  fn();
+};
+
 export var isDeepStrictEqual = function isDeepStrictEqual (actual, expected){
   try{
     eq(actual, expected);
@@ -64,6 +81,7 @@ export var assertIsFuture = function (x){
   eq(x instanceof Future, true);
   eq(x.constructor, Future);
   eq(type(x), Future['@@type']);
+  return true;
 };
 
 export var assertValidFuture = function (x){

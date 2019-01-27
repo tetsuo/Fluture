@@ -1,24 +1,7 @@
 import show from 'sanctuary-show';
 import {testMethod, futureArg, functionArg} from '../util/props';
-import {eq, noop, error} from '../util/util';
+import {eq, noop, error, raises} from '../util/util';
 import {mock as instance} from '../util/futures';
-
-function raises (done, fn, expected){
-  if(typeof process.rawListeners !== 'function'){
-    done();
-    return;
-  }
-
-  var listeners = process.rawListeners('uncaughtException');
-  process.removeAllListeners('uncaughtException');
-  process.once('uncaughtException', function (actual){
-    listeners.forEach(function (f){ process.on('uncaughtException', f) });
-    eq(actual, expected);
-    done();
-  });
-
-  fn();
-}
 
 describe('Future prototype', function (){
 

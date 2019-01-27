@@ -1271,31 +1271,38 @@ Future.prototype.forkCatch :: Future a b ~> (Error -> Any,     a -> Any,     b -
 
 </details>
 
-An advanced version of [fork](#fork) that allows us to recover in the event
-that an error was `throw`n during the execution of the computation.
+An advanced version of [fork](#fork) that allows us to react to a fatal error
+in a custom way. Fatal errors occur when unexpected exceptions are thrown, when
+the Fluture API is used incorrectly, or when resources couldn't be disposed.
 
-The recovery function will always be called with an instance of Error,
-independent of what was thrown.
+The exception handler will always be called with an instance of `Error`,
+independent of what caused the crash.
 
 **Using this function is a trade-off;**
 
-Generally it's best to let a program crash and restart when an unexpected
-exception occurs. Restarting is the surest way to restore the memory that was
-allocated by the program to an expected state.
+Generally it's best to let a program crash and restart when an a fatal error
+occurs. Restarting is the surest way to restore the memory that was allocated
+by the program to an expected state.
 
-By using `forkCatch`, we might be able to keep our program alive longer, which
+By using `forkCatch`, we can keep our program alive after a fatal error, which
 can be very beneficial when the program is being used by multiple clients.
-However, we also forego the certainty that our program will be in a valid state
-after this happens. The more isolated the memory consumed by the particular
-computation was, the more certain we will be that recovery is safe.
+However, since fatal errors might indicate that something, somewhere has
+entered an invalid state, it's probably still best to restart our program upon
+encountering one.
 
 See [Debugging](#debugging) for information about the Error object that is
-recovered.
+passed to your exception handler.
 
 ```js
 var fut = Future.after(300, null).map(x => x.foo);
-fut.forkCatch(console.error, console.error, console.log);
-//! Cannot read property 'foo' of null
+fut.forkCatch(e => {
+  console.error('fatal error:', e.stack);
+  console.error('caused in: ', e.future.toString());
+  process.exit(1);
+}, console.error, console.log);
+//! fatal error: Cannot read property 'foo' of null
+//!   at ...
+//! caused in: Future.after(300, null).map(x => x.foo)
 ```
 
 #### value
@@ -1599,21 +1606,30 @@ the flow of acquired values.
 
 #### hook
 
-<details><summary><code>hook :: Future a b -> (b -> Future a c) -> (b -> Future a d) -> Future a d</code></summary>
+<details><summary><code>hook :: Future a b -> (b -> Future c d) -> (b -> Future a e) -> Future a e</code></summary>
 
 ```hs
-hook :: Future a b -> (b -> Future a c) -> (b -> Future a d) -> Future a d
+hook :: Future a b -> (b -> Future c d) -> (b -> Future a e) -> Future a e
 ```
 
 </details>
 
-Allows a Future-returning function to be decorated with resource acquisition
-and disposal. The signature is like `hook(acquire, dispose, consume)`, where
-`acquire` is a Future which might create connections, open file handlers, etc.
-`dispose` is a function that takes the result from `acquire` and should be used
-to clean up (close connections etc) and `consume` also takes the result from
-`acquire`, and may be used to perform any arbitrary computations using the
-resource. The resolution value of `dispose` is ignored.
+Combines resource acquisition, consumption, and disposal in such a way that you
+can be sure that a resource will always be disposed if it was acquired, even if
+an exception is thrown during consumption; Sometimes referred to as bracketing.
+
+The signature is like `hook(acquire, dispose, consume)`, where:
+
+- `acquire` is a Future which might create connections, open files, etc.
+- `dispose` is a function that takes the result from `acquire` and should be
+  used to clean up (close connections etc). The Future it returns must
+  resolve, and its resolution value is ignored. If it rejects, a fatal error
+  is raised which can only be handled with [`forkCatch`](#forkcatch).
+- `consume` is another Function takes the result from `acquire`, and may be
+  used to perform any arbitrary computations using the resource.
+
+Typically, you'd want to partially apply this function with the first two
+arguments (acquisition and disposal), as shown in the example.
 
 <!-- eslint-disable no-undef -->
 ```js
@@ -1622,27 +1638,17 @@ var withConnection = Future.hook(
   closeConnection
 );
 
-withConnection(
-  conn => query(conn, 'EAT * cakes FROM bakery')
-)
+withConnection(conn => query(conn, 'SELECT * FROM users'))
 .fork(console.error, console.log);
 ```
 
 When a hooked Future is cancelled while acquiring its resource, nothing else
-will happen. However, once the resource has been acquired, the `dispose`
-Future is guaranteed to run.
+will happen. When it's cancelled after acquistion completes, however, the
+disposal will still run, and if it fails, an exception will be thrown.
 
-In the case where the consumption Future settles, the disposal is forked and
-awaited. If the disposal Future rejects or encounters an exception, it will
-replace the state of the consumption Future. Otherwise the rejection reason or
-resolution value of the consumption Future will determine the final outcome.
-
-In the case where an exception is encountered during consumption, the disposal
-Future will run, but its results are ignored.
-
-In the case where the consumption or disposal Future is cancelled from outside,
-the disposal Future will start and/or finish its computation, but the results
-will be ignored.
+If you have multiple resources that you'd like to consume all at once, you can
+use [Fluture Hooks](https://github.com/fluture-js/fluture-hooks) to combine
+multiple hooks into one.
 
 ### Utility functions
 

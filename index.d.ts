@@ -254,9 +254,9 @@ declare module 'fluture' {
   export function go<L, R>(generator: Generator<FutureInstance<L, any>, R>): FutureInstance<L, R>
 
   /** Manage resources before and after the computation that needs them. See https://github.com/fluture-js/Fluture#hook */
-  export function hook<L, H, R>(acquire: FutureInstance<L, H>, dispose: (handle: H) => FutureInstance<L, any>, consume: (handle: H) => FutureInstance<L, R>): FutureInstance<L, R>
-  export function hook<L, H, R>(acquire: FutureInstance<L, H>, dispose: (handle: H) => FutureInstance<L, any>): (consume: (handle: H) => FutureInstance<L, R>) => FutureInstance<L, R>
-  export function hook<L, H, R>(acquire: FutureInstance<L, H>): AwaitingTwo<(handle: H) => FutureInstance<L, any>, (handle: H) => FutureInstance<L, R>, FutureInstance<L, R>>
+  export function hook<L, H, R>(acquire: FutureInstance<L, H>, dispose: (handle: H) => FutureInstance<any, any>, consume: (handle: H) => FutureInstance<L, R>): FutureInstance<L, R>
+  export function hook<L, H, R>(acquire: FutureInstance<L, H>, dispose: (handle: H) => FutureInstance<any, any>): (consume: (handle: H) => FutureInstance<L, R>) => FutureInstance<L, R>
+  export function hook<L, H, R>(acquire: FutureInstance<L, H>): AwaitingTwo<(handle: H) => FutureInstance<any, any>, (handle: H) => FutureInstance<L, R>, FutureInstance<L, R>>
 
   /** Returns true for Futures. See https://github.com/fluture-js/Fluture#isfuture */
   export function isFuture(value: any): boolean

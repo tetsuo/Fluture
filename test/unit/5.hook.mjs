@@ -8,11 +8,11 @@ var expect = chai.expect;
 
 describe('hook()', function (){
 
-  testFunction('hook', hook, [futureArg, functionArg, functionArg], U.assertValidFuture);
+  testFunction('hook', hook, [futureArg, functionArg, functionArg], U.assertIsFuture);
 
   describe('#_interpret()', function (){
 
-    it('crashes when the first function does not return Future', function (){
+    it('crashes when the disposal function does not return Future', function (){
       var m = hook(F.resolved, function (){ return 1 }, function (){ return F.resolved });
       return U.assertCrashed(m, new TypeError(
         'hook() expects the first function it\'s given to return a Future.\n' +
@@ -22,12 +22,12 @@ describe('hook()', function (){
       ));
     });
 
-    it('crashes when the first function throws', function (){
+    it('crashes when the disposal function throws', function (){
       var m = hook(F.resolved, function (){ throw U.error }, function (){ return F.resolved });
       return U.assertCrashed(m, U.error);
     });
 
-    it('crashes when the second function does not return Future', function (){
+    it('crashes when the computation function does not return Future', function (){
       var m = hook(F.resolved, function (){ return F.resolved }, function (){ return 1 });
       return U.assertCrashed(m, new TypeError(
         'hook() expects the second function it\'s given to return a Future.\n' +
@@ -37,9 +37,18 @@ describe('hook()', function (){
       ));
     });
 
-    it('crashes when the second function throws', function (){
+    it('crashes when the computation function throws', function (){
       var m = hook(F.resolved, function (){ return F.resolved }, function (){ throw U.error });
       return U.assertCrashed(m, U.error);
+    });
+
+    it('crashes when the disposal Future rejects', function (){
+      var rejected = hook(F.resolved, function (){ return reject(1) }, function (){ return reject(2) });
+      var resolved = hook(F.resolved, function (){ return reject(1) }, function (){ return of(2) });
+      return Promise.all([
+        U.assertCrashed(rejected, new Error('The disposal Future rejected with 1')),
+        U.assertCrashed(resolved, new Error('The disposal Future rejected with 1'))
+      ]);
     });
 
     it('runs the first computation after the second, both with the resource', function (done){
@@ -61,15 +70,6 @@ describe('hook()', function (){
         function (){ return Future(function (){ return done() }) },
         function (){ return reject(2) }
       )._interpret(done, U.noop, U.noop);
-    });
-
-    it('rejects with the rejection reason of the first', function (){
-      var rejected = hook(F.resolved, function (){ return reject(1) }, function (){ return reject(2) });
-      var resolved = hook(F.resolved, function (){ return reject(1) }, function (){ return of(2) });
-      return Promise.all([
-        U.assertRejected(rejected, 1),
-        U.assertRejected(resolved, 1)
-      ]);
     });
 
     it('assumes the state of the second if the first resolves', function (){
@@ -139,6 +139,14 @@ describe('hook()', function (){
         hook(F.resolved, function (){ return Future(function (){ done() }) }, function (){ return F.resolvedSlow })
         ._interpret(done, U.failRej, U.failRes);
       setTimeout(cancel, 10);
+    });
+
+    it('does not call the exception handler after having been cancelled', function (done){
+      U.raises(done, function (){
+        hook(F.resolved, U.K(F.crashedSlow), U.K(F.resolved))._interpret(function (){
+          done(new Error('Exception handler called'));
+        }, U.failRej, U.failRes)();
+      }, U.error);
     });
 
   });

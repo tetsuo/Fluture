@@ -1,5 +1,5 @@
 import {Future, isFuture} from './future';
-import {noop, show, showf, partial1, partial2} from './internal/utils';
+import {noop, show, showf, partial1, partial2, raise} from './internal/utils';
 import {isFunction} from './internal/predicates';
 import {invalidFuture, makeError} from './internal/error';
 import {throwInvalidArgument, throwInvalidFuture} from './internal/throw';
@@ -43,21 +43,7 @@ Hook.prototype._interpret = function Hook$interpret(rec, rej, res){
     cont(value);
   }
 
-  function Hook$reject(x){
-    rej(x);
-  }
-
-  function Hook$consumptionException(report){
-    var rec_ = rec;
-    cont = noop;
-    rej = noop;
-    rec = noop;
-    Hook$dispose();
-    rec_(report);
-  }
-
   function Hook$dispose(){
-    context = captureContext(context, 'hook consuming a resource', Hook$dispose);
     var disposal;
     try{
       disposal = _dispose(resource);
@@ -67,7 +53,7 @@ Hook.prototype._interpret = function Hook$interpret(rec, rej, res){
     if(!isFuture(disposal)){
       return rec(makeError(invalidDisposal(disposal, _dispose, resource), _this, context));
     }
-    disposal._interpret(rec, Hook$reject, Hook$done);
+    disposal._interpret(Hook$disposalCrashed, Hook$disposalRejected, Hook$done);
     cancel = Hook$cancelDisposal;
   }
 
@@ -79,17 +65,32 @@ Hook.prototype._interpret = function Hook$interpret(rec, rej, res){
 
   function Hook$cancelDisposal(){
     cont = noop;
-    rec = noop;
-    rej = noop;
+  }
+
+  function Hook$disposalCrashed(x){
+    rec(makeError(x, _this, context));
+  }
+
+  function Hook$disposalRejected(x){
+    rec(makeError(new Error('The disposal Future rejected with ' + show(x)), _this, context));
+  }
+
+  function Hook$consumptionException(x){
+    context = captureContext(context, 'resource consumption crashing', Hook$dispose);
+    cont = rec;
+    value = x;
+    Hook$dispose();
   }
 
   function Hook$consumptionRejected(x){
+    context = captureContext(context, 'resource consumption failing', Hook$consumptionRejected);
     cont = rej;
     value = x;
     Hook$dispose();
   }
 
   function Hook$consumptionResolved(x){
+    context = captureContext(context, 'resource consumption', Hook$consumptionResolved);
     cont = res;
     value = x;
     Hook$dispose();
@@ -119,10 +120,13 @@ Hook.prototype._interpret = function Hook$interpret(rec, rej, res){
     );
   }
 
-  var cancelAcquire = _acquire._interpret(rec, Hook$reject, Hook$consume);
+  var cancelAcquire = _acquire._interpret(rec, rej, Hook$consume);
   cancel = cancel || cancelAcquire;
 
-  return function Hook$fork$cancel(){ cancel() };
+  return function Hook$fork$cancel(){
+    rec = raise;
+    cancel();
+  };
 
 };
 
