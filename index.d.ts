@@ -345,6 +345,7 @@ declare module 'fluture' {
     chainRec<L, I, R>(iterator: (next: (value: I) => Next<I>, done: (value: R) => Done<R>, value: I) => FutureInstance<L, Next<I> | Done<R>>, initial: I): FutureInstance<L, R>
 
     ap: typeof ap
+    alt: typeof alt
     bimap: typeof bimap
     chain: typeof chain
     map: typeof map
