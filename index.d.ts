@@ -327,6 +327,9 @@ declare module 'fluture' {
   export function value<R>(resolve: ResolveFunction<R>, source: FutureInstance<never, R>): Cancel
   export function value<R>(resolve: ResolveFunction<R>): (source: FutureInstance<never, R>) => Cancel
 
+  /** Enable or disable debug mode. See https://github.com/fluture-js/Fluture#debugmode */
+  export function debugMode(debug: boolean): void;
+
   export interface FutureTypeRep {
 
     /** Create a Future from a possibly cancellable computation. See https://github.com/fluture-js/Fluture#future */
@@ -345,6 +348,7 @@ declare module 'fluture' {
     chainRec<L, I, R>(iterator: (next: (value: I) => Next<I>, done: (value: R) => Done<R>, value: I) => FutureInstance<L, Next<I> | Done<R>>, initial: I): FutureInstance<L, R>
 
     ap: typeof ap
+    alt: typeof alt
     bimap: typeof bimap
     chain: typeof chain
     map: typeof map
