@@ -84,7 +84,7 @@
     "rollup-plugin-commonjs": "^9.1.6",
     "rollup-plugin-node-resolve": "^4.0.0",
     "sanctuary-benchmark": "^1.0.0",
-    "sanctuary-type-classes": "^9.0.0",
+    "sanctuary-type-classes": "^10.0.0",
     "typescript": "^3.0.3",
     "xyz": "^3.0.0"
   }
