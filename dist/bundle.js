@@ -1,5 +1,5 @@
 /**
- * Fluture bundled; version 10.3.1
+ * Fluture bundled; version 11.0.0
  */
 
 var Fluture = (function () {
@@ -1177,9 +1177,9 @@ var Fluture = (function () {
 	    Sequence$cancel();
 	    settled = true;
 	    cold = hot = nil;
-	    var error$$1 = makeError(e, future, context);
+	    var error = makeError(e, future, context);
 	    future = never;
-	    rec(error$$1);
+	    rec(error);
 	  }
 
 	  //This function serves to kickstart concurrent computations.
@@ -1366,27 +1366,27 @@ var Fluture = (function () {
 	  cancel: noop
 	};
 
-	function captureActionContext(name$$1, fn){
-	  return captureContext(nil, 'a Future transformed with ' + name$$1, fn);
+	function captureActionContext(name, fn){
+	  return captureContext(nil, 'a Future transformed with ' + name, fn);
 	}
 
 	function nullaryActionToString(){
 	  return this.name + '()';
 	}
 
-	function defineNullaryAction(name$$1, prototype){
-	  var _name = '_' + name$$1;
+	function defineNullaryAction(name, prototype){
+	  var _name = '_' + name;
 	  function NullaryAction(context){ this.context = context; }
 	  NullaryAction.prototype = Object.assign(Object.create(Action), prototype);
-	  NullaryAction.prototype.name = name$$1;
+	  NullaryAction.prototype.name = name;
 	  NullaryAction.prototype.toString = nullaryActionToString;
-	  Future.prototype[name$$1] = function checkedNullaryTransformation(){
-	    if(!isFuture(this)) throwInvalidContext('Future#' + name$$1, this);
+	  Future.prototype[name] = function checkedNullaryTransformation(){
+	    if(!isFuture(this)) throwInvalidContext('Future#' + name, this);
 	    return this[_name]();
 	  };
 	  Future.prototype[_name] = function uncheckedNullaryTransformation(){
 	    return this._transform(new NullaryAction(
-	      captureActionContext(name$$1, uncheckedNullaryTransformation)
+	      captureActionContext(name, uncheckedNullaryTransformation)
 	    ));
 	  };
 	  return NullaryAction;
@@ -1396,21 +1396,21 @@ var Fluture = (function () {
 	  return this.name + '(' + showf(this.mapper) + ')';
 	}
 
-	function defineMapperAction(name$$1, prototype){
-	  var _name = '_' + name$$1;
+	function defineMapperAction(name, prototype){
+	  var _name = '_' + name;
 	  function MapperAction(mapper, context){ this.mapper = mapper; this.context = context; }
 	  MapperAction.prototype = Object.assign(Object.create(Action), prototype);
-	  MapperAction.prototype.name = name$$1;
+	  MapperAction.prototype.name = name;
 	  MapperAction.prototype.toString = mapperActionToString;
-	  Future.prototype[name$$1] = function checkedMapperTransformation(mapper){
-	    if(!isFuture(this)) throwInvalidContext('Future#' + name$$1, this);
-	    if(!isFunction(mapper)) throwInvalidArgument('Future#' + name$$1, 0, 'be a Function', mapper);
+	  Future.prototype[name] = function checkedMapperTransformation(mapper){
+	    if(!isFuture(this)) throwInvalidContext('Future#' + name, this);
+	    if(!isFunction(mapper)) throwInvalidArgument('Future#' + name, 0, 'be a Function', mapper);
 	    return this[_name](mapper);
 	  };
 	  Future.prototype[_name] = function uncheckedMapperTransformation(mapper){
 	    return this._transform(new MapperAction(
 	      mapper,
-	      captureActionContext(name$$1, uncheckedMapperTransformation)
+	      captureActionContext(name, uncheckedMapperTransformation)
 	    ));
 	  };
 	  return MapperAction;
@@ -1420,27 +1420,27 @@ var Fluture = (function () {
 	  return this.name + '(' + showf(this.lmapper) + ', ' + showf(this.rmapper) + ')';
 	}
 
-	function defineBimapperAction(name$$1, prototype){
-	  var _name = '_' + name$$1;
+	function defineBimapperAction(name, prototype){
+	  var _name = '_' + name;
 	  function BimapperAction(lmapper, rmapper, context){
 	    this.lmapper = lmapper;
 	    this.rmapper = rmapper;
 	    this.context = context;
 	  }
 	  BimapperAction.prototype = Object.assign(Object.create(Action), prototype);
-	  BimapperAction.prototype.name = name$$1;
+	  BimapperAction.prototype.name = name;
 	  BimapperAction.prototype.toString = bimapperActionToString;
-	  Future.prototype[name$$1] = function checkedBimapperTransformation(lm, rm){
-	    if(!isFuture(this)) throwInvalidContext('Future#' + name$$1, this);
-	    if(!isFunction(lm)) throwInvalidArgument('Future#' + name$$1, 0, 'be a Function', lm);
-	    if(!isFunction(rm)) throwInvalidArgument('Future#' + name$$1, 1, 'be a Function', rm);
+	  Future.prototype[name] = function checkedBimapperTransformation(lm, rm){
+	    if(!isFuture(this)) throwInvalidContext('Future#' + name, this);
+	    if(!isFunction(lm)) throwInvalidArgument('Future#' + name, 0, 'be a Function', lm);
+	    if(!isFunction(rm)) throwInvalidArgument('Future#' + name, 1, 'be a Function', rm);
 	    return this[_name](lm, rm);
 	  };
 	  Future.prototype[_name] = function uncheckedBimapperTransformation(lmapper, rmapper){
 	    return this._transform(new BimapperAction(
 	      lmapper,
 	      rmapper,
-	      captureActionContext(name$$1, uncheckedBimapperTransformation)
+	      captureActionContext(name, uncheckedBimapperTransformation)
 	    ));
 	  };
 	  return BimapperAction;
@@ -1450,35 +1450,35 @@ var Fluture = (function () {
 	  return this.name + '(' + this.other.toString() + ')';
 	}
 
-	function defineOtherAction(name$$1, prototype){
-	  var _name = '_' + name$$1;
+	function defineOtherAction(name, prototype){
+	  var _name = '_' + name;
 	  function OtherAction(other, context){ this.other = other; this.context = context; }
 	  OtherAction.prototype = Object.assign(Object.create(Action), prototype);
-	  OtherAction.prototype.name = name$$1;
+	  OtherAction.prototype.name = name;
 	  OtherAction.prototype.toString = otherActionToString;
-	  Future.prototype[name$$1] = function checkedOtherTransformation(other){
-	    if(!isFuture(this)) throwInvalidContext('Future#' + name$$1, this);
-	    if(!isFuture(other)) throwInvalidFuture('Future#' + name$$1, 0, other);
+	  Future.prototype[name] = function checkedOtherTransformation(other){
+	    if(!isFuture(this)) throwInvalidContext('Future#' + name, this);
+	    if(!isFuture(other)) throwInvalidFuture('Future#' + name, 0, other);
 	    return this[_name](other);
 	  };
 	  Future.prototype[_name] = function uncheckedOtherTransformation(other){
 	    return this._transform(new OtherAction(
 	      other,
-	      captureActionContext(name$$1, uncheckedOtherTransformation)
+	      captureActionContext(name, uncheckedOtherTransformation)
 	    ));
 	  };
 	  return OtherAction;
 	}
 
-	function defineParallelAction(name$$1, rec, rej, res, prototype){
-	  var ParallelAction = defineOtherAction(name$$1, prototype);
+	function defineParallelAction(name, rec, rej, res, prototype){
+	  var ParallelAction = defineOtherAction(name, prototype);
 	  ParallelAction.prototype.run = function ParallelAction$run(early){
 	    var eager = new Eager(this.other);
 	    var action = new ParallelAction(eager);
 	    function ParallelAction$early(m){ early(m, action); }
 	    action.context = captureContext(
 	      this.context,
-	      name$$1 + ' triggering a parallel Future',
+	      name + ' triggering a parallel Future',
 	      ParallelAction$run
 	    );
 	    action.cancel = eager._interpret(
@@ -2620,21 +2620,7 @@ var Fluture = (function () {
 	    cont(value);
 	  }
 
-	  function Hook$reject(x){
-	    rej(x);
-	  }
-
-	  function Hook$consumptionException(report){
-	    var rec_ = rec;
-	    cont = noop;
-	    rej = noop;
-	    rec = noop;
-	    Hook$dispose();
-	    rec_(report);
-	  }
-
 	  function Hook$dispose(){
-	    context = captureContext(context, 'hook consuming a resource', Hook$dispose);
 	    var disposal;
 	    try{
 	      disposal = _dispose(resource);
@@ -2644,7 +2630,7 @@ var Fluture = (function () {
 	    if(!isFuture(disposal)){
 	      return rec(makeError(invalidDisposal(disposal, _dispose, resource), _this, context));
 	    }
-	    disposal._interpret(rec, Hook$reject, Hook$done);
+	    disposal._interpret(Hook$disposalCrashed, Hook$disposalRejected, Hook$done);
 	    cancel = Hook$cancelDisposal;
 	  }
 
@@ -2656,17 +2642,32 @@ var Fluture = (function () {
 
 	  function Hook$cancelDisposal(){
 	    cont = noop;
-	    rec = noop;
-	    rej = noop;
+	  }
+
+	  function Hook$disposalCrashed(x){
+	    rec(makeError(x, _this, context));
+	  }
+
+	  function Hook$disposalRejected(x){
+	    rec(makeError(new Error('The disposal Future rejected with ' + sanctuaryShow(x)), _this, context));
+	  }
+
+	  function Hook$consumptionException(x){
+	    context = captureContext(context, 'resource consumption crashing', Hook$dispose);
+	    cont = rec;
+	    value = x;
+	    Hook$dispose();
 	  }
 
 	  function Hook$consumptionRejected(x){
+	    context = captureContext(context, 'resource consumption failing', Hook$consumptionRejected);
 	    cont = rej;
 	    value = x;
 	    Hook$dispose();
 	  }
 
 	  function Hook$consumptionResolved(x){
+	    context = captureContext(context, 'resource consumption', Hook$consumptionResolved);
 	    cont = res;
 	    value = x;
 	    Hook$dispose();
@@ -2696,10 +2697,13 @@ var Fluture = (function () {
 	    );
 	  }
 
-	  var cancelAcquire = _acquire._interpret(rec, Hook$reject, Hook$consume);
+	  var cancelAcquire = _acquire._interpret(rec, rej, Hook$consume);
 	  cancel = cancel || cancelAcquire;
 
-	  return function Hook$fork$cancel(){ cancel(); };
+	  return function Hook$fork$cancel(){
+	    rec = raise;
+	    cancel();
+	  };
 
 	};
 
