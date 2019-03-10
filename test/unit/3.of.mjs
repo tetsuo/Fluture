@@ -1,5 +1,5 @@
 import chai from 'chai';
-import FL from 'fantasy-land';
+import {FL} from '../../src/internal/const';
 import {Future, of} from '../../index.mjs';
 import * as U from '../util/util';
 import {testFunction, anyArg} from '../util/props';
