@@ -176,8 +176,8 @@ declare module 'fluture' {
   export function chain<L, RA, RB>(mapper: (value: RA) => FutureInstance<L, RB>): (source: FutureInstance<L, RA>) => FutureInstance<L, RB>
 
   /** Create a Future using the rejection reason of the given Future. See https://github.com/fluture-js/Fluture#chain */
-  export function chainRej<LA, LB, R>(mapper: (reason: LA) => FutureInstance<LA, R>, source: FutureInstance<LA, R>): FutureInstance<LB, R>
-  export function chainRej<LA, LB, R>(mapper: (reason: LA) => FutureInstance<LA, R>): (source: FutureInstance<LA, R>) => FutureInstance<LB, R>
+  export function chainRej<LA, LB, R>(mapper: (reason: LA) => FutureInstance<LB, R>, source: FutureInstance<LA, R>): FutureInstance<LB, R>
+  export function chainRej<LA, LB, R>(mapper: (reason: LA) => FutureInstance<LB, R>): (source: FutureInstance<LA, R>) => FutureInstance<LB, R>
 
   /** Fork the given Future into a Node-style callback. See https://github.com/fluture-js/Fluture#done */
   export function done<L, R>(callback: Nodeback<L, R>, source: FutureInstance<L, R>): Cancel
