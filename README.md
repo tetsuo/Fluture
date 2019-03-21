@@ -1067,8 +1067,8 @@ Future.prototype.ap ::            Future e (a -> b) ~> Future e a -> Future e b
 
 </details>
 
-Applies the function contained in the left-hand Future or Apply to the value
-contained in the right-hand Future or Apply. If one of the Futures rejects the
+Applies the function contained in the left-hand Future to the value
+contained in the right-hand Future. If one of the Futures rejects the
 resulting Future will also be rejected.
 
 ```js
