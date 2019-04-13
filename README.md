@@ -147,7 +147,7 @@ for sponsoring the project.
 - [`rejectAfter`: Create a Future that rejects after a timeout](#rejectafter)
 - [`do`: Create a "coroutine" using a generator function](#do)
 - [`try`: Create a Future using a possibly throwing function](#try)
-- [`tryP`: Create a Future using a Promise-returning function](#tryp)
+- [`attemptP`: Create a Future using a Promise-returning function](#attemptp)
 - [`node`: Create a Future using a Node-style callback](#node)
 - [`encase`: Convert a possibly throwing function to a Future function](#encase)
 - [`encaseP`: Convert a Promise-returning function to a Future function](#encasep)
@@ -165,7 +165,7 @@ for sponsoring the project.
 
 <details><summary>Converting between Promises and Futures</summary>
 
-- [`tryP`: Create a Future using a Promise-returning function](#tryp)
+- [`attemptP`: Create a Future using a Promise-returning function](#attemptp)
 - [`encaseP`: Convert a Promise-returning function to a Future function](#encasep)
 - [`promise`: Convert a Future to a Promise](#promise)
 
@@ -669,12 +669,12 @@ Future.try(() => data.foo.bar.baz)
 //> [TypeError: Cannot read property 'baz' of undefined]
 ```
 
-#### tryP
+#### attemptP
 
-<details><summary><code>tryP :: (() -> Promise e r) -> Future e r</code></summary>
+<details><summary><code>attemptP :: (() -> Promise e r) -> Future e r</code></summary>
 
 ```hs
-tryP :: (() -> Promise e r) -> Future e r
+attemptP :: (() -> Promise e r) -> Future e r
 ```
 
 </details>
@@ -685,7 +685,7 @@ resolves with its resolution value, or rejects with its rejection reason.
 Short for [`Future.encaseP(f, undefined)`](#encasep).
 
 ```js
-Future.tryP(() => Promise.resolve('Hello'))
+Future.attemptP(() => Promise.resolve('Hello'))
 .fork(console.error, console.log);
 //> "Hello"
 ```
@@ -772,7 +772,7 @@ Furthermore; `encaseP2` and `encaseP3` are binary and ternary versions of
 var fetchf = Future.encaseP(fetch);
 
 fetchf('https://api.github.com/users/Avaq')
-.chain(res => Future.tryP(_ => res.json()))
+.chain(res => Future.attemptP(_ => res.json()))
 .map(user => user.name)
 .fork(console.error, console.log);
 //> "Aldwin Vlasblom"
@@ -1105,16 +1105,6 @@ Future.after(300, null)
 //> "hello"
 ```
 
-With good old `reduce`, we can turn this into an asynchronous `all` function,
-where the resulting Future will be the leftmost to reject, or the rightmost to
-resolve.
-
-```js
-var all = ms => ms.reduce(Future.and, Future.of(0));
-all([Future.after(20, 1), Future.of(2)]).value(console.log);
-//> 2
-```
-
 #### alt
 
 <details><summary><code>alt :: Alt f => f a -> f a -> f a</code></summary>
@@ -1148,16 +1138,6 @@ Future.rejectAfter(300, new Error('Failed'))
 .alt(Future.of('hello'))
 .fork(console.error, console.log);
 //> "hello"
-```
-
-With good old `reduce`, we can turn this into an asynchronous `any` function,
-where the resulting Future will be the leftmost to resolve, or the rightmost
-to reject.
-
-```js
-var any = ms => ms.reduce(Future.alt, Future.reject('empty list'));
-any([Future.reject(1), Future.after(20, 2), Future.of(3)]).value(console.log);
-//> 2
 ```
 
 #### finally
@@ -1428,20 +1408,6 @@ Future.after(100, 'hello')
 .race(Future.after(50, 'bye'))
 .fork(console.error, console.log);
 //> "bye"
-```
-
-With good old `reduce`, we can turn this into a `first` function, where the
-resulting Future will be the first to resolve, or the first to reject.
-
-```js
-var first = futures => futures.reduce(Future.race, Future.never);
-first([
-  Future.after(100, 'hello'),
-  Future.after(50, 'bye'),
-  Future.rejectAfter(25, 'nope')
-])
-.fork(console.error, console.log);
-//! "nope"
 ```
 
 #### both

@@ -1,33 +1,24 @@
-import {Future} from './future';
-import {showf, noop} from './internal/utils';
-import {isFunction} from './internal/predicates';
-import {throwInvalidArgument} from './internal/throw';
+import {application1, func} from './internal/check';
 import {makeError} from './internal/error';
-import {nil} from './internal/list';
-import {captureContext} from './internal/debug';
+import {noop, call} from './internal/utils';
+import {createInterpreter} from './future';
 
-export function Node(fn){
-  this._fn = fn;
-  this.context = captureContext(nil, 'a Future created with node');
-}
-
-Node.prototype = Object.create(Future.prototype);
-
-Node.prototype._interpret = function Node$interpret(rec, rej, res){
+export var Node = createInterpreter(1, 'node', function Node$interpret(rec, rej, res){
+  function Node$done(err, val){
+    cont = err ? function EncaseN3$rej(){
+      open = false;
+      rej(err);
+    } : function EncaseN3$res(){
+      open = false;
+      res(val);
+    };
+    if(open){
+      cont();
+    }
+  }
   var open = false, cont = function(){ open = true };
   try{
-    this._fn(function Node$done(err, val){
-      cont = err ? function Node$rej(){
-        open = false;
-        rej(err);
-      } : function Node$res(){
-        open = false;
-        res(val);
-      };
-      if(open){
-        cont();
-      }
-    });
+    call(this.$1, Node$done);
   }catch(e){
     rec(makeError(e, this, this.context));
     open = false;
@@ -35,13 +26,9 @@ Node.prototype._interpret = function Node$interpret(rec, rej, res){
   }
   cont();
   return function Node$cancel(){ open = false };
-};
-
-Node.prototype.toString = function Node$toString(){
-  return 'node(' + showf(this._fn) + ')';
-};
+});
 
 export function node(f){
-  if(!isFunction(f)) throwInvalidArgument('node', 0, 'be a Function', f);
-  return new Node(f);
+  var context = application1(node, func, f);
+  return new Node(context, f);
 }

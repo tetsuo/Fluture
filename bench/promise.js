@@ -12,50 +12,50 @@ const config = {leftHeader: 'Promise', rightHeader: 'Fluture'};
 const def = f => [
   {defer: true},
   (x, [d]) => f(x).then(() => d.resolve()),
-  (x, [d]) => f(x).value(() => d.resolve())
+  (x, [d]) => Future.value(() => d.resolve())(f(x))
 ];
 
 const PromiseInterop = {
-  of: x => Promise.resolve(x),
-  map: (f, p) => p.then(f),
-  chain: (f, p) => p.then(f),
-  fold: (f, g, p) => p.then(g, f),
-  race: (a, b) => Promise.race([a, b]),
-  after: (n, x) => new Promise(res => setTimeout(res, n, x))
+  resolve: x => Promise.resolve(x),
+  map: f => p => p.then(f),
+  chain: f => p => p.then(f),
+  fold: f => g => p => p.then(g, f),
+  race: a => b => Promise.race([a, b]),
+  after: n => x => new Promise(res => setTimeout(res, n, x))
 };
 
 module.exports = require('sanctuary-benchmark')(PromiseInterop, Future, config, {
 
-  'of': def(
-    ({of}) => repeat(1000, of, 1)
+  'resolve': def(
+    ({resolve}) => repeat(1000, resolve, 1)
   ),
 
   'after': def(
-    ({after}) => after(10, 1),
+    ({after}) => after(10)(1),
   ),
 
   'map': def(
-    ({map, of}) => repeat(1000, m => map(plus1, m), of(1))
+    ({map, resolve}) => repeat(1000, map(plus1), resolve(1))
   ),
 
   'fold': def(
-    ({fold, of}) => repeat(1000, m => fold(Left, Right, m), of(1))
+    ({fold, resolve}) => repeat(1000, fold(Left)(Right), resolve(1))
   ),
 
   'chain.sync': def(
-    ({chain, of}) => repeat(1000, m => chain(x => of(plus1(x)), m), of(1))
+    ({chain, resolve}) => repeat(1000, chain(x => resolve(plus1(x))), resolve(1))
   ),
 
   'chain.async': def(
-    ({chain, after}) => repeat(5, m => chain(x => after(1, plus1(x)), m), after(1, 1))
+    ({chain, after}) => repeat(5, chain(x => after(1)(plus1(x))), after(1)(1))
   ),
 
   'race.sync': def(
-    ({race, of}) => repeat(1000, m => race(m, of(2)), of(1))
+    ({race, resolve}) => repeat(1000, race(resolve(2)), resolve(1))
   ),
 
   'race.async': def(
-    ({race, after}) => repeat(5, m => race(m, after(1, 2)), after(1, 1))
+    ({race, after}) => repeat(5, race(after(1)(2)), after(1)(1))
   ),
 
 });

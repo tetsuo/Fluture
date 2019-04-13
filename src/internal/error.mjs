@@ -45,17 +45,20 @@ function invalidVersion(m, x){
   );
 }
 
-export function invalidFuture(it, at, m, s){
+export function invalidFuture(desc, m, s){
   var id = type.parse(type(m));
   var info = id.name === name ? '\n' + (
     id.namespace !== namespace ? invalidNamespace(m, id.namespace)
   : id.version !== version ? invalidVersion(m, id.version)
   : 'Nothing seems wrong. Contact the Fluture maintainers.') : '';
   return typeError(
-    it + '() expects ' +
-    (ordinal[at] ? 'its ' + ordinal[at] + ' argument to be a valid Future' : at) +
-    '.' + info + '\n  Actual: ' + show(m) + ' :: ' + id.name + (s || '')
+    desc + ' to be a valid Future.' + info + '\n' +
+    '  Actual: ' + show(m) + ' :: ' + id.name + (s || '')
   );
+}
+
+export function invalidFutureArgument(it, at, m, s){
+  return invalidFuture(it + '() expects its ' + ordinal[at] + ' argument', m, s);
 }
 
 export function ensureError(value, fn){

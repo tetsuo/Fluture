@@ -119,6 +119,18 @@ module.exports = require('sanctuary-benchmark')(Old, New, config, {
     {}, ({of, map}) => run(map(plus1, of(1)))
   ],
 
+  'run.transform.sync.swap.one': [
+    {}, ({of, swap}) => run(swap(of(42)))
+  ],
+
+  'run.transform.sync.swap.many': [
+    {}, ({of, swap}) => {
+      let m = of(1);
+      for(let i = 0; i < 1000; i++) { m = swap(m); }
+      run(m);
+    }
+  ],
+
   'run.transform.sync.chain.one': [
     {}, ({of, chain}) => run(chain(compose(of, plus1), of(1)))
   ],

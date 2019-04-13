@@ -25,10 +25,10 @@ var _f = elements([f, g, I, of]);
 var _mf = _of(_f);
 var _fm = FutureArb(_f, _f).smap(function (m){
   return function (x){
-    return bimap(T(x), T(x), m);
+    return bimap(T(x))(T(x))(m);
   };
 }, function (f){
-  return bimap(K, K, f());
+  return bimap(K)(K)(f());
 }, show);
 
 function test (laws, name){

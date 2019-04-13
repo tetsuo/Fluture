@@ -25,42 +25,42 @@ var make = oneof(constant(resolve), constant(reject));
 
 describe('Libs', function (){
 
-  property('Z.of(Future, x) = Future.of(x)', any, function (x){
-    return assertEqual(Z.of(Future, x), Future.of(x));
+  property('Z.of(Future, x) = resolve(x)', any, function (x){
+    return assertEqual(Z.of(Future, x), resolve(x));
   });
 
-  property('R.ap(mf, mx) = ap(mf, mx)', stringSquareFuture, stringNumberFuture, function (mf, mx){
-    return assertEqual(R.ap(mf, mx), ap(mf, mx));
+  property('R.ap(mf, mx) = ap(mx)(mf)', stringSquareFuture, stringNumberFuture, function (mf, mx){
+    return assertEqual(R.ap(mf, mx), ap(mx)(mf));
   });
 
-  property('Z.ap(mf, mx) = ap(mf, mx)', stringSquareFuture, stringNumberFuture, function (mf, mx){
-    return assertEqual(Z.ap(mf, mx), ap(mf, mx));
+  property('Z.ap(mf, mx) = ap(mx)(mf)', stringSquareFuture, stringNumberFuture, function (mf, mx){
+    return assertEqual(Z.ap(mf, mx), ap(mx)(mf));
   });
 
-  property('Z.alt(a, b) = alt(a, b)', anyFuture, anyFuture, function (a, b){
-    return assertEqual(Z.alt(a, b), alt(a, b));
+  property('Z.alt(a, b) = alt(b)(a)', anyFuture, anyFuture, function (a, b){
+    return assertEqual(Z.alt(a, b), alt(b)(a));
   });
 
-  property('R.map(f, mx) = map(f, mx)', stringNumberFuture, function (mx){
-    return assertEqual(R.map(square, mx), map(square, mx));
+  property('R.map(f, mx) = map(f)(mx)', stringNumberFuture, function (mx){
+    return assertEqual(R.map(square, mx), map(square)(mx));
   });
 
   property('Z.map(f, mx) = map(f, mx)', stringNumberFuture, function (mx){
-    return assertEqual(Z.map(square, mx), map(square, mx));
+    return assertEqual(Z.map(square, mx), map(square)(mx));
   });
 
-  property('Z.bimap(f, g, mx) = bimap(f, g, mx)', stringNumberFuture, function (mx){
-    return assertEqual(Z.bimap(bang, square, mx), bimap(bang, square, mx));
+  property('Z.bimap(f, g, mx) = bimap(f)(g)(mx)', stringNumberFuture, function (mx){
+    return assertEqual(Z.bimap(bang, square, mx), bimap(bang)(square)(mx));
   });
 
-  property('R.chain(f, mx) = chain(f, mx)', make, stringNumberFuture, function (f, mx){
-    var g = compose(f, square);
-    return assertEqual(R.chain(g, mx), chain(g, mx));
+  property('R.chain(f, mx) = chain(f)(mx)', make, stringNumberFuture, function (g, mx){
+    var f = compose(f, square);
+    return assertEqual(R.chain(f, mx), chain(f)(mx));
   });
 
-  property('Z.chain(f, mx) = chain(f, mx)', make, stringNumberFuture, function (f, mx){
-    var g = compose(f, square);
-    return assertEqual(Z.chain(g, mx), chain(g, mx));
+  property('Z.chain(f, mx) = chain(f)(mx)', make, stringNumberFuture, function (g, mx){
+    var f = compose(f, square);
+    return assertEqual(Z.chain(f, mx), chain(f)(mx));
   });
 
 });

@@ -1,70 +1,23 @@
-import {Future, never} from './future';
-import {show, partial1} from './internal/utils';
-import {isUnsigned} from './internal/predicates';
-import {throwInvalidArgument} from './internal/throw';
-import {captureContext} from './internal/debug';
-import {nil} from './internal/list';
+import {application1, application, any, positiveInteger} from './internal/check';
+import {createInterpreter, never} from './future';
 
-export function After(time, value){
-  this._time = time;
-  this._value = value;
-  this.context = captureContext(nil, 'a Future created with after', After);
-}
-
-After.prototype = Object.create(Future.prototype);
-
-After.prototype._interpret = function After$interpret(rec, rej, res){
-  var id = setTimeout(res, this._time, this._value);
+export var After = createInterpreter(2, 'after', function After$interpret(rec, rej, res){
+  var id = setTimeout(res, this.$1, this.$2);
   return function After$cancel(){ clearTimeout(id) };
-};
+});
 
 After.prototype.extractRight = function After$extractRight(){
-  return [this._value];
+  return [this.$2];
 };
 
-After.prototype.toString = function After$toString(){
-  return 'after(' + show(this._time) + ', ' + show(this._value) + ')';
-};
-
-export function RejectAfter(time, value){
-  this._time = time;
-  this._value = value;
-  this.context = captureContext(nil, 'a Future created with rejectAfter', After);
+function alwaysNever(_){
+  return never;
 }
 
-RejectAfter.prototype = Object.create(Future.prototype);
-
-RejectAfter.prototype._interpret = function RejectAfter$interpret(rec, rej){
-  var id = setTimeout(rej, this._time, this._value);
-  return function RejectAfter$cancel(){ clearTimeout(id) };
-};
-
-RejectAfter.prototype.extractLeft = function RejectAfter$extractLeft(){
-  return [this._value];
-};
-
-RejectAfter.prototype.toString = function RejectAfter$toString(){
-  return 'rejectAfter(' + show(this._time) + ', ' + show(this._value) + ')';
-};
-
-function after$time(time, value){
-  return time === Infinity ? never : new After(time, value);
-}
-
-export function after(time, value){
-  if(!isUnsigned(time)) throwInvalidArgument('after', 0, 'be a positive Integer', time);
-  if(arguments.length === 1) return partial1(after$time, time);
-  return after$time(time, value);
-}
-
-function rejectAfter$time(time, reason){
-  return time === Infinity ? never : new RejectAfter(time, reason);
-}
-
-export function rejectAfter(time, reason){
-  if(!isUnsigned(time)){
-    throwInvalidArgument('rejectAfter', 0, 'be a positive Integer', time);
-  }
-  if(arguments.length === 1) return partial1(rejectAfter$time, time);
-  return rejectAfter$time(time, reason);
+export function after(time){
+  var context1 = application1(after, positiveInteger, time);
+  return time === Infinity ? alwaysNever : (function after(value){
+    var context2 = application(2, after, any, value, context1);
+    return new After(context2, time, value);
+  });
 }

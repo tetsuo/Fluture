@@ -1,41 +1,26 @@
-import {Future, isFuture} from './future';
-import {noop, show, showf, partial1, partial2, raise} from './internal/utils';
-import {isFunction} from './internal/predicates';
+import {application1, application, func, future} from './internal/check';
+import {noop, show, raise} from './internal/utils';
 import {invalidFuture, makeError} from './internal/error';
-import {throwInvalidArgument, throwInvalidFuture} from './internal/throw';
-import {nil} from './internal/list';
 import {captureContext} from './internal/debug';
+import {createInterpreter, isFuture} from './future';
 
 function invalidDisposal(m, f, x){
   return invalidFuture(
-    'hook',
-    'the first function it\'s given to return a Future',
-    m,
-    '\n  From calling: ' + showf(f) + '\n  With: ' + show(x)
+    'hook() expects the return value from the first function it\'s given', m,
+    '\n  From calling: ' + show(f) + '\n  With: ' + show(x)
   );
 }
 
 function invalidConsumption(m, f, x){
   return invalidFuture(
-    'hook',
-    'the second function it\'s given to return a Future',
-    m,
-    '\n  From calling: ' + showf(f) + '\n  With: ' + show(x)
+    'hook() expects the return value from the second function it\'s given', m,
+    '\n  From calling: ' + show(f) + '\n  With: ' + show(x)
   );
 }
 
-export function Hook(acquire, dispose, consume){
-  this._acquire = acquire;
-  this._dispose = dispose;
-  this._consume = consume;
-  this.context = captureContext(nil, 'a Future created with hook', Hook);
-}
+export var Hook = createInterpreter(3, 'hook', function Hook$interpret(rec, rej, res){
 
-Hook.prototype = Object.create(Future.prototype);
-
-Hook.prototype._interpret = function Hook$interpret(rec, rej, res){
-
-  var _this = this, _acquire = this._acquire, _dispose = this._dispose, _consume = this._consume;
+  var _this = this, _acquire = this.$1, _dispose = this.$2, _consume = this.$3;
   var cancel, cancelConsume = noop, resource, value, cont = noop;
   var context = captureContext(_this.context, 'interpreting a hooked Future', Hook$interpret);
 
@@ -128,32 +113,15 @@ Hook.prototype._interpret = function Hook$interpret(rec, rej, res){
     cancel();
   };
 
-};
+});
 
-Hook.prototype.toString = function Hook$toString(){
-  return 'hook('
-       + this._acquire.toString()
-       + ', '
-       + showf(this._dispose)
-       + ', '
-       + showf(this._consume)
-       + ')';
-};
-
-function hook$acquire$cleanup(acquire, cleanup, consume){
-  if(!isFunction(consume)) throwInvalidArgument('hook', 2, 'be a Function', consume);
-  return new Hook(acquire, cleanup, consume);
-}
-
-function hook$acquire(acquire, cleanup, consume){
-  if(!isFunction(cleanup)) throwInvalidArgument('hook', 1, 'be a Function', cleanup);
-  if(arguments.length === 2) return partial2(hook$acquire$cleanup, acquire, cleanup);
-  return hook$acquire$cleanup(acquire, cleanup, consume);
-}
-
-export function hook(acquire, cleanup, consume){
-  if(!isFuture(acquire)) throwInvalidFuture('hook', 0, acquire);
-  if(arguments.length === 1) return partial1(hook$acquire, acquire);
-  if(arguments.length === 2) return hook$acquire(acquire, cleanup);
-  return hook$acquire(acquire, cleanup, consume);
+export function hook(acquire){
+  var context1 = application1(hook, future, acquire);
+  return function hook(dispose){
+    var context2 = application(2, hook, func, dispose, context1);
+    return function hook(consume){
+      var context3 = application(3, hook, func, consume, context2);
+      return new Hook(context3, acquire, dispose, consume);
+    };
+  };
 }

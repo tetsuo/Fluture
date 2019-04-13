@@ -7,7 +7,7 @@ import {
   typeError,
   invalidArgument,
   invalidContext,
-  invalidFuture,
+  invalidFutureArgument,
   makeError,
   contextToStackTrace
 } from '../../src/internal/error';
@@ -51,7 +51,7 @@ describe('error', function (){
 
   });
 
-  describe('invalidFuture', function (){
+  describe('invalidFutureArgument', function (){
 
     var mockType = function (identifier){
       return {'constructor': {'@@type': identifier}, '@@show': function (){
@@ -59,40 +59,29 @@ describe('error', function (){
       }};
     };
 
-    it('creates a TypeError with a computed message', function (){
-      var actual = invalidFuture(
-        'DeepThought', 'the answer to be 42', 43,
-        '\n  See: https://en.wikipedia.org/wiki/Off-by-one_error'
-      );
-      eq(actual, new TypeError(
-        'DeepThought() expects the answer to be 42.\n  Actual: 43 :: Number\n' +
-        '  See: https://en.wikipedia.org/wiki/Off-by-one_error'
-      ));
-    });
-
     it('warns us when nothing seems wrong', function (){
-      var actual = invalidFuture('Foo', 0, mockType(namespace + '/' + name + '@' + version));
+      var actual = invalidFutureArgument('Foo', 0, mockType(namespace + '/' + name + '@' + version));
       eq(actual, new TypeError(
         'Foo() expects its first argument to be a valid Future.\n' +
         'Nothing seems wrong. Contact the Fluture maintainers.\n' +
-        '  Actual: mockType("fluture/Future@4") :: Future'
+        '  Actual: mockType("fluture/Future@5") :: Future'
       ));
     });
 
     it('Warns us about Futures from other sources', function (){
-      var actual = invalidFuture('Foo', 0, mockType('bobs-tinkershop/' + name + '@' + version));
+      var actual = invalidFutureArgument('Foo', 0, mockType('bobs-tinkershop/' + name + '@' + version));
       eq(actual, new TypeError(
         'Foo() expects its first argument to be a valid Future.\n' +
         'The Future was not created by fluture. ' +
         'Make sure you transform other Futures to fluture Futures. ' +
         'Got a Future from bobs-tinkershop.\n' +
         '  See: https://github.com/fluture-js/Fluture#casting-futures\n' +
-        '  Actual: mockType("bobs-tinkershop/Future@4") :: Future'
+        '  Actual: mockType("bobs-tinkershop/Future@5") :: Future'
       ));
     });
 
     it('Warns us about Futures from unnamed sources', function (){
-      var actual = invalidFuture('Foo', 0, mockType(name));
+      var actual = invalidFutureArgument('Foo', 0, mockType(name));
       eq(actual, new TypeError(
         'Foo() expects its first argument to be a valid Future.\n' +
         'The Future was not created by fluture. ' +
@@ -104,26 +93,26 @@ describe('error', function (){
     });
 
     it('Warns about older versions', function (){
-      var actual = invalidFuture('Foo', 0, mockType(namespace + '/' + name + '@' + (version - 1)));
+      var actual = invalidFutureArgument('Foo', 0, mockType(namespace + '/' + name + '@' + (version - 1)));
       eq(actual, new TypeError(
         'Foo() expects its first argument to be a valid Future.\n' +
         'The Future was created by an older version of fluture. ' +
         'This means that one of the sources which creates Futures is outdated. ' +
         'Update this source, or transform its created Futures to be compatible.\n' +
         '  See: https://github.com/fluture-js/Fluture#casting-futures\n' +
-        '  Actual: mockType("fluture/Future@3") :: Future'
+        '  Actual: mockType("fluture/Future@4") :: Future'
       ));
     });
 
     it('Warns about newer versions', function (){
-      var actual = invalidFuture('Foo', 0, mockType(namespace + '/' + name + '@' + (version + 1)));
+      var actual = invalidFutureArgument('Foo', 0, mockType(namespace + '/' + name + '@' + (version + 1)));
       eq(actual, new TypeError(
         'Foo() expects its first argument to be a valid Future.\n' +
         'The Future was created by a newer version of fluture. ' +
         'This means that one of the sources which creates Futures is outdated. ' +
         'Update this source, or transform its created Futures to be compatible.\n' +
         '  See: https://github.com/fluture-js/Fluture#casting-futures\n' +
-        '  Actual: mockType("fluture/Future@5") :: Future'
+        '  Actual: mockType("fluture/Future@6") :: Future'
       ));
     });
 

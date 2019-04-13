@@ -22,8 +22,6 @@ export var elements = jsc.elements;
 export var suchthat = jsc.suchthat;
 export var nil = elements([null, undefined]);
 
-var R_VOWEL = /^[aeiouyAEIOUY]/;
-
 export function f (x){
   return {f: x};
 }
@@ -77,10 +75,6 @@ export function _of (rarb){
   return FutureArb(string, rarb);
 }
 
-export function an (thing){
-  return R_VOWEL.test(thing) ? ('an ' + thing) : ('a ' + thing);
-}
-
 export var {
   any,
   anyFuture,
@@ -112,73 +106,73 @@ export var {
 export var anyParallel = anyFuture.smap(Par, seq, show);
 
 export var altArg = {
-  name: 'Alt',
+  name: 'have Alt implemented',
   valid: anyFuture,
   invalid: anyNonFuture,
 };
 
 export var applyArg = {
-  name: 'Apply',
+  name: 'have Apply implemented',
   valid: anyFuture,
   invalid: anyNonFuture,
 };
 
 export var bifunctorArg = {
-  name: 'Bifunctor',
+  name: 'have Bifunctor implemented',
   valid: anyFuture,
   invalid: anyNonFuture,
 };
 
 export var chainArg = {
-  name: 'Chain',
+  name: 'have Chain implemented',
   valid: anyFuture,
   invalid: anyNonFuture,
 };
 
 export var functorArg = {
-  name: 'Functor',
+  name: 'have Functor implemented',
   valid: anyFuture,
   invalid: anyNonFuture,
 };
 
 export var functionArg = {
-  name: 'Function',
+  name: 'be a Function',
   valid: anyFunction,
   invalid: oneof(number, string, bool, falsy, constant(error)),
 };
 
 export var futureArg = {
-  name: 'valid Future',
+  name: 'be a valid Future',
   valid: anyFuture,
   invalid: anyNonFuture,
 };
 
 export var resolvedFutureArg = {
-  name: 'valid Future',
+  name: 'be a valid Future',
   valid: anyResolvedFuture,
   invalid: anyNonFuture,
 };
 
 export var positiveIntegerArg = {
-  name: 'positive Integer',
+  name: 'be a positive Integer',
   valid: suchthat(nat, function (x){ return x > 0 }),
   invalid: oneof(bool, constant(0.5)),
 };
 
 export var futureArrayArg = {
-  name: 'Array of valid Futures',
+  name: 'be an Array of valid Futures',
   valid: array(anyFuture),
   invalid: oneof(nearray(anyNonFuture), any),
 };
 
 export var parallelArg = {
-  name: 'ConcurrentFuture',
+  name: 'be a ConcurrentFuture',
   valid: anyParallel,
   invalid: any,
 };
 
 export var anyArg = {
-  name: 'Any',
+  name: 'be anything',
   valid: any,
   invalid: null,
 };
@@ -196,12 +190,11 @@ export function testFunction (name, func, args, assert){
 
   it('is a curried ' + args.length + '-ary function', function (){
     eq(typeof func, 'function');
-    eq(func.length, args.length);
+    eq(func.length, 1);
     validArgs.slice(0, -1).forEach(function (_, idx){
-      var partial1 = func.apply(null, validArgs.slice(0, idx + 1));
-      var partial2 = capply(func, validArgs.slice(0, idx + 1));
-      eq(typeof partial1, 'function');
-      eq(typeof partial2, 'function');
+      var partial = capply(func, validArgs.slice(0, idx + 1));
+      eq(typeof partial, 'function');
+      eq(partial.length, 1);
     });
   });
 
@@ -213,9 +206,9 @@ export function testFunction (name, func, args, assert){
     if(arg !== anyArg){
       property('throws when the ' + ordinal[idx] + ' argument is invalid', arg.invalid, function (value){
         throws(function (){
-          func.apply(null, validPriorArgs.concat([value]).concat(validFollowingArgs));
+          capply(func, validPriorArgs.concat([value]).concat(validFollowingArgs));
         }, new TypeError(
-          name + '() expects its ' + ordinal[idx] + ' argument to be ' + an(arg.name) + '.\n' +
+          name + '() expects its ' + ordinal[idx] + ' argument to ' + arg.name + '.\n' +
           '  Actual: ' + show(value) + ' :: ' + type.parse(type(value)).name
         ));
         return true;
@@ -224,40 +217,6 @@ export function testFunction (name, func, args, assert){
   });
 
   property.apply(null, ['returns valid output when given valid input'].concat(validArbs).concat([function (){
-    return assert(func.apply(null, arguments));
+    return assert(capply(func, Array.from(arguments)));
   }]));
-}
-
-export function testMethod (instance, method, args){
-  var validArgs = args.map(generateValid);
-
-  it('exists', function (){
-    eq(typeof instance[method], 'function');
-    eq(instance[method].length, args.length);
-  });
-
-  property('throws when invoked out of context', anyNonFuture, function (value){
-    throws(function (){ instance[method].apply(value, validArgs) }, new TypeError(
-      'Future#' + method + '() was invoked outside the context of a Future. ' +
-      'You might want to use a dispatcher instead\n' +
-      '  Called on: ' + show(value)
-    ));
-    return true;
-  });
-
-  args.forEach(function (arg, idx){
-    var priorArgs = args.slice(0, idx);
-    var followingArgs = args.slice(idx + 1);
-    var validPriorArgs = priorArgs.map(generateValid);
-    var validFollowingArgs = followingArgs.map(generateValid);
-    property('throws when the ' + ordinal[idx] + ' argument is invalid', arg.invalid, function (value){
-      throws(function (){
-        instance[method].apply(instance, validPriorArgs.concat([value]).concat(validFollowingArgs));
-      }, new TypeError(
-        'Future#' + method + '() expects its ' + ordinal[idx] + ' argument to be ' + an(arg.name) + '.\n' +
-        '  Actual: ' + show(value) + ' :: ' + type.parse(type(value)).name
-      ));
-      return true;
-    });
-  });
 }

@@ -1,12 +1,12 @@
-import {Future, isFuture} from './future';
+import {application1, future} from './internal/check';
 import {noop} from './internal/utils';
-import {throwInvalidFuture} from './internal/throw';
+import {createInterpreter} from './future';
 
-var Cold = Cached.Cold = 0;
-var Pending = Cached.Pending = 1;
-var Crashed = Cached.Crashed = 2;
-var Rejected = Cached.Rejected = 3;
-var Resolved = Cached.Resolved = 4;
+export var Cold = 0;
+export var Pending = 1;
+export var Crashed = 2;
+export var Rejected = 3;
+export var Resolved = 4;
 
 export function Queued(rec, rej, res){
   this[Crashed] = rec;
@@ -14,28 +14,41 @@ export function Queued(rec, rej, res){
   this[Resolved] = res;
 }
 
-export function Cached(pure){
-  this._pure = pure;
-  this.reset();
-}
+export var Cache = createInterpreter(1, 'cache', function Cache$interpret(rec, rej, res){
+  var cancel = noop;
 
-Cached.prototype = Object.create(Future.prototype);
+  switch(this._state){
+    case Pending: cancel = this._addToQueue(rec, rej, res); break;
+    case Crashed: rec(this._value); break;
+    case Rejected: rej(this._value); break;
+    case Resolved: res(this._value); break;
+    default: cancel = this._addToQueue(rec, rej, res); this.run();
+  }
 
-Cached.prototype.extractLeft = function Cached$extractLeft(){
+  return cancel;
+});
+
+Cache.prototype._cancel = noop;
+Cache.prototype._queue = [];
+Cache.prototype._queued = 0;
+Cache.prototype._value = undefined;
+Cache.prototype._state = Cold;
+
+Cache.prototype.extractLeft = function Cache$extractLeft(){
   return this._state === Rejected ? [this._value] : [];
 };
 
-Cached.prototype.extractRight = function Cached$extractRight(){
+Cache.prototype.extractRight = function Cache$extractRight(){
   return this._state === Resolved ? [this._value] : [];
 };
 
-Cached.prototype._addToQueue = function Cached$addToQueue(rec, rej, res){
+Cache.prototype._addToQueue = function Cache$addToQueue(rec, rej, res){
   var _this = this;
   if(_this._state > Pending) return noop;
   var i = _this._queue.push(new Queued(rec, rej, res)) - 1;
   _this._queued = _this._queued + 1;
 
-  return function Cached$removeFromQueue(){
+  return function Cache$removeFromQueue(){
     if(_this._state > Pending) return;
     _this._queue[i] = undefined;
     _this._queued = _this._queued - 1;
@@ -43,7 +56,7 @@ Cached.prototype._addToQueue = function Cached$addToQueue(rec, rej, res){
   };
 };
 
-Cached.prototype._drainQueue = function Cached$drainQueue(){
+Cache.prototype._drainQueue = function Cache$drainQueue(){
   if(this._state <= Pending) return;
   if(this._queued === 0) return;
   var queue = this._queue;
@@ -60,39 +73,39 @@ Cached.prototype._drainQueue = function Cached$drainQueue(){
   this._queued = 0;
 };
 
-Cached.prototype.crash = function Cached$crash(error){
+Cache.prototype.crash = function Cache$crash(error){
   if(this._state > Pending) return;
   this._value = error;
   this._state = Crashed;
   this._drainQueue();
 };
 
-Cached.prototype.reject = function Cached$reject(reason){
+Cache.prototype.reject = function Cache$reject(reason){
   if(this._state > Pending) return;
   this._value = reason;
   this._state = Rejected;
   this._drainQueue();
 };
 
-Cached.prototype.resolve = function Cached$resolve(value){
+Cache.prototype.resolve = function Cache$resolve(value){
   if(this._state > Pending) return;
   this._value = value;
   this._state = Resolved;
   this._drainQueue();
 };
 
-Cached.prototype.run = function Cached$run(){
+Cache.prototype.run = function Cache$run(){
   var _this = this;
   if(_this._state > Cold) return;
   _this._state = Pending;
-  _this._cancel = _this._pure._interpret(
-    function Cached$fork$rec(x){ _this.crash(x) },
-    function Cached$fork$rej(x){ _this.reject(x) },
-    function Cached$fork$res(x){ _this.resolve(x) }
+  _this._cancel = _this.$1._interpret(
+    function Cache$fork$rec(x){ _this.crash(x) },
+    function Cache$fork$rej(x){ _this.reject(x) },
+    function Cache$fork$res(x){ _this.resolve(x) }
   );
 };
 
-Cached.prototype.reset = function Cached$reset(){
+Cache.prototype.reset = function Cache$reset(){
   if(this._state === Cold) return;
   if(this._state === Pending) this._cancel();
   this._cancel = noop;
@@ -102,25 +115,6 @@ Cached.prototype.reset = function Cached$reset(){
   this._state = Cold;
 };
 
-Cached.prototype._interpret = function Cached$interpret(rec, rej, res){
-  var cancel = noop;
-
-  switch(this._state){
-    case Pending: cancel = this._addToQueue(rec, rej, res); break;
-    case Crashed: rec(this._value); break;
-    case Rejected: rej(this._value); break;
-    case Resolved: res(this._value); break;
-    default: cancel = this._addToQueue(rec, rej, res); this.run();
-  }
-
-  return cancel;
-};
-
-Cached.prototype.toString = function Cached$toString(){
-  return 'cache(' + this._pure.toString() + ')';
-};
-
 export function cache(m){
-  if(!isFuture(m)) throwInvalidFuture('cache', 0, m);
-  return new Cached(m);
+  return new Cache(application1(cache, future, m), m);
 }
