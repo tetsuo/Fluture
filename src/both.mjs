@@ -6,11 +6,11 @@ import {
 } from './internal/parallel-transformation';
 import {createTransformation} from './internal/transformation';
 import {noop} from './internal/utils';
-import {resolve} from './resolve';
+import {Resolve} from './resolve';
 
 export var PairTransformation = createTransformation(1, 'pair', {
   resolved: function PairTransformation$resolved(x){
-    return resolve([x, this.$1]);
+    return new Resolve(this.context, [x, this.$1]);
   }
 });
 

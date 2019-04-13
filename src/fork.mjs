@@ -6,8 +6,8 @@ export function fork(f){
   return function fork(g){
     var context2 = application(2, fork, func, g, context1);
     return function fork(m){
-      var context3 = application(3, fork, future, m, context2);
-      return m._interpret(raise, f, g, context3);
+      application(3, fork, future, m, context2);
+      return m._interpret(raise, f, g);
     };
   };
 }

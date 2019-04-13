@@ -1,11 +1,15 @@
 import {application1, application, func, future} from './internal/check';
 import {createTransformation} from './internal/transformation';
 import {call} from './internal/utils';
-import {resolve} from './resolve';
+import {Resolve} from './resolve';
 
 export var FoldTransformation = createTransformation(2, 'fold', {
-  rejected: function FoldTransformation$rejected(x){ return resolve(call(this.$1, x)) },
-  resolved: function FoldTransformation$resolved(x){ return resolve(call(this.$2, x)) }
+  rejected: function FoldTransformation$rejected(x){
+    return new Resolve(this.context, call(this.$1, x));
+  },
+  resolved: function FoldTransformation$resolved(x){
+    return new Resolve(this.context, call(this.$2, x));
+  }
 });
 
 export function fold(f){

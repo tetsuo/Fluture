@@ -1,7 +1,7 @@
 import {show} from './utils';
 import {ordinal, namespace, name, version} from './const';
 import type from 'sanctuary-type-identifiers';
-import {nil, cat, isNil} from './list';
+import {nil, cat} from './list';
 import {captureStackTrace} from './debug';
 
 export function error(message){
@@ -74,20 +74,30 @@ export function ensureError(value, fn){
   return e;
 }
 
-export function makeError(caught, callingFuture, extraContext){
-  var origin = ensureError(caught, makeError);
+export function assignUnenumerable(o, prop, value){
+  Object.defineProperty(o, prop, {value: value, writable: true, configurable: true});
+}
+
+export function wrapException(caught, callingFuture){
+  var origin = ensureError(caught, wrapException);
+  var context = cat(origin.context || nil, callingFuture.context);
   var e = error(origin.message);
-  e.context = cat(origin.context || nil, extraContext || nil);
-  e.future = origin.future || callingFuture;
-  e.reason = origin.reason || origin;
-  e.stack = e.reason.stack + (isNil(e.context) ? '' : '\n' + contextToStackTrace(e.context));
+  assignUnenumerable(e, 'future', origin.future || callingFuture);
+  assignUnenumerable(e, 'reason', origin.reason || origin);
+  assignUnenumerable(e, 'stack', e.reason.stack);
+  return withExtraContext(e, context);
+}
+
+export function withExtraContext(e, context){
+  assignUnenumerable(e, 'context', context);
+  assignUnenumerable(e, 'stack', e.stack + contextToStackTrace(context));
   return e;
 }
 
 export function contextToStackTrace(context){
   var stack = '', tail = context;
   while(tail !== nil){
-    stack += tail.head.stack + '\n';
+    stack = stack + '\n' + tail.head.stack;
     tail = tail.tail;
   }
   return stack;

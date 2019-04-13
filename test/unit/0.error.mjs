@@ -8,7 +8,7 @@ import {
   invalidArgument,
   invalidContext,
   invalidFutureArgument,
-  makeError,
+  wrapException,
   contextToStackTrace
 } from '../../src/internal/error';
 
@@ -118,39 +118,41 @@ describe('error', function (){
 
   });
 
-  describe('makeError', function (){
+  describe('wrapException', function (){
 
     it('converts any value to an Error', function (){
       var evilValue = {};
       evilValue.__defineGetter__('name', () => { throw new Error });
       evilValue.__defineGetter__('stack', () => { throw new Error });
 
-      eq(makeError(new Error('test')) instanceof Error, true);
-      eq(makeError(new TypeError('test')) instanceof Error, true);
-      eq(makeError('test') instanceof Error, true);
-      eq(makeError({foo: 'bar'}) instanceof Error, true);
-      eq(makeError(evilValue) instanceof Error, true);
-      eq(makeError(null) instanceof Error, true);
-      eq(makeError({crash: null}) instanceof Error, true);
+      eq(wrapException(new Error('test'), mock) instanceof Error, true);
+      eq(wrapException(new TypeError('test'), mock) instanceof Error, true);
+      eq(wrapException('test', mock) instanceof Error, true);
+      eq(wrapException({foo: 'bar'}, mock) instanceof Error, true);
+      eq(wrapException(evilValue, mock) instanceof Error, true);
+      eq(wrapException(null, mock) instanceof Error, true);
+      eq(wrapException({crash: null}, mock) instanceof Error, true);
     });
 
     it('creates an error which encompasses the given error', function (){
-      var context = cons({stack: 'hello'}, cons({stack: 'world'}, nil));
-      var e = makeError(mockError, mock, context);
+      var m = Object.create(mock);
+      m.context = cons({stack: 'hello'}, cons({stack: 'world'}, nil));
+      var e = wrapException(mockError, m);
       eq(e.name, 'Error');
       eq(e.message, mockError.message);
       eq(e.reason, mockError);
-      eq(e.context, context);
-      eq(e.future, mock);
+      eq(e.context, m.context);
+      eq(e.future, m);
       assertStackTrace('Error: Intentional error for unit testing', e.stack);
 
-      var context2 = cons({stack: 'foo'}, cons({stack: 'bar'}, nil));
-      var e2 = makeError(e, mock, context2);
+      var m2 = Object.create(mock);
+      m2.context = cons({stack: 'foo'}, cons({stack: 'bar'}, nil));
+      var e2 = wrapException(e, m2);
       eq(e2.name, 'Error');
       eq(e2.message, mockError.message);
       eq(e2.reason, mockError);
-      eq(e2.context, cat(context, context2));
-      eq(e2.future, mock);
+      eq(e2.context, cat(m.context, m2.context));
+      eq(e2.future, m);
       assertStackTrace('Error: Intentional error for unit testing', e2.stack);
     });
 
@@ -159,7 +161,7 @@ describe('error', function (){
   describe('contextToStackTrace', function (){
 
     it('converts a nested context structure to a stack trace', function (){
-      eq(contextToStackTrace(cons({stack: 'hello'}, cons({stack: 'world'}, nil))), 'hello\nworld\n');
+      eq(contextToStackTrace(cons({stack: 'hello'}, cons({stack: 'world'}, nil))), '\nhello\nworld');
     });
 
   });

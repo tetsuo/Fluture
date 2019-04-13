@@ -1,10 +1,8 @@
 /*eslint consistent-return: 0 */
 
 import {application1, func} from './internal/check';
-import {captureContext} from './internal/debug';
-import {typeError, invalidFuture, invalidArgument, makeError} from './internal/error';
+import {typeError, invalidFuture, invalidArgument, wrapException} from './internal/error';
 import {isIteration} from './internal/iteration';
-import {cat} from './internal/list';
 import {isIterator} from './internal/predicates';
 import {Undetermined, Synchronous, Asynchronous} from './internal/timing';
 import {show, noop} from './internal/utils';
@@ -28,39 +26,26 @@ export var Go = createInterpreter(1, 'go', function Go$interpret(rec, rej, res){
 
   var _this = this, timing = Undetermined, cancel = noop, state, value, iterator;
 
-  var context = captureContext(
-    _this.context,
-    'interpreting a Future created with do-notation',
-    Go$interpret
-  );
+  function crash(e){
+    rec(wrapException(e, _this));
+  }
 
   try{
     iterator = _this.$1();
   }catch(e){
-    rec(makeError(e, _this, context));
+    crash(e);
     return noop;
   }
 
   if(!isIterator(iterator)){
-    rec(makeError(
-      invalidArgument('go', 0, 'return an iterator, maybe you forgot the "*"', iterator),
-      _this,
-      context
-    ));
+    crash(invalidArgument('go', 0, 'return an iterator, maybe you forgot the "*"', iterator));
     return noop;
   }
 
   function resolved(x){
     value = x;
-    if(timing === Asynchronous){
-      context = cat(state.value.context, context);
-      return drain();
-    }
+    if(timing === Asynchronous) return drain();
     timing = Synchronous;
-  }
-
-  function crash(e){
-    rec(makeError(e, state.value, cat(state.value.context, context)));
   }
 
   function drain(){
@@ -69,11 +54,13 @@ export var Go = createInterpreter(1, 'go', function Go$interpret(rec, rej, res){
       try{
         state = iterator.next(value);
       }catch(e){
-        return rec(makeError(e, _this, context));
+        return crash(e);
       }
-      if(!isIteration(state)) return rec(makeError(invalidIteration(state), _this, context));
+      if(!isIteration(state)) return crash(invalidIteration(state));
       if(state.done) break;
-      if(!isFuture(state.value)) return rec(makeError(invalidState(state.value), _this, context));
+      if(!isFuture(state.value)){
+        return crash(invalidState(state.value));
+      }
       timing = Undetermined;
       cancel = state.value._interpret(crash, rej, resolved);
       if(timing === Undetermined) return timing = Asynchronous;

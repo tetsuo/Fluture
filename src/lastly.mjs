@@ -1,15 +1,15 @@
 import {application1, application, future} from './internal/check';
 import {createTransformation} from './internal/transformation';
 import {AndTransformation} from './and';
-import {reject} from './reject';
-import {resolve} from './resolve';
+import {Reject} from './reject';
+import {Resolve} from './resolve';
 
 export var LastlyTransformation = createTransformation(1, 'lastly', {
   rejected: function FinallyAction$rejected(x){
-    return this.$1._transform(new AndTransformation(this.context, reject(x)));
+    return this.$1._transform(new AndTransformation(this.context, new Reject(this.context, x)));
   },
   resolved: function FinallyAction$resolved(x){
-    return this.$1._transform(new AndTransformation(this.context, resolve(x)));
+    return this.$1._transform(new AndTransformation(this.context, new Resolve(this.context, x)));
   }
 });
 

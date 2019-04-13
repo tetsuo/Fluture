@@ -1,5 +1,5 @@
 import {noop} from './utils';
-import {cons, cat, nil} from './list';
+import {cons} from './list';
 
 /* istanbul ignore next: non v8 compatibility */
 var captureStackTrace = Error.captureStackTrace || captureStackTraceFallback;
@@ -21,12 +21,9 @@ export function debug(fn){
 
 export function captureContext(previous, tag, fn){
   return debug(function debugCaptureContext(){
-    var context = {
-      tag: tag,
-      name: ' from ' + tag + ':',
-    };
+    var context = {tag: tag, name: ' from ' + tag + ':'};
     captureStackTrace(context, fn);
-    return cat(previous, cons(context, nil));
+    return cons(context, previous);
   }) || previous;
 }
 

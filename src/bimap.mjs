@@ -3,12 +3,16 @@ import {FL} from './internal/const';
 import {createTransformation} from './internal/transformation';
 import {call} from './internal/utils';
 import {isFuture} from './future';
-import {reject} from './reject';
-import {resolve} from './resolve';
+import {Reject} from './reject';
+import {Resolve} from './resolve';
 
 export var BimapTransformation = createTransformation(2, 'bimap', {
-  rejected: function BimapTransformation$rejected(x){ return reject(call(this.$1, x)) },
-  resolved: function BimapTransformation$resolved(x){ return resolve(call(this.$2, x)) }
+  rejected: function BimapTransformation$rejected(x){
+    return new Reject(this.context, call(this.$1, x));
+  },
+  resolved: function BimapTransformation$resolved(x){
+    return new Resolve(this.context, call(this.$2, x));
+  }
 });
 
 export function bimap(f){

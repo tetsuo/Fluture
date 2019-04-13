@@ -1,4 +1,3 @@
-import {captureContext} from './debug';
 import {createTransformation} from './transformation';
 import {noop} from './utils';
 import {Future} from '../future';
@@ -63,11 +62,7 @@ export function createParallelTransformation(name, rec, rej, res, prototype){
   var ParallelTransformation = createTransformation(1, name, Object.assign({
     run: function Parallel$run(early){
       var eager = new Eager(this.$1);
-      var transformation = new ParallelTransformation(captureContext(
-        this.context,
-        name + ' triggering a parallel Future',
-        Parallel$run
-      ), eager);
+      var transformation = new ParallelTransformation(this.context, eager);
       function Parallel$early(m){ early(m, transformation) }
       transformation.cancel = eager._interpret(
         function Parallel$rec(x){ rec(Parallel$early, x) },

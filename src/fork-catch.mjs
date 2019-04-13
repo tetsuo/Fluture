@@ -7,8 +7,8 @@ export function forkCatch(f){
     return function forkCatch(h){
       var context3 = application(3, forkCatch, func, h, context2);
       return function forkCatch(m){
-        var context4 = application(4, forkCatch, future, m, context3);
-        return m._interpret(f, g, h, context4);
+        application(4, forkCatch, future, m, context3);
+        return m._interpret(f, g, h);
       };
     };
   };

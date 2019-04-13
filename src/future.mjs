@@ -3,9 +3,9 @@
 import {show, noop} from './internal/utils';
 import {isFunction} from './internal/predicates';
 import {$$type} from './internal/const';
-import {nil, cons, cat, isNil, reverse} from './internal/list';
+import {nil, cons, isNil, reverse} from './internal/list';
 import type from 'sanctuary-type-identifiers';
-import {typeError, makeError, invalidArgument} from './internal/error';
+import {typeError, wrapException, invalidArgument} from './internal/error';
 import {captureContext} from './internal/debug';
 
 export function Future(computation){
@@ -70,7 +70,6 @@ export function createInterpreter(arity, name, interpret){
 export var Computation =
 createInterpreter(1, 'Future', function Computation$interpret(rec, rej, res){
   var computation = this.$1, open = false, cancel = noop, cont = function(){ open = true };
-  var context = captureContext(this.context, 'consuming a Future', Computation$interpret);
   try{
     cancel = computation(function Computation$rej(x){
       cont = function Computation$rej$cont(){
@@ -90,14 +89,14 @@ createInterpreter(1, 'Future', function Computation$interpret(rec, rej, res){
       }
     }) || noop;
   }catch(e){
-    rec(makeError(e, this, context));
+    rec(wrapException(e, this));
     return noop;
   }
   if(!(isFunction(cancel) && cancel.length === 0)){
-    rec(makeError(typeError(
+    rec(wrapException(typeError(
       'The computation was expected to return a nullary function or void\n' +
       '  Actual: ' + show(cancel)
-    ), this, context));
+    ), this));
     return noop;
   }
   cont();
@@ -115,18 +114,12 @@ export var Transformer = createInterpreter(2, '', function Transformer$interpret
   //have yet to run parallel computations, and hot are those that have.
   var cold = nil, hot = nil;
 
-  //A linked list of stack traces, tracking context across ticks.
-  var context = captureContext(nil, 'consuming a transformed Future', Transformer$interpret);
-
-  //The context of the last transformation to run.
-  var asyncContext = nil;
-
   //These combined variables define our current state.
-  // future  = the future we are currently forking
-  // transformation  = the transformation to be informed when the future settles
-  // cancel  = the cancel function of the current future
-  // settled = a boolean indicating whether a new tick should start
-  // async   = a boolean indicating whether we are awaiting a result asynchronously
+  // future         = the future we are currently forking
+  // transformation = the transformation to be informed when the future settles
+  // cancel         = the cancel function of the current future
+  // settled        = a boolean indicating whether a new tick should start
+  // async          = a boolean indicating whether we are awaiting a result asynchronously
   var future, transformation, cancel = noop, settled, async = true, it;
 
   //Takes an transformation from the top of the hot stack and returns it.
@@ -166,7 +159,6 @@ export var Transformer = createInterpreter(2, '', function Transformer$interpret
   //It will tell the current transformation that the future rejected, and it will
   //settle the current tick with the transformation's answer to that.
   function rejected(x){
-    if(async) context = cat(future.context, cat(asyncContext, context));
     settle(transformation.rejected(x));
   }
 
@@ -174,7 +166,6 @@ export var Transformer = createInterpreter(2, '', function Transformer$interpret
   //It will tell the current transformation that the future resolved, and it will
   //settle the current tick with the transformation's answer to that.
   function resolved(x){
-    if(async) context = cat(future.context, cat(asyncContext, context));
     settle(transformation.resolved(x));
   }
 
@@ -186,7 +177,6 @@ export var Transformer = createInterpreter(2, '', function Transformer$interpret
   //sent a cancel signal so they can cancel their own concurrent computations,
   //as their results are no longer needed.
   function early(m, terminator){
-    context = cat(terminator.context, context);
     cancel();
     cold = nil;
     if(async && transformation !== terminator){
@@ -208,7 +198,7 @@ export var Transformer = createInterpreter(2, '', function Transformer$interpret
     Sequence$cancel();
     settled = true;
     cold = hot = nil;
-    var error = makeError(e, future, context);
+    var error = wrapException(e, future);
     future = never;
     rec(error);
   }
@@ -235,7 +225,6 @@ export var Transformer = createInterpreter(2, '', function Transformer$interpret
     async = false;
     while(true){
       settled = false;
-      if(transformation) asyncContext = transformation.context;
       if(transformation = nextCold()){
         cancel = future._interpret(exception, rejected, resolved);
         if(!settled) warmupActions();

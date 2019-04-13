@@ -1,7 +1,7 @@
 import {isFuture} from '../future';
 
 import {ordinal} from './const';
-import {captureContext} from './debug';
+import {captureContext, captureStackTrace} from './debug';
 import {nil} from './list';
 import {
   isAlt,
@@ -13,7 +13,7 @@ import {
   isFunctor,
   isUnsigned
 } from './predicates';
-import {invalidArgument, invalidFutureArgument} from './error';
+import {invalidArgument, invalidFutureArgument, withExtraContext} from './error';
 
 function alwaysTrue(){
   return true;
@@ -49,11 +49,10 @@ export var futureArray = {
 };
 
 export function application(n, f, type, x, prev){
-  var context = captureContext(prev, ordinal[n - 1] + ' application of ' + f.name, f);
-  if(type.pred(x)) return context;
+  if(type.pred(x)) return captureContext(prev, ordinal[n - 1] + ' application of ' + f.name, f);
   var e = type.error(f.name, n - 1, x);
-  e.context = context;
-  throw e;
+  captureStackTrace(e, f);
+  throw withExtraContext(e, prev);
 }
 
 export function application1(f, type, x){

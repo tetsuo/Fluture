@@ -2,19 +2,19 @@ import {invalidFuture} from './error';
 import {nil} from './list';
 import {noop, moop, show} from './utils';
 
-import {crash} from '../crash';
+import {Crash} from '../crash';
 import {isFuture} from '../future';
-import {reject} from '../reject';
-import {resolve} from '../resolve';
+import {Reject} from '../reject';
+import {Resolve} from '../resolve';
 
 function BaseTransformation$rejected(x){
   this.cancel();
-  return reject(x);
+  return new Reject(this.context, x);
 }
 
 function BaseTransformation$resolved(x){
   this.cancel();
-  return resolve(x);
+  return new Resolve(this.context, x);
 }
 
 export var BaseTransformation = {
@@ -33,12 +33,12 @@ function wrapHandler(handler){
     try{
       m = handler.call(this, x);
     }catch(e){
-      return crash(e);
+      return new Crash(this.context, e);
     }
     if(isFuture(m)){
       return m;
     }
-    return crash(invalidFuture(
+    return new Crash(this.context, invalidFuture(
       this.name + ' expects the return value from the function it\'s given', m,
       '\n  When called with: ' + show(x)
     ));

@@ -3,10 +3,12 @@ import {FL} from './internal/const';
 import {createTransformation} from './internal/transformation';
 import {call} from './internal/utils';
 import {isFuture} from './future';
-import {resolve} from './resolve';
+import {Resolve} from './resolve';
 
 export var MapTransformation = createTransformation(1, 'map', {
-  resolved: function MapTransformation$resolved(x){ return resolve(call(this.$1, x)) }
+  resolved: function MapTransformation$resolved(x){
+    return new Resolve(this.context, call(this.$1, x));
+  }
 });
 
 export function map(f){
