@@ -1,7 +1,6 @@
 import {isFuture} from '../future';
 
-import {ordinal} from './const';
-import {captureContext, captureStackTrace} from './debug';
+import {captureApplicationContext, captureStackTrace} from './debug';
 import {nil} from './list';
 import {
   isAlt,
@@ -49,7 +48,7 @@ export var futureArray = {
 };
 
 export function application(n, f, type, x, prev){
-  if(type.pred(x)) return captureContext(prev, ordinal[n - 1] + ' application of ' + f.name, f);
+  if(type.pred(x)) return captureApplicationContext(prev, n, f);
   var e = type.error(f.name, n - 1, x);
   captureStackTrace(e, f);
   throw withExtraContext(e, prev);

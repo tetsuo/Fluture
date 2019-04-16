@@ -46,9 +46,10 @@ function wrapHandler(handler){
 }
 
 export function createTransformation(arity, name, prototype){
-  var Transformation = function(context){
+  var Transformation = function(context, $1, $2){
     this.context = context;
-    for(var i = 1; i <= arity; i++) this['$' + String(i)] = arguments[i];
+    this.$1 = $1;
+    this.$2 = $2;
   };
 
   Transformation.prototype = Object.create(BaseTransformation);

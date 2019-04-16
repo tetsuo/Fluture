@@ -54,9 +54,11 @@ Future.prototype.toString = function(){
 };
 
 export function createInterpreter(arity, name, interpret){
-  var Interpreter = function(context){
+  var Interpreter = function(context, $1, $2, $3){
     this.context = context;
-    for(var i = 1; i <= arity; i++) this['$' + String(i)] = arguments[i];
+    this.$1 = $1;
+    this.$2 = $2;
+    this.$3 = $3;
   };
 
   Interpreter.prototype = Object.create(Future.prototype);
