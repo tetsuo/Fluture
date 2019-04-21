@@ -1,7 +1,6 @@
 {
   "root": true,
   "extends": ["warp"],
-  "plugins": ["markdown"],
   "parserOptions": {
     "ecmaVersion": 5,
     "sourceType": "module"
@@ -15,21 +14,21 @@
     "space-before-blocks": [2, "never"],
     "consistent-this": [2, "_this"],
     "semi": [2, "always", {"omitLastInOneLineBlock": true}],
-    "curly": 0,
-    "func-style": 0,
-    "prefer-template": 0,
-    "prefer-arrow-callback": 0,
-    "no-use-before-define": 0,
-    "max-statements-per-line": 0,
-    "prefer-rest-params": 0,
-    "class-methods-use-this": 0,
-    "camelcase": 0,
-    "indent": 0,
-    "func-name-matching": 0,
+    "curly": ["off"],
+    "func-style": ["off"],
+    "prefer-template": ["off"],
+    "prefer-arrow-callback": ["off"],
+    "no-use-before-define": ["off"],
+    "max-statements-per-line": ["off"],
+    "prefer-rest-params": ["off"],
+    "class-methods-use-this": ["off"],
+    "camelcase": ["off"],
+    "indent": ["off"],
+    "func-name-matching": ["off"],
     "no-console": 2,
     "eqeqeq": [2, "smart"],
-    "no-eq-null": 0,
-    "no-param-reassign": 0
+    "no-eq-null": ["off"],
+    "no-param-reassign": ["off"]
   },
   "overrides": [
     {
@@ -37,25 +36,10 @@
       "env": {"node": true, "mocha": true},
       "globals": {"Promise": false},
       "rules": {
-        "arrow-body-style": 0,
-        "no-sequences": 0,
-        "max-len": 0,
+        "arrow-body-style": ["off"],
+        "no-sequences": ["off"],
+        "max-len": ["off"],
         "space-before-function-paren": ["error", "always"]
-      }
-    },
-    {
-      "files": ["README.md"],
-      "env": {
-        "browser": true,
-        "node": true
-      },
-      "globals": {
-        "Future": false,
-        "S": false,
-        "Promise": false
-      },
-      "rules": {
-        "no-console": 0
       }
     }
   ]
