@@ -14,6 +14,14 @@
 [Gitter Chat]: https://img.shields.io/gitter/room/fluture-js/Fluture.svg?colorB=blue
 [Questions and Answers]: https://img.shields.io/stackexchange/stackoverflow/t/fluture.svg?label=questions&colorB=blue
 
+## :warning: BETA :warning:
+
+You're looking at the _beta_ version of the Fluture documentation.
+For the stable version, please consult the
+[11.x branch](https://github.com/fluture-js/Fluture/tree/11.x).
+
+----
+
 Fluture offers a control structure similar to Promises, Tasks, Deferreds, and
 what-have-you. Let's call them Futures.
 
