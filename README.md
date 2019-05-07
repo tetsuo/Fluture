@@ -47,7 +47,7 @@ For more information:
 
 ## Usage
 
-> `npm install --save fluture`
+> `npm install --save fluture@beta`
 
 On older environments you may need to polyfill one or more of the following
 functions: [`Object.create`][JS:Object.create],
