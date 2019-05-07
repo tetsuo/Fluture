@@ -1,6 +1,7 @@
 import show from 'sanctuary-show';
 import type from 'sanctuary-type-identifiers';
 import {Future, isFuture, reject, resolve} from '../../index.mjs';
+import {crash} from '../../src/crash';
 import {strictEqual, deepStrictEqual} from 'assert';
 export * from '../../src/internal/predicates';
 
@@ -15,6 +16,7 @@ export var K = function (x){ return function (){ return x } };
 export var T = function (x){ return function (f){ return f(x) } };
 export var error = new Error('Intentional error for unit testing');
 export var throwit = function (it){ throw it };
+export var throwing = function (){ throw error };
 
 export var eq = function eq (actual, expected){
   strictEqual(arguments.length, eq.length);
@@ -30,27 +32,27 @@ export var throws = function throws (f, expected){
   try{
     f();
   }catch(actual){
-    eq(actual, expected);
+    eq(typeof actual, typeof expected);
+    eq(actual.constructor, expected.constructor);
+    eq(actual.name, expected.name);
+    eq(actual.message, expected.message);
     return;
   }
   throw new Error('Expected the function to throw');
 };
 
-export var raises = function raises (done, fn, expected){
-  if(typeof process.rawListeners !== 'function'){
-    done();
-    return;
-  }
-
-  var listeners = process.rawListeners('uncaughtException');
-  process.removeAllListeners('uncaughtException');
-  process.once('uncaughtException', function (actual){
-    listeners.forEach(function (f){ process.on('uncaughtException', f) });
-    eq(actual.message, expected.message);
-    done();
+export var itRaises = function itRaises (when, f, e){
+  var test = (typeof process.rawListeners === 'function') ? it : it.skip;
+  test('raises ' + when, function (done){
+    var listeners = process.rawListeners('uncaughtException');
+    process.removeAllListeners('uncaughtException');
+    process.once('uncaughtException', function (actual){
+      listeners.forEach(function (f){ process.on('uncaughtException', f) });
+      eq(actual.message, e.message);
+      done();
+    });
+    f();
   });
-
-  fn();
 };
 
 export var isDeepStrictEqual = function isDeepStrictEqual (actual, expected){
@@ -198,9 +200,7 @@ var assertEqualByErrorMessage = makeAssertEqual(function (a, b){
 });
 
 export var assertCrashed = function (m, x){
-  return assertEqualByErrorMessage(m, Future(function (){
-    throw x;
-  }));
+  return assertEqualByErrorMessage(m, crash(x));
 };
 
 export var assertRejected = function (m, x){

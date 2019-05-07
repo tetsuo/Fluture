@@ -1,33 +1,44 @@
-import {noop} from './utils';
-import {cons, cat, nil} from './list';
+import {ordinal} from './const';
+import {cons} from './list';
 
 /* istanbul ignore next: non v8 compatibility */
 var captureStackTrace = Error.captureStackTrace || captureStackTraceFallback;
-var _debug = noop;
+var _debug = debugHandleNone;
 
 export {captureStackTrace};
 
 export function debugMode(debug){
-  _debug = debug ? debugHandleAll : noop;
+  _debug = debug ? debugHandleAll : debugHandleNone;
 }
 
-export function debugHandleAll(fn){
-  return fn();
+export function debugHandleNone(x){
+  return x;
 }
 
-export function debug(fn){
-  return _debug(fn);
+export function debugHandleAll(x, fn, a, b, c){
+  return fn(a, b, c);
+}
+
+export function debug(x, fn, a, b, c){
+  return _debug(x, fn, a, b, c);
 }
 
 export function captureContext(previous, tag, fn){
-  return debug(function debugCaptureContext(){
-    var context = {
-      tag: tag,
-      name: ' from ' + tag + ':',
-    };
-    captureStackTrace(context, fn);
-    return cat(previous, cons(context, nil));
-  }) || previous;
+  return debug(previous, debugCaptureContext, previous, tag, fn);
+}
+
+export function debugCaptureContext(previous, tag, fn){
+  var context = {tag: tag, name: ' from ' + tag + ':'};
+  captureStackTrace(context, fn);
+  return cons(context, previous);
+}
+
+export function captureApplicationContext(context, n, f){
+  return debug(context, debugCaptureApplicationContext, context, n, f);
+}
+
+export function debugCaptureApplicationContext(context, n, f){
+  return debugCaptureContext(context, ordinal[n - 1] + ' application of ' + f.name, f);
 }
 
 export function captureStackTraceFallback(x){

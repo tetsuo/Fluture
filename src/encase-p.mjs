@@ -1,39 +1,27 @@
-import {Future} from './future';
-import {noop, show, showf, partial1} from './internal/utils';
-import {isThenable, isFunction} from './internal/predicates';
-import {typeError} from './internal/error';
-import {throwInvalidArgument} from './internal/throw';
-import {makeError} from './internal/error';
-import {nil} from './internal/list';
-import {captureContext} from './internal/debug';
+import {application1, application, func, any} from './internal/check';
+import {wrapException, typeError} from './internal/error';
+import {isThenable} from './internal/predicates';
+import {noop, show} from './internal/utils';
+import {createInterpreter} from './future';
 
 function invalidPromise(p, f, a){
   return typeError(
     'encaseP() expects the function it\'s given to return a Promise/Thenable'
-    + '\n  Actual: ' + (show(p)) + '\n  From calling: ' + (showf(f))
-    + '\n  With: ' + (show(a))
+    + '\n  Actual: ' + show(p) + '\n  From calling: ' + show(f)
+    + '\n  With: ' + show(a)
   );
 }
 
-export function EncaseP(fn, a){
-  this._fn = fn;
-  this._a = a;
-  this.context = captureContext(nil, 'a Future created with encaseP', EncaseP);
-}
-
-EncaseP.prototype = Object.create(Future.prototype);
-
-EncaseP.prototype._interpret = function EncaseP$interpret(rec, rej, res){
-  var open = true, fn = this._fn, a = this._a, p;
-  var context = captureContext(this.context, 'consuming an encased Future', EncaseP$interpret);
+export var EncaseP = createInterpreter(2, 'encaseP', function EncaseP$interpret(rec, rej, res){
+  var open = true, fn = this.$1, arg = this.$2, p;
   try{
-    p = fn(a);
+    p = fn(arg);
   }catch(e){
-    rec(makeError(e, this, context));
+    rec(wrapException(e, this));
     return noop;
   }
   if(!isThenable(p)){
-    rec(makeError(invalidPromise(p, fn, a), this, context));
+    rec(wrapException(invalidPromise(p, fn, arg), this));
     return noop;
   }
   p.then(function EncaseP$res(x){
@@ -48,14 +36,12 @@ EncaseP.prototype._interpret = function EncaseP$interpret(rec, rej, res){
     }
   });
   return function EncaseP$cancel(){ open = false };
-};
+});
 
-EncaseP.prototype.toString = function EncaseP$toString(){
-  return 'encaseP(' + showf(this._fn) + ', ' + show(this._a) + ')';
-};
-
-export function encaseP(f, x){
-  if(!isFunction(f)) throwInvalidArgument('encaseP', 0, 'be a Function', f);
-  if(arguments.length === 1) return partial1(encaseP, f);
-  return new EncaseP(f, x);
+export function encaseP(f){
+  var context1 = application1(encaseP, func, f);
+  return function encaseP(x){
+    var context2 = application(2, encaseP, any, x, context1);
+    return new EncaseP(context2, f, x);
+  };
 }

@@ -1,7 +1,7 @@
 import {show} from './utils';
 import {ordinal, namespace, name, version} from './const';
 import type from 'sanctuary-type-identifiers';
-import {nil, cat, isNil} from './list';
+import {nil, cat} from './list';
 import {captureStackTrace} from './debug';
 
 export function error(message){
@@ -45,17 +45,20 @@ function invalidVersion(m, x){
   );
 }
 
-export function invalidFuture(it, at, m, s){
+export function invalidFuture(desc, m, s){
   var id = type.parse(type(m));
   var info = id.name === name ? '\n' + (
     id.namespace !== namespace ? invalidNamespace(m, id.namespace)
   : id.version !== version ? invalidVersion(m, id.version)
   : 'Nothing seems wrong. Contact the Fluture maintainers.') : '';
   return typeError(
-    it + '() expects ' +
-    (ordinal[at] ? 'its ' + ordinal[at] + ' argument to be a valid Future' : at) +
-    '.' + info + '\n  Actual: ' + show(m) + ' :: ' + id.name + (s || '')
+    desc + ' to be a valid Future.' + info + '\n' +
+    '  Actual: ' + show(m) + ' :: ' + id.name + (s || '')
   );
+}
+
+export function invalidFutureArgument(it, at, m, s){
+  return invalidFuture(it + '() expects its ' + ordinal[at] + ' argument', m, s);
 }
 
 export function ensureError(value, fn){
@@ -71,20 +74,30 @@ export function ensureError(value, fn){
   return e;
 }
 
-export function makeError(caught, callingFuture, extraContext){
-  var origin = ensureError(caught, makeError);
+export function assignUnenumerable(o, prop, value){
+  Object.defineProperty(o, prop, {value: value, writable: true, configurable: true});
+}
+
+export function wrapException(caught, callingFuture){
+  var origin = ensureError(caught, wrapException);
+  var context = cat(origin.context || nil, callingFuture.context);
   var e = error(origin.message);
-  e.context = cat(origin.context || nil, extraContext || nil);
-  e.future = origin.future || callingFuture;
-  e.reason = origin.reason || origin;
-  e.stack = e.reason.stack + (isNil(e.context) ? '' : '\n' + contextToStackTrace(e.context));
+  assignUnenumerable(e, 'future', origin.future || callingFuture);
+  assignUnenumerable(e, 'reason', origin.reason || origin);
+  assignUnenumerable(e, 'stack', e.reason.stack);
+  return withExtraContext(e, context);
+}
+
+export function withExtraContext(e, context){
+  assignUnenumerable(e, 'context', context);
+  assignUnenumerable(e, 'stack', e.stack + contextToStackTrace(context));
   return e;
 }
 
 export function contextToStackTrace(context){
   var stack = '', tail = context;
   while(tail !== nil){
-    stack += tail.head.stack + '\n';
+    stack = stack + '\n' + tail.head.stack;
     tail = tail.tail;
   }
   return stack;

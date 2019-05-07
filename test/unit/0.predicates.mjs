@@ -5,7 +5,7 @@ import * as util from '../../src/internal/predicates';
 
 var expect = chai.expect;
 
-describe('is', function (){
+describe('predicates', function (){
 
   describe('.isThenable()', function (){
 
@@ -32,11 +32,11 @@ describe('is', function (){
 
   describe('.isFunction()', function (){
 
-    var fs = [function (){}, function (){}, Future];
     var xs = [NaN, 1, true, undefined, null, [], {}];
 
     it('returns true when given a Function', function (){
-      fs.forEach(function (f){ return expect(util.isFunction(f)).to.equal(true) });
+      U.eq(util.isFunction(function (){}), true);
+      U.eq(util.isFunction(Future), true);
     });
 
     it('returns false when not given a Function', function (){

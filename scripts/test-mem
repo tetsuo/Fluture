@@ -2,7 +2,7 @@
 
 /* global process setImmediate */
 
-var Future = require('..');
+var {Future, fork, race, chain, resolve: sync} = require('..');
 var {log} = require('util');
 
 var start = Date.now();
@@ -24,8 +24,6 @@ function report(){
   }
 }
 
-var sync = Future.of;
-
 function async(x){
   return Future(function(l, r){ setImmediate(r, x) });
 }
@@ -35,37 +33,37 @@ var cases = Object.create(null);
 //Should infinitely run until finally running out of memory.
 cases.syncHeadRecursion = function recur(){
   report();
-  return sync('l').chain(recur).race(sync('r'));
+  return race(sync('r'))(chain(recur)(sync('l')));
 };
 
 //Should immediately exit with "l".
 cases.syncDeepRecursion = function recur(){
   report();
-  return sync('l').race(sync('r').chain(recur));
+  return race(chain(recur)(sync('r')))(sync('l'));
 };
 
 //Should infinitely run without any problems.
 cases.syncTailRecursion = function recur(){
   report();
-  return sync('l').race(sync('r')).chain(recur);
+  return chain(recur)(race(sync('r'))(sync('l')));
 };
 
 //Should immediately exit with "r".
 cases.asyncHeadRecursion = function recur(){
   report();
-  return async('l').chain(recur).race(async('r'));
+  return race(async('r'))(chain(recur)(async('l')));
 };
 
 //Should immediately exit with "l".
 cases.asyncDeepRecursion = function recur(){
   report();
-  return async('l').race(async('r').chain(recur));
+  return race(chain(recur)(async('r')))(async('l'));
 };
 
 //Should infinitely run without any problems.
 cases.asyncTailRecursion = function recur(){
   report();
-  return async('l').race(async('r')).chain(recur);
+  return chain(recur)(race(async('r'))(async('l')));
 };
 
 //Expected to run out of memory.
@@ -90,10 +88,10 @@ if(typeof f !== 'function'){
 
 log('PID', process.pid);
 
-var cancel = f().fork(
-  function(e){console.error(e.stack); process.exit(1)},
-  function(v){log('resolved', v); process.exit(2)}
-);
+var cancel = fork
+  (function(e){console.error(e.stack); process.exit(1)})
+  (function(v){log('resolved', v); process.exit(2)})
+  (f());
 
 process.once('SIGINT', () => {
   log('SIGINT caught. Cancelling...');

@@ -1,31 +1,18 @@
-import {Future} from './future';
-import {noop, show, showf, partial1} from './internal/utils';
-import {isFunction} from './internal/predicates';
-import {throwInvalidArgument} from './internal/throw';
-import {nil} from './internal/list';
-import {captureContext} from './internal/debug';
+import {application1, application, func, any} from './internal/check';
+import {noop} from './internal/utils';
+import {createInterpreter} from './future';
 
-export function Encase(fn, a){
-  this._fn = fn;
-  this._a = a;
-  this.context = captureContext(nil, 'a Future created with encase', Encase);
-}
-
-Encase.prototype = Object.create(Future.prototype);
-
-Encase.prototype._interpret = function Encase$interpret(rec, rej, res){
-  var r;
-  try{ r = this._fn(this._a) }catch(e){ rej(e); return noop }
+export var Encase = createInterpreter(2, 'encase', function Encase$interpret(rec, rej, res){
+  var fn = this.$1, r;
+  try{ r = fn(this.$2) }catch(e){ rej(e); return noop }
   res(r);
   return noop;
-};
+});
 
-Encase.prototype.toString = function Encase$toString(){
-  return 'encase(' + showf(this._fn) + ', ' + show(this._a) + ')';
-};
-
-export function encase(f, x){
-  if(!isFunction(f)) throwInvalidArgument('encase', 0, 'be a Function', f);
-  if(arguments.length === 1) return partial1(encase, f);
-  return new Encase(f, x);
+export function encase(f){
+  var context1 = application1(encase, func, f);
+  return function encase(x){
+    var context2 = application(2, encase, any, x, context1);
+    return new Encase(context2, f, x);
+  };
 }
