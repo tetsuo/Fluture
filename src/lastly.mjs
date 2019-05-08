@@ -5,10 +5,10 @@ import {Reject} from './reject';
 import {Resolve} from './resolve';
 
 export var LastlyTransformation = createTransformation(1, 'lastly', {
-  rejected: function FinallyAction$rejected(x){
+  rejected: function LastlyAction$rejected(x){
     return this.$1._transform(new AndTransformation(this.context, new Reject(this.context, x)));
   },
-  resolved: function FinallyAction$resolved(x){
+  resolved: function LastlyAction$resolved(x){
     return this.$1._transform(new AndTransformation(this.context, new Resolve(this.context, x)));
   }
 });
