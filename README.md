@@ -242,7 +242,8 @@ The concrete types you will encounter throughout this documentation:
 
 - **Future** - Instances of Future provided by [compatible versions](#casting-futures) of Fluture.
 - **ConcurrentFuture** - [Concurrified][concurrify] Futures ([`Future.Par`](#concurrentfuture)).
-- **Promise** - Values which conform to the [Promises/A+ specification][7].
+- **Promise a b** - Values which conform to the [Promises/A+ specification][7]
+  and have a rejection reason of type `a` and a resolution value of type `b`.
 - **Nodeback a b** - A Node-style callback; A function of signature `(a | Nil, b) -> x`.
 - **Pair a b** - An array with exactly two elements: `[a, b]`.
 - **Iterator** - Objects with `next`-methods which conform to the [Iterator protocol][3].
@@ -606,7 +607,7 @@ Short for [`encase (f) (undefined)`](#encase).
 #### attemptP
 
 ```hs
-attemptP :: (Undefined -> Promise e r) -> Future e r
+attemptP :: (Undefined -> Promise a b) -> Future a b
 ```
 
 Create a Future which when forked spawns a Promise using the given function and
@@ -1102,7 +1103,7 @@ As with [`fork`](#fork), `done` returns an `unsubscribe` function. See
 #### promise
 
 ```hs
-promise :: Future a b -> Promise b a
+promise :: Future Error a -> Promise Error a
 ```
 
 Run the Future and get a Promise to represent its continuation.
@@ -1110,16 +1111,18 @@ Run the Future and get a Promise to represent its continuation.
 Returns a Promise which resolves with the resolution value, or rejects with
 the rejection reason of the Future.
 
-If an exception was encountered during the computation, it will be thrown.
+If an exception was encountered during the computation, the promise will reject
+with it. I recommend using [`fold`](#fold) before `promise` to ensure that
+exceptions and rejections are not mixed into the Promise rejection branch.
 
-This is a convenience function which provides a "quick and dirty" way to create
-a Promise from a Future. You should only use it in scenarios where you're not
-interested in [cancellation](#cancellation), nor interested in recovering from
-exceptions. For example in a test runner that wants you to give it a Promise.
+Cancellation capabilities are lost when using `promise` to consume the Future.
 
 ```js
 > promise (resolve (42)) .then (log ('resolution'))
 [resolution]: 42
+
+> promise (reject ('failure')) .then (log ('resolution'), log ('rejection'))
+[rejection]: "failure"
 ```
 
 ### Parallelism
