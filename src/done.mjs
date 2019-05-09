@@ -7,7 +7,7 @@ export function done(callback){
     callback(null, x);
   }
   return function done(m){
-    var context2 = application(2, done, future, m, context1);
-    return m._interpret(raise, callback, done$res, context2);
+    application(2, done, future, m, context1);
+    return m._interpret(raise, callback, done$res);
   };
 }
