@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
 set -eufo pipefail
 
-npm outdated --long
-npm whoami
+echo "Publishing as $(npm whoami)"
+
+if ! npm outdated --long; then
+  read -p "Continue? [y/N] " choice
+  [[ "${choice-n}" == 'y' ]] || exit 0
+fi
+
 npm run build
 npm run build:dist
 sed --in-place "s/Fluture@$PREVIOUS_VERSION/Fluture@$VERSION/" README.md
