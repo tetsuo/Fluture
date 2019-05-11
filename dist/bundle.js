@@ -1,5 +1,5 @@
 /**
- * Fluture bundled; version 12.0.0-beta.0
+ * Fluture bundled; version 12.0.0-beta.1
  */
 
 var Fluture = (function () {
@@ -1789,8 +1789,8 @@ var Fluture = (function () {
 	    callback(null, x);
 	  }
 	  return function done(m){
-	    var context2 = application(2, done, future, m, context1);
-	    return m._interpret(raise, callback, done$res, context2);
+	    application(2, done, future, m, context1);
+	    return m._interpret(raise, callback, done$res);
 	  };
 	}
 
@@ -2039,10 +2039,10 @@ var Fluture = (function () {
 	}
 
 	var LastlyTransformation = createTransformation(1, 'lastly', {
-	  rejected: function FinallyAction$rejected(x){
+	  rejected: function LastlyAction$rejected(x){
 	    return this.$1._transform(new AndTransformation(this.context, new Reject(this.context, x)));
 	  },
-	  resolved: function FinallyAction$resolved(x){
+	  resolved: function LastlyAction$resolved(x){
 	    return this.$1._transform(new AndTransformation(this.context, new Resolve(this.context, x)));
 	  }
 	});
@@ -2151,9 +2151,9 @@ var Fluture = (function () {
 	}
 
 	function promise(m){
-	  var context1 = application1(promise, future, m);
+	  application1(promise, future, m);
 	  return new Promise(function promise$computation(res, rej){
-	    m._interpret(raise, rej, res, context1);
+	    m._interpret(rej, rej, res);
 	  });
 	}
 
