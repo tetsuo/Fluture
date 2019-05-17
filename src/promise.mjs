@@ -1,7 +1,7 @@
 import {application1, future} from './internal/check';
 
 export function promise(m){
-  application1(promise, future, m);
+  application1(promise, future, arguments);
   return new Promise(function promise$computation(res, rej){
     m._interpret(rej, rej, res);
   });

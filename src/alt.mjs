@@ -9,16 +9,16 @@ export var AltTransformation = createTransformation(1, 'alt', {
 
 export function alt(left){
   if(isFuture(left)){
-    var context1 = application1(alt, future, left);
+    var context1 = application1(alt, future, arguments);
     return function alt(right){
-      var context2 = application(2, alt, future, right, context1);
+      var context2 = application(2, alt, future, arguments, context1);
       return right._transform(new AltTransformation(context2, left));
     };
   }
 
-  var context = application1(alt, alternative, left);
+  var context = application1(alt, alternative, arguments);
   return function alt(right){
-    application(2, alt, alternative, right, context);
+    application(2, alt, alternative, arguments, context);
     return left[FL.alt](right);
   };
 }

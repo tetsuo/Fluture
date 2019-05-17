@@ -19,16 +19,16 @@ export var ApTransformation = createTransformation(1, 'ap', {
 
 export function ap(mx){
   if(isFuture(mx)){
-    var context1 = application1(ap, future, mx);
+    var context1 = application1(ap, future, arguments);
     return function ap(mf){
-      var context2 = application(2, ap, future, mf, context1);
+      var context2 = application(2, ap, future, arguments, context1);
       return mf._transform(new ApTransformation(context2, mx));
     };
   }
 
-  var context = application1(ap, applyArg, mx);
+  var context = application1(ap, applyArg, arguments);
   return function ap(mf){
-    application(2, ap, applyArg, mf, context);
+    application(2, ap, applyArg, arguments, context);
     return mx[FL.ap](mf);
   };
 }

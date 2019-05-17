@@ -5,10 +5,11 @@ import {isFunction} from './internal/predicates';
 import {$$type} from './internal/const';
 import {nil, cons, isNil, reverse} from './internal/list';
 import type from 'sanctuary-type-identifiers';
-import {typeError, wrapException, invalidArgument} from './internal/error';
+import {typeError, wrapException, invalidArgument, invalidArity} from './internal/error';
 import {captureContext} from './internal/debug';
 
 export function Future(computation){
+  if(arguments.length > 1) throw invalidArity(Future, arguments);
   if(!isFunction(computation)) throw invalidArgument('Future', 0, 'be a Function', computation);
   return new Computation(captureContext(nil, 'first application of Future', Future), computation);
 }

@@ -4,6 +4,10 @@ import type from 'sanctuary-type-identifiers';
 import {nil, cat} from './list';
 import {captureStackTrace} from './debug';
 
+function showArg(x){
+  return show(x) + ' :: ' + type.parse(type(x)).name;
+}
+
 export function error(message){
   return new Error(message);
 }
@@ -15,7 +19,7 @@ export function typeError(message){
 export function invalidArgument(it, at, expected, actual){
   return typeError(
     it + '() expects its ' + ordinal[at] + ' argument to ' + expected + '.' +
-    '\n  Actual: ' + show(actual) + ' :: ' + type.parse(type(actual)).name
+    '\n  Actual: ' + showArg(actual)
   );
 }
 
@@ -23,6 +27,20 @@ export function invalidContext(it, actual){
   return typeError(
     it + '() was invoked outside the context of a Future. You might want to use'
   + ' a dispatcher instead\n  Called on: ' + show(actual)
+  );
+}
+
+export function invalidArity(f, args){
+  return new TypeError(
+    f.name + '() expects to be called with a single argument per invocation\n' +
+    '  Saw: ' + args.length + ' arguments' +
+    Array.prototype.slice.call(args).map(function(arg, i){
+      return '\n  ' + (
+        ordinal[i] ?
+        ordinal[i].charAt(0).toUpperCase() + ordinal[i].slice(1) :
+        'Argument ' + String(i + 1)
+      ) + ': ' + showArg(arg);
+    }).join('')
   );
 }
 

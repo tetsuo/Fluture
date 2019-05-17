@@ -13,11 +13,11 @@ export var FoldTransformation = createTransformation(2, 'fold', {
 });
 
 export function fold(f){
-  var context1 = application1(fold, func, f);
+  var context1 = application1(fold, func, arguments);
   return function fold(g){
-    var context2 = application(2, fold, func, g, context1);
+    var context2 = application(2, fold, func, arguments, context1);
     return function fold(m){
-      var context3 = application(3, fold, future, m, context2);
+      var context3 = application(3, fold, future, arguments, context2);
       return m._transform(new FoldTransformation(context3, f, g));
     };
   };

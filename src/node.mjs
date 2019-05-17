@@ -29,5 +29,5 @@ export var Node = createInterpreter(1, 'node', function Node$interpret(rec, rej,
 });
 
 export function node(f){
-  return new Node(application1(node, func, f), f);
+  return new Node(application1(node, func, arguments), f);
 }

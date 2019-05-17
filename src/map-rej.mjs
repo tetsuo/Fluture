@@ -10,9 +10,9 @@ export var MapRejTransformation = createTransformation(1, 'mapRej', {
 });
 
 export function mapRej(f){
-  var context1 = application1(mapRej, func, f);
+  var context1 = application1(mapRej, func, arguments);
   return function mapRej(m){
-    var context2 = application(2, mapRej, future, m, context1);
+    var context2 = application(2, mapRej, future, arguments, context1);
     return m._transform(new MapRejTransformation(context2, f));
   };
 }

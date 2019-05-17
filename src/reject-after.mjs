@@ -16,9 +16,9 @@ function alwaysNever(_){
 }
 
 export function rejectAfter(time){
-  var context1 = application1(rejectAfter, positiveInteger, time);
+  var context1 = application1(rejectAfter, positiveInteger, arguments);
   return time === Infinity ? alwaysNever : (function rejectAfter(value){
-    var context2 = application(2, rejectAfter, any, value, context1);
+    var context2 = application(2, rejectAfter, any, arguments, context1);
     return new RejectAfter(context2, time, value);
   });
 }

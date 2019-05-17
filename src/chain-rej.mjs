@@ -7,9 +7,9 @@ export var ChainRejTransformation = createTransformation(1, 'chainRej', {
 });
 
 export function chainRej(f){
-  var context1 = application1(chainRej, func, f);
+  var context1 = application1(chainRej, func, arguments);
   return function chainRej(m){
-    var context2 = application(2, chainRej, future, m, context1);
+    var context2 = application(2, chainRej, future, arguments, context1);
     return m._transform(new ChainRejTransformation(context2, f));
   };
 }

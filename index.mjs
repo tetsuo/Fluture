@@ -2,7 +2,7 @@ import concurrify from 'concurrify';
 import type from 'sanctuary-type-identifiers';
 
 import {captureContext} from './src/internal/debug';
-import {invalidArgument} from './src/internal/error';
+import {invalidArgument, invalidArity} from './src/internal/error';
 import {nil} from './src/internal/list';
 import {FL} from './src/internal/const';
 
@@ -60,6 +60,7 @@ export function isParallel(x){
 }
 
 export function seq(par){
+  if(arguments.length > 1) throw invalidArity(seq, arguments);
   if(!isParallel(par)) throw invalidArgument('seq', 0, 'be a ConcurrentFuture', par);
   return par.sequential;
 }

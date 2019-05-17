@@ -6,9 +6,9 @@ export var AndTransformation = createTransformation(1, 'and', {
 });
 
 export function and(left){
-  var context1 = application1(and, future, left);
+  var context1 = application1(and, future, arguments);
   return function and(right){
-    var context2 = application(2, and, future, right, context1);
+    var context2 = application(2, and, future, arguments, context1);
     return right._transform(new AndTransformation(context2, left));
   };
 }

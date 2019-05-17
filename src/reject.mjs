@@ -12,5 +12,5 @@ Reject.prototype.extractLeft = function Reject$extractLeft(){
 };
 
 export function reject(x){
-  return new Reject(application1(reject, any, x), x);
+  return new Reject(application1(reject, any, arguments), x);
 }

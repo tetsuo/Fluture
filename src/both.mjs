@@ -22,9 +22,9 @@ createParallelTransformation('both', earlyCrash, earlyReject, noop, {
 });
 
 export function both(left){
-  var context1 = application1(both, future, left);
+  var context1 = application1(both, future, arguments);
   return function both(right){
-    var context2 = application(2, both, future, right, context1);
+    var context2 = application(2, both, future, arguments, context1);
     return right._transform(new BothTransformation(context2, left));
   };
 }

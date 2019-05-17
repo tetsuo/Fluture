@@ -13,6 +13,6 @@ export var SwapTransformation = createTransformation(0, 'swap', {
 });
 
 export function swap(m){
-  var context = application1(swap, future, m);
+  var context = application1(swap, future, arguments);
   return m._transform(new SwapTransformation(context));
 }

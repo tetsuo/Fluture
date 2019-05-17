@@ -49,9 +49,9 @@ export var Parallel = createInterpreter(2, 'parallel', function Parallel$interpr
 var emptyArray = resolve([]);
 
 export function parallel(max){
-  var context1 = application1(parallel, positiveInteger, max);
+  var context1 = application1(parallel, positiveInteger, arguments);
   return function parallel(ms){
-    var context2 = application(2, parallel, futureArray, ms, context1);
+    var context2 = application(2, parallel, futureArray, arguments, context1);
     return ms.length === 0 ? emptyArray : new Parallel(context2, max, ms);
   };
 }

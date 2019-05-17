@@ -12,5 +12,5 @@ Resolve.prototype.extractRight = function Resolve$extractRight(){
 };
 
 export function resolve(x){
-  return new Resolve(application1(resolve, any, x), x);
+  return new Resolve(application1(resolve, any, arguments), x);
 }

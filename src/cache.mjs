@@ -116,5 +116,5 @@ Cache.prototype.reset = function Cache$reset(){
 };
 
 export function cache(m){
-  return new Cache(application1(cache, future, m), m);
+  return new Cache(application1(cache, future, arguments), m);
 }
