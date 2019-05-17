@@ -79,7 +79,7 @@
     "remark-validate-links": "^8.0.0",
     "rimraf": "^2.6.2",
     "rollup": "^1.0.0",
-    "rollup-plugin-commonjs": "^9.1.6",
+    "rollup-plugin-commonjs": "^10.0.0",
     "rollup-plugin-node-resolve": "^5.0.0",
     "sanctuary-benchmark": "^1.0.0",
     "sanctuary-either": "^1.1.0",
