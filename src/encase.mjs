@@ -10,9 +10,9 @@ export var Encase = createInterpreter(2, 'encase', function Encase$interpret(rec
 });
 
 export function encase(f){
-  var context1 = application1(encase, func, f);
+  var context1 = application1(encase, func, arguments);
   return function encase(x){
-    var context2 = application(2, encase, any, x, context1);
+    var context2 = application(2, encase, any, arguments, context1);
     return new Encase(context2, f, x);
   };
 }

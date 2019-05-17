@@ -15,9 +15,9 @@ function alwaysNever(_){
 }
 
 export function after(time){
-  var context1 = application1(after, positiveInteger, time);
+  var context1 = application1(after, positiveInteger, arguments);
   return time === Infinity ? alwaysNever : (function after(value){
-    var context2 = application(2, after, any, value, context1);
+    var context2 = application(2, after, any, arguments, context1);
     return new After(context2, time, value);
   });
 }

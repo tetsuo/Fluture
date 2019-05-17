@@ -12,9 +12,9 @@ export var MapTransformation = createTransformation(1, 'map', {
 });
 
 export function map(f){
-  var context1 = application1(map, func, f);
+  var context1 = application1(map, func, arguments);
   return function map(m){
-    var context2 = application(2, map, functor, m, context1);
+    var context2 = application(2, map, functor, arguments, context1);
     return isFuture(m) ?
            m._transform(new MapTransformation(context2, f)) :
            m[FL.map](f);

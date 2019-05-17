@@ -1,5 +1,5 @@
 import {encaseP} from './encase-p';
 
-export function attemptP(f){
-  return encaseP(f)(undefined);
+export function attemptP(_){
+  return encaseP.apply(this, arguments)(undefined);
 }

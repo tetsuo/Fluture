@@ -22,9 +22,9 @@ createParallelTransformation('parallelAp', earlyCrash, earlyReject, noop, {
 });
 
 export function parallelAp(mx){
-  var context1 = application1(parallelAp, future, mx);
+  var context1 = application1(parallelAp, future, arguments);
   return function parallelAp(mf){
-    var context2 = application(2, parallelAp, future, mf, context1);
+    var context2 = application(2, parallelAp, future, arguments, context1);
     return mf._transform(new ParallelApTransformation(context2, mx));
   };
 }

@@ -1,4 +1,4 @@
-import {eq, assertStackTrace, error as mockError} from '../util/util';
+import {eq, assertStackTrace, error as mockError, noop} from '../util/util';
 import {mock} from '../util/futures';
 import {namespace, name, version} from '../../src/internal/const';
 import {nil, cons, cat} from '../../src/internal/list';
@@ -7,10 +7,15 @@ import {
   typeError,
   invalidArgument,
   invalidContext,
+  invalidArity,
   invalidFutureArgument,
   wrapException,
   contextToStackTrace
 } from '../../src/internal/error';
+
+function args (){
+  return arguments;
+}
 
 describe('error', function (){
 
@@ -46,6 +51,23 @@ describe('error', function (){
       eq(invalidContext('Test', 'foo'), new TypeError(
         'Test() was invoked outside the context of a Future. You might want ' +
         'to use a dispatcher instead\n  Called on: "foo"'
+      ));
+    });
+
+  });
+
+  describe('invalidArity', function (){
+
+    it('constructs a TypeError', function (){
+      eq(invalidArity(noop, args('one', 2, 3, 4, 5, 6)), new TypeError(
+        'noop() expects to be called with a single argument per invocation\n' +
+        '  Saw: 6 arguments\n' +
+        '  First: "one" :: String\n' +
+        '  Second: 2 :: Number\n' +
+        '  Third: 3 :: Number\n' +
+        '  Fourth: 4 :: Number\n' +
+        '  Fifth: 5 :: Number\n' +
+        '  Argument 6: 6 :: Number'
       ));
     });
 

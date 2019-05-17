@@ -106,11 +106,11 @@ export var Hook = createInterpreter(3, 'hook', function Hook$interpret(rec, rej,
 });
 
 export function hook(acquire){
-  var context1 = application1(hook, future, acquire);
+  var context1 = application1(hook, future, arguments);
   return function hook(dispose){
-    var context2 = application(2, hook, func, dispose, context1);
+    var context2 = application(2, hook, func, arguments, context1);
     return function hook(consume){
-      var context3 = application(3, hook, func, consume, context2);
+      var context3 = application(3, hook, func, arguments, context2);
       return new Hook(context3, acquire, dispose, consume);
     };
   };

@@ -75,5 +75,5 @@ export var Go = createInterpreter(1, 'go', function Go$interpret(rec, rej, res){
 });
 
 export function go(generator){
-  return new Go(application1(go, func, generator), generator);
+  return new Go(application1(go, func, arguments), generator);
 }

@@ -39,9 +39,9 @@ export var EncaseP = createInterpreter(2, 'encaseP', function EncaseP$interpret(
 });
 
 export function encaseP(f){
-  var context1 = application1(encaseP, func, f);
+  var context1 = application1(encaseP, func, arguments);
   return function encaseP(x){
-    var context2 = application(2, encaseP, any, x, context1);
+    var context2 = application(2, encaseP, any, arguments, context1);
     return new EncaseP(context2, f, x);
   };
 }

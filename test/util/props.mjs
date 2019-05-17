@@ -213,6 +213,18 @@ export function testFunction (name, func, args, assert){
         ));
         return true;
       });
+      property('throws when the ' + ordinal[idx] + ' invocation has more than one argument', arg.valid, function (value){
+        throws(function (){
+          var partial = capply(func, validPriorArgs);
+          partial(value, 42);
+        }, new TypeError(
+          name + '() expects to be called with a single argument per invocation\n' +
+          '  Saw: 2 arguments\n' +
+          '  First: ' + show(value) + ' :: ' + type.parse(type(value)).name + '\n' +
+          '  Second: 42 :: Number'
+        ));
+        return true;
+      });
     }
   });
 

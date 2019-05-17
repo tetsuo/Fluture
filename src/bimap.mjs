@@ -16,11 +16,11 @@ export var BimapTransformation = createTransformation(2, 'bimap', {
 });
 
 export function bimap(f){
-  var context1 = application1(bimap, func, f);
+  var context1 = application1(bimap, func, arguments);
   return function bimap(g){
-    var context2 = application(2, bimap, func, g, context1);
+    var context2 = application(2, bimap, func, arguments, context1);
     return function bimap(m){
-      var context3 = application(3, bimap, bifunctor, m, context2);
+      var context3 = application(3, bimap, bifunctor, arguments, context2);
       return isFuture(m) ?
              m._transform(new BimapTransformation(context3, f, g)) :
              m[FL.bimap](f, g);

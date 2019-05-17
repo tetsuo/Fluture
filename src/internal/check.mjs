@@ -12,7 +12,7 @@ import {
   isFunctor,
   isUnsigned
 } from './predicates';
-import {invalidArgument, invalidFutureArgument, withExtraContext} from './error';
+import {invalidArgument, invalidArity, invalidFutureArgument, withExtraContext} from './error';
 
 function alwaysTrue(){
   return true;
@@ -47,13 +47,13 @@ export var futureArray = {
   error: invalidArgumentOf('be an Array of valid Futures')
 };
 
-export function application(n, f, type, x, prev){
-  if(type.pred(x)) return captureApplicationContext(prev, n, f);
-  var e = type.error(f.name, n - 1, x);
+export function application(n, f, type, args, prev){
+  if(args.length < 2 && type.pred(args[0])) return captureApplicationContext(prev, n, f);
+  var e = args.length > 1 ? invalidArity(f, args) : type.error(f.name, n - 1, args[0]);
   captureStackTrace(e, f);
   throw withExtraContext(e, prev);
 }
 
-export function application1(f, type, x){
-  return application(1, f, type, x, nil);
+export function application1(f, type, args){
+  return application(1, f, type, args, nil);
 }

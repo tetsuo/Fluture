@@ -8,5 +8,5 @@ export var Crash = createInterpreter(1, 'crash', function Crash$interpret(rec){
 });
 
 export function crash(x){
-  return new Crash(application1(crash, any, x), x);
+  return new Crash(application1(crash, any, arguments), x);
 }

@@ -9,9 +9,9 @@ export var ChainTransformation = createTransformation(1, 'chain', {
 });
 
 export function chain(f){
-  var context1 = application1(chain, func, f);
+  var context1 = application1(chain, func, arguments);
   return function chain(m){
-    var context2 = application(2, chain, monad, m, context1);
+    var context2 = application(2, chain, monad, arguments, context1);
     return isFuture(m) ?
            m._transform(new ChainTransformation(context2, f)) :
            m[FL.chain](f);
