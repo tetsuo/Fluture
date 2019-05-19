@@ -1,8 +1,27 @@
-import {application1, positiveInteger, application, futureArray} from './internal/check';
-import {wrapException} from './internal/error';
+import {wrapException, invalidArgumentOf} from './internal/error';
+import {isArray} from './internal/predicates';
 import {noop} from './internal/utils';
-import {createInterpreter} from './future';
-import {resolve} from './resolve';
+import {
+  createInterpreter,
+  isFuture,
+  resolve,
+  application1,
+  positiveInteger,
+  application
+} from './future';
+
+function isFutureArray(xs){
+  if(!isArray(xs)) return false;
+  for(var i = 0; i < xs.length; i++){
+    if(!isFuture(xs[i])) return false;
+  }
+  return true;
+}
+
+export var futureArray = {
+  pred: isFutureArray,
+  error: invalidArgumentOf('be an Array of valid Futures')
+};
 
 export var Parallel = createInterpreter(2, 'parallel', function Parallel$interpret(rec, rej, res){
 
