@@ -855,7 +855,7 @@ Future.of(1)
 //> 2
 ```
 
-For comparison, the equivalent with Promises is:
+For comparison, an approximation with Promises is:
 
 ```js
 Promise.resolve(1)
@@ -890,12 +890,18 @@ Future.reject('error')
 //! "error!"
 ```
 
-For comparison, the equivalent with Promises is:
+For comparison, an approximation with Promises is:
 
 ```js
 Promise.resolve(1)
-.then(x => x + 1, x => x + '!')
+.then(x => x + 1, x => Promise.reject(x + '!'))
 .then(console.log, console.error);
+//> 2
+
+Promise.reject('error')
+.then(x => x + 1, x => Promise.reject(x + '!'))
+.then(console.log, console.error);
+//! "error!"
 ```
 
 #### chain
@@ -927,12 +933,13 @@ Future.of(1)
 //> 2
 ```
 
-For comparison, the equivalent with Promises is:
+For comparison, an approximation with Promises is:
 
 ```js
 Promise.resolve(1)
 .then(x => Promise.resolve(x + 1))
 .then(console.log, console.error);
+//> 2
 ```
 
 #### swap
@@ -977,12 +984,13 @@ Future.reject(new Error('It broke!'))
 //! [Oh No! It broke!]
 ```
 
-For comparison, the equivalent with Promises is:
+For comparison, an approximation with Promises is:
 
 ```js
-Promise.resolve(1)
+Promise.reject(new Error('It broke!'))
 .then(null, err => Promise.reject(new Error('Oh No! ' + err.message)))
 .then(console.log, console.error);
+//! [Oh No! It broke!]
 ```
 
 #### chainRej
@@ -1006,7 +1014,7 @@ Future.reject(new Error('It broke!'))
 //> "It broke! But it's all good."
 ```
 
-For comparison, the equivalent with Promises is:
+For comparison, an approximation with Promises is:
 
 ```js
 Promise.reject(new Error('It broke!'))
@@ -1044,12 +1052,18 @@ Future.reject('it broke')
 //> Left('it broke')
 ```
 
-For comparison, the equivalent with Promises is:
+For comparison, an approximation with Promises is:
 
 ```js
 Promise.resolve('hello')
 .then(S.Right, S.Left)
 .then(console.log);
+//> Right('hello')
+
+Promise.reject('it broke')
+.then(S.Right, S.Left)
+.then(console.log);
+//> Left('it broke')
 ```
 
 ### Combining Futures
