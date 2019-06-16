@@ -233,8 +233,24 @@ for sponsoring the project.
 ### Type signatures
 
 The various function signatures are provided in a small language referred to as
-Hindley-Milner notation. Read about [Hindley-Milner in JavaScript][Guide:HM]
-here.
+Hindley-Milner notation.
+
+In summary, the syntax is as follows: `InputType -> OutputType`. Now,
+because functions in Fluture are [curried][Guide:currying], the "output" of a
+function is often *another function*. In Hindley-Milner that's simply written
+as `InputputType -> InputToSecondFunction -> OutputType` and so forth.
+
+By convention, types starting with a capital letter are
+[concrete types](#types). When they start with a lower-case letter they're
+*type variables*. You can think of these type variables as generic types.
+So `a -> b` denotes a function from generic type `a` to generic type `b`.
+
+Finally, through so-called [*constraints*](#type-classes), type variables can
+be forced to conform to an "interface" (or *Type Class* in functional jargon).
+For example, `MyInterface a => a -> b`, denotes a function from generic type
+`a` to generic type `b`, *where `a` must have `MyInterface` implemented*.
+
+You can read in depth about [Hindley-Milner in JavaScript][Guide:HM] here.
 
 #### Types
 
@@ -1507,6 +1523,7 @@ by Fluture to generate contextual stack traces.
 
 [Guide:HM]:             https://drboolean.gitbooks.io/mostly-adequate-guide/content/ch7.html
 [Guide:constraints]:    https://drboolean.gitbooks.io/mostly-adequate-guide/content/ch7.html#constraints
+[Guide:currying]:       https://drboolean.gitbooks.io/mostly-adequate-guide-old/content/ch4.html
 
 [1]:                    https://en.wikipedia.org/wiki/Continuation-passing_style
 [2]:                    https://github.com/tc39/proposal-pipeline-operator
