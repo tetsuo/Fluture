@@ -240,7 +240,7 @@ because functions in Fluture are [curried][Guide:currying], the "output" of a
 function is often *another function*. In Hindley-Milner that's simply written
 as `InputputType -> InputToSecondFunction -> OutputType` and so forth.
 
-By convention, types starting with a capital letter are
+By convention, types starting with an upper-case letter are
 [concrete types](#types). When they start with a lower-case letter they're
 *type variables*. You can think of these type variables as generic types.
 So `a -> b` denotes a function from generic type `a` to generic type `b`.
@@ -248,7 +248,7 @@ So `a -> b` denotes a function from generic type `a` to generic type `b`.
 Finally, through so-called [*constraints*](#type-classes), type variables can
 be forced to conform to an "interface" (or *Type Class* in functional jargon).
 For example, `MyInterface a => a -> b`, denotes a function from generic type
-`a` to generic type `b`, *where `a` must have `MyInterface` implemented*.
+`a` to generic type `b`, *where `a` must implement `MyInterface`*.
 
 You can read in depth about [Hindley-Milner in JavaScript][Guide:HM] here.
 
