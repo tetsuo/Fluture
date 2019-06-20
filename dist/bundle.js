@@ -1,5 +1,5 @@
 /**
- * Fluture bundled; version 11.0.1
+ * Fluture bundled; version 11.0.2
  */
 
 var Fluture = (function () {
@@ -2630,8 +2630,8 @@ var Fluture = (function () {
 	    if(!isFuture(disposal)){
 	      return rec(makeError(invalidDisposal(disposal, _dispose, resource), _this, context));
 	    }
-	    disposal._interpret(Hook$disposalCrashed, Hook$disposalRejected, Hook$done);
 	    cancel = Hook$cancelDisposal;
+	    disposal._interpret(Hook$disposalCrashed, Hook$disposalRejected, Hook$done);
 	  }
 
 	  function Hook$cancelConsumption(){
@@ -2929,7 +2929,7 @@ var Fluture = (function () {
 
 	var Fluture = /*#__PURE__*/Object.freeze({
 		Future: Future,
-		default: Future,
+		'default': Future,
 		Par: Par,
 		isParallel: isParallel,
 		seq: seq,
@@ -2942,7 +2942,7 @@ var Fluture = (function () {
 		after: after,
 		rejectAfter: rejectAfter,
 		attempt: attempt,
-		try: attempt,
+		'try': attempt,
 		cache: cache,
 		encase: encase,
 		encase2: encase2,
@@ -2954,7 +2954,7 @@ var Fluture = (function () {
 		encaseP2: encaseP2,
 		encaseP3: encaseP3,
 		go: go,
-		do: go,
+		'do': go,
 		hook: hook,
 		node: node,
 		parallel: parallel,
@@ -2969,7 +2969,7 @@ var Fluture = (function () {
 		mapRej: mapRej,
 		chainRej: chainRej,
 		lastly: lastly,
-		finally: lastly,
+		'finally': lastly,
 		and: and,
 		both: both,
 		race: race,
