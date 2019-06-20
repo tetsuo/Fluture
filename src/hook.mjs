@@ -53,8 +53,8 @@ Hook.prototype._interpret = function Hook$interpret(rec, rej, res){
     if(!isFuture(disposal)){
       return rec(makeError(invalidDisposal(disposal, _dispose, resource), _this, context));
     }
-    disposal._interpret(Hook$disposalCrashed, Hook$disposalRejected, Hook$done);
     cancel = Hook$cancelDisposal;
+    disposal._interpret(Hook$disposalCrashed, Hook$disposalRejected, Hook$done);
   }
 
   function Hook$cancelConsumption(){
