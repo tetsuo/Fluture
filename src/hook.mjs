@@ -39,8 +39,8 @@ export var Hook = createInterpreter(3, 'hook', function Hook$interpret(rec, rej,
     if(!isFuture(disposal)){
       return Hook$rec(invalidDisposal(disposal, _dispose, resource));
     }
-    disposal._interpret(Hook$rec, Hook$disposalRejected, Hook$done);
     cancel = Hook$cancelDisposal;
+    disposal._interpret(Hook$rec, Hook$disposalRejected, Hook$done);
   }
 
   function Hook$cancelConsumption(){
