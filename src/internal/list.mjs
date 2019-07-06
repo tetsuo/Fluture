@@ -1,4 +1,13 @@
-export var nil = {head: null};
+export function List(head, tail){
+  this.head = head;
+  this.tail = tail;
+}
+
+List.prototype.toJSON = function(){
+  return toArray(this);
+};
+
+export var nil = new List(null, null);
 nil.tail = nil;
 
 export function isNil(list){
@@ -8,7 +17,7 @@ export function isNil(list){
 // cons :: (a, List a) -> List a
 //      -- O(1) append operation
 export function cons(head, tail){
-  return {head: head, tail: tail};
+  return new List(head, tail);
 }
 
 // reverse :: List a -> List a
@@ -31,4 +40,15 @@ export function cat(xs, ys){
     tail = tail.tail;
   }
   return zs;
+}
+
+// toArray :: List a -> Array a
+//         -- O(n) list to Array
+export function toArray(xs){
+  var tail = xs, arr = [];
+  while(!isNil(tail)){
+    arr.push(tail.head);
+    tail = tail.tail;
+  }
+  return arr;
 }

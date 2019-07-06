@@ -1,5 +1,5 @@
-import {Future, resolve, after, chain, race, map} from '../../index.mjs';
-import {noop, error, assertResolved, eq} from '../util/util';
+import {Future, resolve, after, chain, race, map, ap} from '../../index.mjs';
+import {noop, error, assertResolved, eq, add} from '../util/util';
 import {resolved, resolvedSlow} from '../util/futures';
 
 function through (x, fs){
@@ -93,6 +93,29 @@ describe('Future in general', function (){
     var cancel = m._interpret(done, noop, noop);
     eq(i, 5);
     cancel();
+  });
+
+  it('returns source when cast to String', function (){
+    const m = ap(resolve(22))(map(add)(resolve(20)));
+    eq(
+      String(m),
+      'ap (resolve (22)) (map (function (a){ return function (b){ return a + b } }) (resolve (20)))'
+    );
+  });
+
+  it('returns an AST when cast to JSON', function (){
+    const m = ap(resolve(22))(map(add)(resolve(20)));
+    eq(
+      JSON.stringify(m),
+      '{"$":"fluture/Future@5","kind":"interpreter","type":"transform","args":[' +
+        '{"$":"fluture/Future@5","kind":"interpreter","type":"resolve","args":[20]},[' +
+          '{"$":"fluture/Future@5","kind":"transformation","type":"ap","args":[' +
+            '{"$":"fluture/Future@5","kind":"interpreter","type":"resolve","args":[22]}' +
+          ']},' +
+          '{"$":"fluture/Future@5","kind":"transformation","type":"map","args":[null]}' +
+        ']' +
+      ']}'
+    );
   });
 
 });
