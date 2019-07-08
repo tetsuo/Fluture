@@ -136,6 +136,7 @@ for sponsoring the project.
 - [How cancellation works](#cancellation)
 - [On stack safety](#stack-safety)
 - [Debugging with Fluture](#debugging)
+- [Casting Futures to String](#casting-futures-to-string)
 - [Usage with Sanctuary](#sanctuary)
 - [Using multiple versions of Fluture](#casting-futures)
 
@@ -394,9 +395,10 @@ original exception is created. Its properties are as follows:
   Error's own stack trace otherwise. If debug mode (see below) is enabled,
   additional stack traces from the steps leading up to the crash are included.
 - `future`: The instance of [`Future`](#future) that was being
-  [consumed](#consuming-futures) when the exception happened. Often printing it
-  as a String can yield useful information. You can also try to consume it in
-  isolation to better identify what's going wrong.
+  [consumed](#consuming-futures) when the exception happened. Often
+  [printing it as a String](#casting-futures-to-string) can yield useful
+  information. You can also try to consume it in isolation to better identify
+  what's going wrong.
 
 Finally, as mentioned, Fluture has a [debug mode](#debugmode) wherein
 additional contextual information across multiple JavaScript ticks is
@@ -405,6 +407,70 @@ collected, included as an extended "async stack trace" on Errors, and
 
 Debug mode can have a significant impact on performance, and uses up memory,
 so I would advise against using it in production.
+
+### Casting Futures to String
+
+There are multiple ways to print a Future to String. Let's take a simple
+computation as an example:
+
+```js
+const add = a => b => a + b;
+const eventualAnswer = ap (resolve (22)) (map (add) (resolve (20)));
+```
+
+1. Casting it to String directly by calling `String(eventualAnswer)` or
+   `eventualAnswer.toString()` will yield an approximation of the code that
+   was used to create the Future. In this case:
+
+   ```js
+   "ap (resolve (22)) (map (a => b => a + b) (resolve (20)))"
+   ```
+
+2. Casting it to String using `JSON.stringify(eventualAnswer, null, 2)` will
+   yield a kind of abstract syntax tree.
+
+   ```json
+   {
+     "$": "fluture/Future@5",
+     "kind": "interpreter",
+     "type": "transform",
+     "args": [
+       {
+         "$": "fluture/Future@5",
+         "kind": "interpreter",
+         "type": "resolve",
+         "args": [
+           20
+         ]
+       },
+       [
+         {
+           "$": "fluture/Future@5",
+           "kind": "transformation",
+           "type": "ap",
+           "args": [
+             {
+               "$": "fluture/Future@5",
+               "kind": "interpreter",
+               "type": "resolve",
+               "args": [
+                 22
+               ]
+             }
+           ]
+         },
+         {
+           "$": "fluture/Future@5",
+           "kind": "transformation",
+           "type": "map",
+           "args": [
+             null
+           ]
+         }
+       ]
+     ]
+   }
+   ```
 
 ### Sanctuary
 
