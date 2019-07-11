@@ -785,7 +785,7 @@ See also [`chain`](#chain) and [`mapRej`](#maprej).
 [resolution]: 42
 ```
 
-For comparison, the equivalent with Promises is:
+For comparison, an approximation with Promises is:
 
 ```js
 > Promise.resolve (41)
@@ -816,13 +816,18 @@ the resolution value, depending on which is present. Can be used on any
 [rejection]: "It broke!!"
 ```
 
-For comparison, the equivalent with Promises is:
+For comparison, an approximation with Promises is:
 
 ```js
 > Promise.resolve (41)
-. .then (x => x + 1, x => x + '!')
+. .then (x => x + 1, x => Promise.reject (x + '!'))
 . .then (log ('resolution'), log ('rejection'))
 [resolution]: 42
+
+> Promise.reject ('It broke!')
+. .then (x => x + 1, x => Promise.reject (x + '!'))
+. .then (log ('resolution'), log ('rejection'))
+[rejection]: "It broke!!"
 ```
 
 #### chain
@@ -848,7 +853,7 @@ See also [`chainRej`](#chainrej).
 [resolution]: 42
 ```
 
-For comparison, the equivalent with Promises is:
+For comparison, an approximation with Promises is:
 
 ```js
 > Promise.resolve (41)
@@ -893,7 +898,7 @@ but for the rejection branch.
 [rejection]: "Oh no! It broke!"
 ```
 
-For comparison, the equivalent with Promises is:
+For comparison, an approximation with Promises is:
 
 ```js
 > Promise.reject ('It broke!')
@@ -918,7 +923,7 @@ Chain over the **rejection** reason of the Future. This is like
 [resolution]: "It broke! But it's all good."
 ```
 
-For comparison, the equivalent with Promises is:
+For comparison, an approximation with Promises is:
 
 ```js
 > Promise.reject ('It broke!')
@@ -952,13 +957,18 @@ a representation of failure.
 [resolution]: Left ("It broke!")
 ```
 
-For comparison, the equivalent with Promises is:
+For comparison, an approximation with Promises is:
 
 ```js
 > Promise.resolve ('hello')
 . .then (S.Right, S.Left)
 . .then (log ('resolution'), log ('rejection'))
 [resolution]: Right ("hello")
+
+> Promise.reject ('It broke!')
+. .then (S.Right, S.Left)
+. .then (log ('resolution'), log ('rejection'))
+[resolution]: Left ("It broke!")
 ```
 
 ### Combining Futures
