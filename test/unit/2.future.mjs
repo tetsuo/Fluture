@@ -77,4 +77,20 @@ describe('Future()', function (){
     });
   });
 
+  describe('issue #362', function (){
+
+    it('is not produced', function (done){
+      const ma = Future.cache(Future.rejectAfter(1, new Error));
+      const mb = Future.map(noop, Future.parallel(Infinity, [ma, ma]));
+      Future.fork(() => done(), noop, mb);
+    });
+
+    it('is not produced in a regular combinator', function (done){
+      const ma = Future.cache(Future.rejectAfter(1, new Error));
+      const mb = Future.map(noop, Future.both(ma, ma));
+      Future.fork(() => done(), noop, mb);
+    });
+
+  });
+
 });
