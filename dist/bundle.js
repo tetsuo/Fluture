@@ -1,5 +1,5 @@
 /**
- * Fluture bundled; version 12.0.0-beta.2
+ * Fluture bundled; version 12.0.0-beta.3
  */
 
 var Fluture = (function () {
@@ -217,7 +217,16 @@ var Fluture = (function () {
 
 	var $$type = namespace + '/' + name + '@' + version;
 
-	var nil = {head: null};
+	function List(head, tail){
+	  this.head = head;
+	  this.tail = tail;
+	}
+
+	List.prototype.toJSON = function(){
+	  return toArray(this);
+	};
+
+	var nil = new List(null, null);
 	nil.tail = nil;
 
 	function isNil(list){
@@ -227,7 +236,7 @@ var Fluture = (function () {
 	// cons :: (a, List a) -> List a
 	//      -- O(1) append operation
 	function cons(head, tail){
-	  return {head: head, tail: tail};
+	  return new List(head, tail);
 	}
 
 	// reverse :: List a -> List a
@@ -250,6 +259,17 @@ var Fluture = (function () {
 	    tail = tail.tail;
 	  }
 	  return zs;
+	}
+
+	// toArray :: List a -> Array a
+	//         -- O(n) list to Array
+	function toArray(xs){
+	  var tail = xs, arr = [];
+	  while(!isNil(tail)){
+	    arr.push(tail.head);
+	    tail = tail.tail;
+	  }
+	  return arr;
 	}
 
 	/* istanbul ignore next: non v8 compatibility */
@@ -677,6 +697,18 @@ var Fluture = (function () {
 	  return true;
 	}
 
+	function getArgs(it){
+	  var args = new Array(it.arity);
+	  for(var i = 1; i <= it.arity; i++){
+	    args[i - 1] = it['$' + String(i)];
+	  }
+	  return args;
+	}
+
+	function showArg$1(arg){
+	  return ' (' + sanctuaryShow(arg) + ')';
+	}
+
 	var any = {pred: alwaysTrue, error: invalidArgumentOf('be anything')};
 	var func = {pred: isFunction, error: invalidArgumentOf('be a Function')};
 	var future = {pred: isFuture, error: invalidFutureArgument};
@@ -757,12 +789,12 @@ var Fluture = (function () {
 	Future.prototype.arity = 0;
 	Future.prototype.name = 'future';
 
-	Future.prototype.toString = function(){
-	  var str = this.name;
-	  for(var i = 1; i <= this.arity; i++){
-	    str += ' (' + sanctuaryShow(this['$' + String(i)]) + ')';
-	  }
-	  return str;
+	Future.prototype.toString = function Future$toString(){
+	  return this.name + getArgs(this).map(showArg$1).join('');
+	};
+
+	Future.prototype.toJSON = function Future$toJSON(){
+	  return {$: $$type, kind: 'interpreter', type: this.name, args: getArgs(this)};
 	};
 
 	function createInterpreter(arity, name, interpret){
@@ -879,7 +911,8 @@ var Fluture = (function () {
 	  }));
 	}
 
-	var Transformer = createInterpreter(2, '', function Transformer$interpret(rec, rej, res){
+	var Transformer =
+	createInterpreter(2, 'transform', function Transformer$interpret(rec, rej, res){
 
 	  //These are the cold, and hot, transformation stacks. The cold actions are those that
 	  //have yet to run parallel computations, and hot are those that have.
@@ -893,14 +926,14 @@ var Fluture = (function () {
 	  // async          = a boolean indicating whether we are awaiting a result asynchronously
 	  var future, transformation, cancel = noop, settled, async = true, it;
 
-	  //Takes an transformation from the top of the hot stack and returns it.
+	  //Takes a transformation from the top of the hot stack and returns it.
 	  function nextHot(){
 	    var x = hot.head;
 	    hot = hot.tail;
 	    return x;
 	  }
 
-	  //Takes an transformation from the top of the cold stack and returns it.
+	  //Takes a transformation from the top of the cold stack and returns it.
 	  function nextCold(){
 	    var x = cold.head;
 	    cold = cold.tail;
@@ -1024,18 +1057,9 @@ var Fluture = (function () {
 	};
 
 	Transformer.prototype.toString = function Transformer$toString(){
-	  var i, str = this.$1.toString(), str2, tail = this.$2;
-
-	  while(!isNil(tail)){
-	    str2 = tail.head.name;
-	    for(i = 1; i <= tail.head.arity; i++){
-	      str2 += ' (' + sanctuaryShow(tail.head['$' + String(i)]) + ')';
-	    }
-	    str = str2 + ' (' + str + ')';
-	    tail = tail.tail;
-	  }
-
-	  return str;
+	  return toArray(reverse(this.$2)).reduce(function(str, action){
+	    return action.name + getArgs(action).map(showArg$1).join('') + ' (' + str + ')';
+	  }, this.$1.toString());
 	};
 
 	function BaseTransformation$rejected(x){
@@ -1048,6 +1072,10 @@ var Fluture = (function () {
 	  return new Resolve(this.context, x);
 	}
 
+	function BaseTransformation$toJSON(){
+	  return {$: $$type, kind: 'transformation', type: this.name, args: getArgs(this)};
+	}
+
 	var BaseTransformation = {
 	  rejected: BaseTransformation$rejected,
 	  resolved: BaseTransformation$resolved,
@@ -1055,7 +1083,8 @@ var Fluture = (function () {
 	  cancel: noop,
 	  context: nil,
 	  arity: 0,
-	  name: 'transform'
+	  name: 'transform',
+	  toJSON: BaseTransformation$toJSON
 	};
 
 	function wrapHandler(handler){
@@ -1695,8 +1724,8 @@ var Fluture = (function () {
 	    if(!isFuture(disposal)){
 	      return Hook$rec(invalidDisposal(disposal, _dispose, resource));
 	    }
-	    disposal._interpret(Hook$rec, Hook$disposalRejected, Hook$done);
 	    cancel = Hook$cancelDisposal;
+	    disposal._interpret(Hook$rec, Hook$disposalRejected, Hook$done);
 	  }
 
 	  function Hook$cancelConsumption(){
@@ -1879,9 +1908,12 @@ var Fluture = (function () {
 
 	  var _this = this, futures = this.$2, length = futures.length;
 	  var max = Math.min(this.$1, length), cancels = new Array(length), out = new Array(length);
-	  var cursor = 0, running = 0, blocked = false;
+	  var cursor = 0, running = 0, blocked = false, cont = noop;
 
 	  function Parallel$cancel(){
+	    rec = noop;
+	    rej = noop;
+	    res = noop;
 	    cursor = length;
 	    for(var n = 0; n < length; n++) cancels[n] && cancels[n]();
 	  }
@@ -1889,13 +1921,15 @@ var Fluture = (function () {
 	  function Parallel$run(idx){
 	    running++;
 	    cancels[idx] = futures[idx]._interpret(function Parallel$rec(e){
+	      cont = rec;
 	      cancels[idx] = noop;
 	      Parallel$cancel();
-	      rec(wrapException(e, _this));
+	      cont(wrapException(e, _this));
 	    }, function Parallel$rej(reason){
+	      cont = rej;
 	      cancels[idx] = noop;
 	      Parallel$cancel();
-	      rej(reason);
+	      cont(reason);
 	    }, function Parallel$res(value){
 	      cancels[idx] = noop;
 	      out[idx] = value;
