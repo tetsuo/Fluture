@@ -1,5 +1,5 @@
 /**
- * Fluture bundled; version 11.0.2
+ * Fluture bundled; version 11.0.3
  */
 
 var Fluture = (function () {
@@ -2788,10 +2788,13 @@ var Fluture = (function () {
 
 	  var _futures = this._futures, _length = this._length, _max = this._max;
 	  var cancels = new Array(_length), out = new Array(_length);
-	  var cursor = 0, running = 0, blocked = false;
+	  var cursor = 0, running = 0, blocked = false, cont = noop;
 	  var context = captureContext(this.context, 'consuming a parallel Future', Parallel$interpret);
 
 	  function Parallel$cancel(){
+	    rec = noop;
+	    rej = noop;
+	    res = noop;
 	    cursor = _length;
 	    for(var n = 0; n < _length; n++) cancels[n] && cancels[n]();
 	  }
@@ -2799,13 +2802,15 @@ var Fluture = (function () {
 	  function Parallel$run(idx){
 	    running++;
 	    cancels[idx] = _futures[idx]._interpret(function Parallel$rec(e){
+	      cont = rec;
 	      cancels[idx] = noop;
 	      Parallel$cancel();
-	      rec(makeError(e, _futures[idx], context));
+	      cont(makeError(e, _futures[idx], context));
 	    }, function Parallel$rej(reason){
+	      cont = rej;
 	      cancels[idx] = noop;
 	      Parallel$cancel();
-	      rej(reason);
+	      cont(reason);
 	    }, function Parallel$res(value){
 	      cancels[idx] = noop;
 	      out[idx] = value;
