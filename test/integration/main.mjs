@@ -1,4 +1,18 @@
-import {Future, resolve, after, chain, race, map, ap} from '../../index.mjs';
+import {
+  Future,
+  after,
+  ap,
+  both,
+  cache,
+  chain,
+  fork,
+  map,
+  parallel,
+  race,
+  rejectAfter,
+  resolve,
+} from '../../index.mjs';
+
 import {noop, error, assertResolved, eq, add} from '../util/util';
 import {resolved, resolvedSlow} from '../util/futures';
 
@@ -116,6 +130,18 @@ describe('Future in general', function (){
         ']' +
       ']}'
     );
+  });
+
+  it('does not produce issue #362', function (done){
+    const ma = cache(rejectAfter(1)(new Error));
+    const mb = map(noop)(parallel(Infinity)([ma, ma]));
+    fork(() => done())(noop)(mb);
+  });
+
+  it('does not produce issue #362 in a regular combinator', function (done){
+    const ma = cache(rejectAfter(1)(new Error));
+    const mb = map(noop)(both(ma)(ma));
+    fork(() => done())(noop)(mb);
   });
 
 });

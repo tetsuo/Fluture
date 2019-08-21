@@ -27,9 +27,12 @@ export var Parallel = createInterpreter(2, 'parallel', function Parallel$interpr
 
   var _this = this, futures = this.$2, length = futures.length;
   var max = Math.min(this.$1, length), cancels = new Array(length), out = new Array(length);
-  var cursor = 0, running = 0, blocked = false;
+  var cursor = 0, running = 0, blocked = false, cont = noop;
 
   function Parallel$cancel(){
+    rec = noop;
+    rej = noop;
+    res = noop;
     cursor = length;
     for(var n = 0; n < length; n++) cancels[n] && cancels[n]();
   }
@@ -37,13 +40,15 @@ export var Parallel = createInterpreter(2, 'parallel', function Parallel$interpr
   function Parallel$run(idx){
     running++;
     cancels[idx] = futures[idx]._interpret(function Parallel$rec(e){
+      cont = rec;
       cancels[idx] = noop;
       Parallel$cancel();
-      rec(wrapException(e, _this));
+      cont(wrapException(e, _this));
     }, function Parallel$rej(reason){
+      cont = rej;
       cancels[idx] = noop;
       Parallel$cancel();
-      rej(reason);
+      cont(reason);
     }, function Parallel$res(value){
       cancels[idx] = noop;
       out[idx] = value;
