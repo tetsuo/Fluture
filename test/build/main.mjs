@@ -1,6 +1,6 @@
 import {noop, eq} from '../util/util.mjs';
 import * as Fluture from '../../index.mjs';
-import Future from '../../index.js';
+import Future from '../../cjs.js';
 
 describe('CommonJS build output', function (){
 

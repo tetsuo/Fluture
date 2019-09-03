@@ -5,4 +5,4 @@
 /.esm-cache/
 /.nyc_output/
 
-/index.js
+/cjs.js
