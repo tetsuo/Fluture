@@ -79,12 +79,12 @@ getPackageName ('package.json')
 ### CommonJS Module
 
 Although the Fluture source uses the EcmaScript module system, versions
-downloaded from the npm registry include a CommonJS build, which will
-automatically be used when loading Fluture with `require`.
+downloaded from the npm registry include a CommonJS build, which can be
+loaded with `require ("fluture/cjs")`.
 
 ```js
 const fs = require ('fs')
-const Future = require ('fluture')
+const Future = require ('fluture/cjs')
 
 const getPackageName = function (file) {
   return Future.node (function (done) { fs.readFile (file, 'utf8', done) })

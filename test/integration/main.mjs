@@ -13,8 +13,8 @@ import {
   resolve,
 } from '../../index.mjs';
 
-import {noop, error, assertResolved, eq, add} from '../util/util';
-import {resolved, resolvedSlow} from '../util/futures';
+import {noop, error, assertResolved, eq, add} from '../util/util.mjs';
+import {resolved, resolvedSlow} from '../util/futures.mjs';
 
 function through (x, fs){
   return fs.reduce(function (y, f){
