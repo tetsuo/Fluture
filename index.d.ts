@@ -63,12 +63,12 @@ declare module 'fluture' {
     'fantasy-land/map'<RB>(mapper: (value: R) => RB): FutureInstance<L, RB>
     'fantasy-land/alt'(right: FutureInstance<L, R>): FutureInstance<L, R>
     'fantasy-land/bimap'<LB, RB>(lmapper: (reason: L) => LB, rmapper: (value: R) => RB): FutureInstance<LB, RB>
-    'fantasy-land/chain'<RB>(mapper: (value: R) => FutureInstance<L, RB>): FutureInstance<L, RB>
+    'fantasy-land/chain'<LB, RB>(mapper: (value: R) => FutureInstance<LB, RB>): FutureInstance<L | LB, RB>
 
   }
 
   /** Creates a Future which resolves after the given duration with the given value. See https://github.com/fluture-js/Fluture#after */
-  export function after<L, R>(duration: number): (value: R) => FutureInstance<L, R>
+  export function after(duration: number): <R>(value: R) => FutureInstance<never, R>
 
   /** Logical and for Futures. See https://github.com/fluture-js/Fluture#and */
   export function and<L, R>(left: FutureInstance<L, R>): (right: FutureInstance<L, any>) => FutureInstance<L, R>
@@ -80,10 +80,10 @@ declare module 'fluture' {
   export function alt<L, R>(left: ConcurrentFutureInstance<L, R>): (right: ConcurrentFutureInstance<L, R>) => ConcurrentFutureInstance<L, R>
 
   /** Apply the function in the left Future to the value in the right Future. See https://github.com/fluture-js/Fluture#ap */
-  export function ap<L, RA, RB>(value: FutureInstance<L, RA>): (apply: FutureInstance<L, (value: RA) => RB>) => FutureInstance<L, RB>
+  export function ap<L, RA>(value: FutureInstance<L, RA>): <RB>(apply: FutureInstance<L, (value: RA) => RB>) => FutureInstance<L, RB>
 
   /** Apply the function in the left ConcurrentFuture to the value in the right ConcurrentFuture. See https://github.com/fluture-js/Fluture#ap */
-  export function ap<L, RA, RB>(value: ConcurrentFutureInstance<L, RA>): (apply: ConcurrentFutureInstance<L, (value: RA) => RB>) => ConcurrentFutureInstance<L, RB>
+  export function ap<L, RA>(value: ConcurrentFutureInstance<L, RA>): <RB>(apply: ConcurrentFutureInstance<L, (value: RA) => RB>) => ConcurrentFutureInstance<L, RB>
 
   /** Create a Future which resolves with the return value of the given function, or rejects with the error it throws. See https://github.com/fluture-js/Fluture#attempt */
   export function attempt<L, R>(fn: () => R): FutureInstance<L, R>
@@ -92,19 +92,19 @@ declare module 'fluture' {
   export function attemptP<L, R>(fn: () => Promise<R>): FutureInstance<L, R>
 
   /** Map over both branched of the given Bifunctor at once. See https://github.com/fluture-js/Fluture#bimap */
-  export function bimap<LA, LB, RA, RB>(lmapper: (reason: LA) => LB): (rmapper: (value: RA) => RB) => (source: FutureInstance<LA, RA>) => FutureInstance<LB, RB>
+  export function bimap<LA, LB>(lmapper: (reason: LA) => LB): <RA, RB>(rmapper: (value: RA) => RB) => (source: FutureInstance<LA, RA>) => FutureInstance<LB, RB>
 
   /** Wait for both Futures to resolve in parallel. See https://github.com/fluture-js/Fluture#both */
-  export function both<L, A, B>(left: FutureInstance<L, A>): (right: FutureInstance<L, B>) => FutureInstance<L, [A, B]>
+  export function both<L, A>(left: FutureInstance<L, A>): <B>(right: FutureInstance<L, B>) => FutureInstance<L, [A, B]>
 
   /** Cache the outcome of the given Future. See https://github.com/fluture-js/Fluture#cache */
   export function cache<L, R>(source: FutureInstance<L, R>): FutureInstance<L, R>
 
   /** Create a Future using the resolution value of the given Future. See https://github.com/fluture-js/Fluture#chain */
-  export function chain<L, RA, RB>(mapper: (value: RA) => FutureInstance<L, RB>): (source: FutureInstance<L, RA>) => FutureInstance<L, RB>
+  export function chain<LB, RA, RB>(mapper: (value: RA) => FutureInstance<LB, RB>): <LA>(source: FutureInstance<LA, RA>) => FutureInstance<LA | LB, RB>
 
   /** Create a Future using the rejection reason of the given Future. See https://github.com/fluture-js/Fluture#chain */
-  export function chainRej<LA, LB, R>(mapper: (reason: LA) => FutureInstance<LB, R>): (source: FutureInstance<LA, R>) => FutureInstance<LB, R>
+  export function chainRej<LA, LB, RB>(mapper: (reason: LA) => FutureInstance<LB, RB>): <RA>(source: FutureInstance<LA, RA>) => FutureInstance<LB, RA | RB>
 
   /** Fork the given Future into a Node-style callback. See https://github.com/fluture-js/Fluture#done */
   export function done<L, R>(callback: Nodeback<L, R>): (source: FutureInstance<L, R>) => Cancel
@@ -122,19 +122,19 @@ declare module 'fluture' {
   export function extractRight<L, R>(source: FutureInstance<L, R>): Array<R>
 
   /** Fold both branches into the resolution branch. See https://github.com/fluture-js/Fluture#fold */
-  export function fold<LA, RA, LB, RB>(lmapper: (left: LA) => RB): (rmapper: (right: RA) => RB) => (source: FutureInstance<LA, RA>) => FutureInstance<LB, RB>
+  export function fold<LA, R>(lmapper: (left: LA) => R): <RA>(rmapper: (right: RA) => R) => (source: FutureInstance<LA, RA>) => FutureInstance<never, R>
 
   /** Fork the given Future into the given continuations. See https://github.com/fluture-js/Fluture#fork */
-  export function fork<L, R>(reject: RejectFunction<L>): (resolve: ResolveFunction<R>) => (source: FutureInstance<L, R>) => Cancel
+  export function fork<L>(reject: RejectFunction<L>): <R>(resolve: ResolveFunction<R>) => (source: FutureInstance<L, R>) => Cancel
 
   /** Fork with exception recovery. See https://github.com/fluture-js/Fluture#forkCatch */
-  export function forkCatch<L, R>(recover: RecoverFunction): (reject: RejectFunction<L>) => (resolve: ResolveFunction<R>) => (source: FutureInstance<L, R>) => Cancel
+  export function forkCatch(recover: RecoverFunction): <L>(reject: RejectFunction<L>) => <R>(resolve: ResolveFunction<R>) => (source: FutureInstance<L, R>) => Cancel
 
   /** Build a coroutine using Futures. See https://github.com/fluture-js/Fluture#go */
   export function go<L, R>(generator: Generator<FutureInstance<L, any>, R>): FutureInstance<L, R>
 
   /** Manage resources before and after the computation that needs them. See https://github.com/fluture-js/Fluture#hook */
-  export function hook<L, H, R>(acquire: FutureInstance<L, H>): (dispose: (handle: H) => FutureInstance<any, any>) => (consume: (handle: H) => FutureInstance<L, R>) => FutureInstance<L, R>
+  export function hook<L, H>(acquire: FutureInstance<L, H>): (dispose: (handle: H) => FutureInstance<any, any>) => <R>(consume: (handle: H) => FutureInstance<L, R>) => FutureInstance<L, R>
 
   /** Returns true for Futures. See https://github.com/fluture-js/Fluture#isfuture */
   export function isFuture(value: any): boolean
@@ -143,16 +143,16 @@ declare module 'fluture' {
   export function isNever(value: any): boolean
 
   /** Set up a cleanup Future to run after the given action has settled. See https://github.com/fluture-js/Fluture#lastly */
-  export function lastly<L, R>(cleanup: FutureInstance<L, any>): (action: FutureInstance<L, R>) => FutureInstance<L, R>
+  export function lastly<L>(cleanup: FutureInstance<L, any>): <R>(action: FutureInstance<L, R>) => FutureInstance<L, R>
 
   /** Map over the resolution value of the given Future. See https://github.com/fluture-js/Fluture#map */
-  export function map<L, RA, RB>(mapper: (value: RA) => RB): (source: FutureInstance<L, RA>) => FutureInstance<L, RB>
+  export function map<RA, RB>(mapper: (value: RA) => RB): <L>(source: FutureInstance<L, RA>) => FutureInstance<L, RB>
 
   /** Map over the resolution value of the given ConcurrentFuture. See https://github.com/fluture-js/Fluture#map */
-  export function map<L, RA, RB>(mapper: (value: RA) => RB): (source: ConcurrentFutureInstance<L, RA>) => ConcurrentFutureInstance<L, RB>
+  export function map<RA, RB>(mapper: (value: RA) => RB): <L>(source: ConcurrentFutureInstance<L, RA>) => ConcurrentFutureInstance<L, RB>
 
   /** Map over the rejection reason of the given Future. See https://github.com/fluture-js/Fluture#maprej */
-  export function mapRej<LA, LB, R>(mapper: (reason: LA) => LB): (source: FutureInstance<LA, R>) => FutureInstance<LB, R>
+  export function mapRej<LA, LB>(mapper: (reason: LA) => LB): <R>(source: FutureInstance<LA, R>) => FutureInstance<LB, R>
 
   /** A Future that never settles. See https://github.com/fluture-js/Fluture#never */
   export var never: FutureInstance<never, never>
@@ -161,10 +161,10 @@ declare module 'fluture' {
   export function node<L, R>(fn: (done: Nodeback<L, R>) => void): FutureInstance<L, R>
 
   /** Create a Future with the given resolution value. See https://github.com/fluture-js/Fluture#of */
-  export function resolve<L, R>(value: R): FutureInstance<L, R>
+  export function resolve<R>(value: R): FutureInstance<never, R>
 
   /** Run an Array of Futures in parallel, under the given concurrency limit. See https://github.com/fluture-js/Fluture#parallel */
-  export function parallel<L, R>(concurrency: number): (futures: Array<FutureInstance<L, R>>) => FutureInstance<L, Array<R>>
+  export function parallel(concurrency: number): <L, R>(futures: Array<FutureInstance<L, R>>) => FutureInstance<L, Array<R>>
 
   /** Convert a Future to a Promise. See https://github.com/fluture-js/Fluture#promise */
   export function promise<R>(source: FutureInstance<Error, R>): Promise<R>
@@ -173,10 +173,10 @@ declare module 'fluture' {
   export function race<L, R>(left: FutureInstance<L, R>): (right: FutureInstance<L, R>) => FutureInstance<L, R>
 
   /** Create a Future with the given rejection reason. See https://github.com/fluture-js/Fluture#reject */
-  export function reject<L, R>(reason: L): FutureInstance<L, R>
+  export function reject<L>(reason: L): FutureInstance<L, never>
 
   /** Creates a Future which rejects after the given duration with the given reason. See https://github.com/fluture-js/Fluture#rejectafter */
-  export function rejectAfter<L, R>(duration: number): (reason: L) => FutureInstance<L, R>
+  export function rejectAfter(duration: number): <L>(reason: L) => FutureInstance<L, never>
 
   /** Convert a ConcurrentFuture to a regular Future. See https://github.com/fluture-js/Fluture#concurrentfuture */
   export function seq<L, R>(source: ConcurrentFutureInstance<L, R>): FutureInstance<L, R>
