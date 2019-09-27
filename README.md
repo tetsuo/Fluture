@@ -543,14 +543,20 @@ takes two callbacks. Both are continuations for the computation. The first is
 When the computation is finished (possibly asynchronously) it may call the
 appropriate continuation with a failure or success value.
 
-Additionally, the computation may return a nullary function containing
+Additionally, the computation must return a nullary function containing
 cancellation logic. See [Cancellation](#cancellation).
+
+If you find that there is no way to cancel your computation, you can return a
+`noop` function as a cancellation function. However, at this point there is
+usually a more fitting way to [create that Future](#creating-futures)
+(like for example via [`node`](#node)).
 
 ```js
 > fork (log ('rejection'))
 .      (log ('resolution'))
 .      (Future (function computation (reject, resolve) {
-.        setTimeout (resolve, 20, 42)
+.        const t = setTimeout (resolve, 20, 42)
+.        return () => clearTimeout (t)
 .      }))
 [resolution]: 42
 ```

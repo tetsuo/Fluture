@@ -3,7 +3,7 @@ import show from 'sanctuary-show';
 import jsc from 'jsverify';
 
 import {Future, resolve, reject, Par, seq} from '../../index.mjs';
-import {eq, error, throws, test} from '../util/util.mjs';
+import {eq, error, throws, test, noop} from '../util/util.mjs';
 import {ordinal} from '../../src/internal/const.mjs';
 
 export var array = jsc.array;
@@ -41,13 +41,13 @@ function value (m){
 }
 
 function immediatelyResolve (x){
-  var m = Future(function (rej, res){ setImmediate(res, x) });
+  var m = Future(function (rej, res){ setImmediate(res, x); return noop });
   m._value = x;
   return m;
 }
 
 function immediatelyReject (x){
-  var m = Future(function (rej){ setImmediate(rej, x) });
+  var m = Future(function (rej){ setImmediate(rej, x); return noop });
   m._value = x;
   return m;
 }

@@ -51,16 +51,16 @@ test('runs the first computation after the second, both with the resource', func
   var ran = false;
   hook(F.resolved)(function (x){
     expect(x).to.equal('resolved');
-    return Future(function (rej, res){ return res(done(ran ? null : new Error('Second did not run'))) });
+    return Future(function (rej, res){ res(done(ran ? null : new Error('Second did not run'))); return noop });
   })(function (x){
     expect(x).to.equal('resolved');
-    return Future(function (rej, res){ return res(ran = true) });
+    return Future(function (rej, res){ res(ran = true); return noop });
   })._interpret(done, done, noop);
 });
 
 test('runs the first even if the second rejects', function (done){
   hook(F.resolved)(function (){
-    return Future(function (){ return done() });
+    return Future(function (){ done(); return noop });
   })(function (){
     return reject(2);
   })._interpret(done, noop, noop);
@@ -130,7 +130,7 @@ test('does not cancel delayed dispose', function (done){
 
 test('runs the disposal Future when cancelled after acquire', function (done){
   var cancel =
-    hook(F.resolved)(function (){ return Future(function (){ done() }) })(function (){ return F.resolvedSlow })
+    hook(F.resolved)(function (){ return Future(function (){ done(); return noop }) })(function (){ return F.resolvedSlow })
     ._interpret(done, failRej, failRes);
   setTimeout(cancel, 10);
 });

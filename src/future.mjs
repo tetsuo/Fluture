@@ -158,14 +158,14 @@ createInterpreter(1, 'Future', function Computation$interpret(rec, rej, res){
       if(open){
         cont();
       }
-    }) || noop;
+    });
   }catch(e){
     rec(wrapException(e, this));
     return noop;
   }
   if(!(isFunction(cancel) && cancel.length === 0)){
     rec(wrapException(typeError(
-      'The computation was expected to return a nullary function or void\n' +
+      'The computation was expected to return a nullary cancellation function\n' +
       '  Actual: ' + show(cancel)
     ), this));
     return noop;
