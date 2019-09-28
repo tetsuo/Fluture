@@ -182,7 +182,7 @@ for sponsoring the project.
 - [`swap`: Swap the success with the failure value](#swap)
 - [`mapRej`: Synchronously process the failure value in a Future](#maprej)
 - [`chainRej`: Asynchronously process the failure value in a Future](#chainrej)
-- [`fold`: Coerce success and failure values into the same success value](#fold)
+- [`coalesce`: Coerce success and failure values into the same success value](#coalesce)
 - [`ap`: Combine the success values of multiple Futures using a function](#ap)
 - [`and`: Logical *and* for Futures](#and)
 - [`alt`: Logical *or* for Futures](#alt)
@@ -649,13 +649,13 @@ A rejected Future short-circuits the whole coroutine.
 [rejection]: "It broke!"
 ```
 
-To handle rejections *inside* the coroutine, we need to [`fold`](#fold) the
-error into our control domain.
+To handle rejections *inside* the coroutine, we need to [`coalesce`](#coalesce)
+the error into our control domain.
 
-I recommend folding into an [`Either`][S:Either].
+I recommend using coalesce with an [`Either`][S:Either].
 
 ```js
-> const control = fold (S.Left) (S.Right)
+> const control = coalesce (S.Left) (S.Right)
 
 > fork (log ('rejection')) (log ('resolution')) (go (function*() {
 .   const thing = yield control (reject ('It broke!'))
@@ -932,10 +932,10 @@ For comparison, an approximation with Promises is:
 [resolution]: "It broke! But it's all good."
 ```
 
-#### fold
+#### coalesce
 
 ```hs
-fold :: (a -> c) -> (b -> c) -> Future a b -> Future d c
+coalesce :: (a -> c) -> (b -> c) -> Future a b -> Future d c
 ```
 
 Applies the left function to the rejection value, or the right function to the
@@ -948,12 +948,12 @@ a representation of failure.
 ```js
 > fork (log ('rejection'))
 .      (log ('resolution'))
-.      (fold (S.Left) (S.Right) (resolve ('hello'))
+.      (coalesce (S.Left) (S.Right) (resolve ('hello'))
 [resolution]: Right ("hello")
 
 > fork (log ('rejection'))
 .      (log ('resolution'))
-.      (fold (S.Left) (S.Right) (reject ('It broke!'))
+.      (coalesce (S.Left) (S.Right) (reject ('It broke!'))
 [resolution]: Left ("It broke!")
 ```
 
@@ -1163,7 +1163,7 @@ value :: (b -> Any) -> Future a b -> Cancel
 
 Like [`fork`](#fork) but for the resolution branch only. Only use this function
 if you are sure the Future is going to be resolved, for example; after using
-[`fold`](#fold). If the Future rejects, `value` will throw an Error.
+[`coalesce`](#coalesce). If the Future rejects, `value` will throw an Error.
 
 As with [`fork`](#fork), `value` returns an `unsubscribe` function. See
 [Cancellation](#cancellation).
@@ -1204,8 +1204,8 @@ Returns a Promise which resolves with the resolution value, or rejects with
 the rejection reason of the Future.
 
 If an exception was encountered during the computation, the promise will reject
-with it. I recommend using [`fold`](#fold) before `promise` to ensure that
-exceptions and rejections are not mixed into the Promise rejection branch.
+with it. I recommend using [`coalesce`](#coalesce) before `promise` to ensure
+that exceptions and rejections are not mixed into the Promise rejection branch.
 
 Cancellation capabilities are lost when using `promise` to consume the Future.
 
@@ -1285,13 +1285,14 @@ program should handle.
 
 When one Future rejects, all currently running Futures will be cancelled and
 the resulting Future will reject. If you want to settle all Futures, even if
-some may fail, you can use `parallel` in combination with [fold](#fold).
+some may fail, you can use `parallel` in combination with
+[coalesce](#coalesce).
 
 ```js
 > fork (log ('rejection'))
 .      (log ('resolution'))
 .      (parallel (2) ([resolve (42), reject ('It broke!')]
-.                     .map (fold (S.Left) (S.Right))))
+.                     .map (coalesce (S.Left) (S.Right))))
 [resolution]: [Right (42), Left ("It broke!")]
 ```
 

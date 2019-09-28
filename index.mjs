@@ -24,7 +24,7 @@ export {encaseP} from './src/encase-p.mjs';
 export {encase} from './src/encase.mjs';
 export {extractLeft} from './src/extract-left.mjs';
 export {extractRight} from './src/extract-right.mjs';
-export {fold} from './src/fold.mjs';
+export {coalesce} from './src/coalesce.mjs';
 export {forkCatch} from './src/fork-catch.mjs';
 export {fork} from './src/fork.mjs';
 export {go} from './src/go.mjs';

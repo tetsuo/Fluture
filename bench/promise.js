@@ -19,7 +19,7 @@ const PromiseInterop = {
   resolve: x => Promise.resolve(x),
   map: f => p => p.then(f),
   chain: f => p => p.then(f),
-  fold: f => g => p => p.then(g, f),
+  coalesce: f => g => p => p.then(g, f),
   race: a => b => Promise.race([a, b]),
   after: n => x => new Promise(res => setTimeout(res, n, x))
 };
@@ -38,8 +38,8 @@ module.exports = require('sanctuary-benchmark')(PromiseInterop, Future, config, 
     ({map, resolve}) => repeat(1000, map(plus1), resolve(1))
   ),
 
-  'fold': def(
-    ({fold, resolve}) => repeat(1000, fold(Left)(Right), resolve(1))
+  'coalesce': def(
+    ({coalesce, resolve}) => repeat(1000, coalesce(Left)(Right), resolve(1))
   ),
 
   'chain.sync': def(

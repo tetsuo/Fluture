@@ -16,7 +16,7 @@ import {
   bimap,
   chain,
   chainRej,
-  fold,
+  coalesce,
   go,
   map,
   mapRej,
@@ -70,12 +70,12 @@ property('and(a)(b) = chain(K(a))(b)', anyFuture, anyFuture, function (a, b){
   return eq(and(a)(b))(chain(K(a))(b));
 });
 
-property('Rejected m => fold(f)(g)(m) = chainRej(B(resolve)(f))(m)', anyRejectedFuture, function (m){
-  return eq(fold(f)(g)(m))(chainRej(B(resolve)(f))(m));
+property('Rejected m => coalesce(f)(g)(m) = chainRej(B(resolve)(f))(m)', anyRejectedFuture, function (m){
+  return eq(coalesce(f)(g)(m))(chainRej(B(resolve)(f))(m));
 });
 
-property('Resolved m => fold(f)(g)(m) = map(g)(m)', anyResolvedFuture, function (m){
-  return eq(fold(f)(g)(m))(map(g)(m));
+property('Resolved m => coalesce(f)(g)(m) = map(g)(m)', anyResolvedFuture, function (m){
+  return eq(coalesce(f)(g)(m))(map(g)(m));
 });
 
 property('go(function*(){ return f(yield m) }) = map(f)(m)', anyFuture, function (m){
