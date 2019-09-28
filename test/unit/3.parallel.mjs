@@ -170,28 +170,28 @@ test('does not cancel settled computations (#123)', function (done){
   };
 
   m2._interpret = function (_, rej){
-    setTimeout(rej, 20, 2);
+    setTimeout(rej, 50, 2);
     return function (){ return done(error) };
   };
 
   parallel(2)([m1, m2])._interpret(done, noop, noop);
-  setTimeout(done, 50, null);
+  setTimeout(done, 100, null);
 });
 
 test('does not resolve after being cancelled', function (done){
   const fail = () => done(error);
   const cancel = parallel(1)([F.resolvedSlow, F.resolvedSlow])
   ._interpret(done, fail, fail);
-  setTimeout(cancel, 10);
-  setTimeout(done, 50);
+  cancel();
+  setTimeout(done, 100);
 });
 
 test('does not reject after being cancelled', function (done){
   const fail = () => done(error);
   const cancel = parallel(1)([F.rejectedSlow, F.rejectedSlow])
   ._interpret(done, fail, fail);
-  setTimeout(cancel, 10);
-  setTimeout(done, 50);
+  cancel();
+  setTimeout(done, 100);
 });
 
 test('is stack safe (#130)', function (){
