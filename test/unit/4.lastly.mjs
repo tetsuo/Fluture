@@ -1,5 +1,5 @@
 import {lastly, resolve, reject, map} from '../../index.mjs';
-import {test, assertRejected, assertResolved, assertValidFuture, failRej, failRes, noop, eq} from '../util/util.mjs';
+import {test, assertRejected, assertResolved, assertValidFuture, noop, eq} from '../util/util.mjs';
 import {rejected, rejectedSlow, resolved, resolvedSlow} from '../util/futures.mjs';
 import {testFunction, futureArg} from '../util/props.mjs';
 
@@ -33,10 +33,11 @@ test('always rejects with the rejection reason of the second', function (){
 });
 
 test('does nothing after being cancelled', function (done){
-  lastly(resolved)(resolvedSlow)._interpret(done, failRej, failRes)();
-  lastly(resolvedSlow)(resolved)._interpret(done, failRej, failRes)();
-  lastly(rejected)(rejectedSlow)._interpret(done, failRej, failRes)();
-  lastly(rejectedSlow)(rejected)._interpret(done, failRej, failRes)();
+  const fail = () => fail(done);
+  lastly(resolved)(resolvedSlow)._interpret(done, fail, fail)();
+  lastly(resolvedSlow)(resolved)._interpret(done, fail, fail)();
+  lastly(rejected)(rejectedSlow)._interpret(done, fail, fail)();
+  lastly(rejectedSlow)(rejected)._interpret(done, fail, fail)();
   setTimeout(done, 25);
 });
 

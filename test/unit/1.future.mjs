@@ -1,5 +1,5 @@
 import Future from '../../index.mjs';
-import {noop, eq, assertCrashed, assertResolved, error, throwit, failRej, failRes, assertValidFuture, test} from '../util/util.mjs';
+import {noop, eq, assertCrashed, assertResolved, error, assertValidFuture, test} from '../util/util.mjs';
 import {testFunction, functionArg} from '../util/props.mjs';
 
 testFunction('Future', Future, [functionArg], assertValidFuture);
@@ -17,9 +17,9 @@ test('crashes when the computation returns nonsense', function (){
   ));
 });
 
-test('does not crash when the computation returns a nullary function', function (){
+test('does not crash when the computation returns a nullary function', function (done){
   var m = Future(function (){ return function (){} });
-  m._interpret(throwit, noop, noop);
+  m._interpret(done, noop, noop);
 });
 
 test('settles using the last synchronously called continuation', function (){
@@ -42,31 +42,33 @@ test('settles using the first asynchronously called continuation', function (){
 });
 
 test('stops continuations from being called after cancellation', function (done){
+  const fail = () => done(error);
   Future(function (rej, res){
     setTimeout(res, 20, 1);
     setTimeout(rej, 20, 1);
     return noop;
   })
-  ._interpret(done, failRej, failRes)();
+  ._interpret(done, fail, fail)();
   setTimeout(done, 25);
 });
 
-test('cannot continue during cancellation (#216)', function (){
+test('cannot continue during cancellation (#216)', function (done){
+  const fail = () => done(error);
   Future(function (rej, res){
     return function (){
       rej();
       res();
     };
   })
-  ._interpret(throwit, failRej, failRes)();
+  ._interpret(done, fail, fail)();
 });
 
-test('stops cancellation from being called after continuations', function (){
+test('stops cancellation from being called after continuations', function (done){
   var m = Future(function (rej, res){
     res(1);
-    return function (){ throw error };
+    return function (){ done(error) };
   });
-  var cancel = m._interpret(throwit, failRej, noop);
+  var cancel = m._interpret(done, noop, noop);
   cancel();
 });
 

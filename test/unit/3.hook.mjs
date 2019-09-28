@@ -1,6 +1,6 @@
 import chai from 'chai';
 import {Future, hook, resolve, reject} from '../../index.mjs';
-import {test, assertCrashed, assertIsFuture, assertRejected, assertResolved, error, failRej, failRes, itRaises, K, noop} from '../util/util.mjs';
+import {test, assertCrashed, assertIsFuture, assertRejected, assertResolved, error, itRaises, K, noop} from '../util/util.mjs';
 import * as F from '../util/futures.mjs';
 import {testFunction, futureArg, functionArg} from '../util/props.mjs';
 
@@ -76,69 +76,78 @@ test('assumes the state resolve the second if the first resolves', function (){
 });
 
 test('does not hook after being cancelled', function (done){
-  hook(F.resolvedSlow)(function (){ return resolve('dispose') })(failRes)._interpret(done, failRej, failRes)();
+  const fail = () => done(error);
+  hook(F.resolvedSlow)(function (){ return resolve('dispose') })(fail)._interpret(done, fail, fail)();
   setTimeout(done, 25);
 });
 
 test('does not reject after being cancelled', function (done){
-  hook(F.rejectedSlow)(function (){ return resolve('dispose') })(failRes)._interpret(done, failRej, failRes)();
-  hook(F.resolved)(function (){ return resolve('dispose') })(function (){ return F.rejectedSlow })._interpret(done, failRej, failRes)();
+  const fail = () => done(error);
+  hook(F.rejectedSlow)(function (){ return resolve('dispose') })(fail)._interpret(done, fail, fail)();
+  hook(F.resolved)(function (){ return resolve('dispose') })(function (){ return F.rejectedSlow })._interpret(done, fail, fail)();
   setTimeout(done, 25);
 });
 
 test('cancels acquire appropriately', function (done){
+  const fail = () => done(error);
   var acquire = Future(function (){ return function (){ return done() } });
   var cancel =
     hook(acquire)(function (){ return resolve('dispose') })(function (){ return resolve('consume') })
-    ._interpret(done, failRej, failRes);
+    ._interpret(done, fail, fail);
   setTimeout(cancel, 10);
 });
 
 test('cancels consume appropriately', function (done){
+  const fail = () => done(error);
   var consume = Future(function (){ return function (){ return done() } });
   var cancel =
     hook(F.resolved)(function (){ return resolve('dispose') })(function (){ return consume })
-    ._interpret(done, failRej, failRes);
+    ._interpret(done, fail, fail);
   setTimeout(cancel, 10);
 });
 
 test('cancels delayed consume appropriately', function (done){
+  const fail = () => done(error);
   var consume = Future(function (){ return function (){ return done() } });
   var cancel =
     hook(F.resolvedSlow)(function (){ return resolve('dispose') })(function (){ return consume })
-    ._interpret(done, failRej, failRes);
+    ._interpret(done, fail, fail);
   setTimeout(cancel, 25);
 });
 
 test('does not cancel disposal', function (done){
+  const fail = () => done(error);
   var dispose = Future(function (){ return function (){ return done(error) } });
   var cancel =
     hook(F.resolved)(function (){ return dispose })(function (){ return resolve('consume') })
-    ._interpret(done, failRej, failRes);
+    ._interpret(done, fail, fail);
   setTimeout(cancel, 10);
   setTimeout(done, 50);
 });
 
 test('does not cancel delayed dispose', function (done){
+  const fail = () => done(error);
   var dispose = Future(function (){ return function (){ return done(error) } });
   var cancel =
     hook(F.resolved)(function (){ return dispose })(function (){ return F.resolvedSlow })
-    ._interpret(done, failRej, failRes);
+    ._interpret(done, fail, fail);
   setTimeout(cancel, 50);
   setTimeout(done, 100);
 });
 
 test('runs the disposal Future when cancelled after acquire', function (done){
+  const fail = () => done(error);
   var cancel =
     hook(F.resolved)(function (){ return Future(function (){ done(); return noop }) })(function (){ return F.resolvedSlow })
-    ._interpret(done, failRej, failRes);
+    ._interpret(done, fail, fail);
   setTimeout(cancel, 10);
 });
 
 itRaises('exceptions that occur after the Future was unsubscribed', function (done){
+  const fail = () => done(error);
   hook(F.resolved)(K(F.crashedSlow))(K(F.resolved))._interpret(function (){
     done(new Error('Exception handler called'));
-  }, failRej, failRes)();
+  }, fail, fail)();
 }, error);
 
 test('returns the code which creates the same data-structure when cast to String', function (){

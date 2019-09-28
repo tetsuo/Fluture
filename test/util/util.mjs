@@ -15,7 +15,6 @@ export var B = function (f){ return function (g){ return function (x){ return f(
 export var K = function (x){ return function (){ return x } };
 export var T = function (x){ return function (f){ return f(x) } };
 export var error = new Error('Intentional error for unit testing');
-export var throwit = function (it){ throw it };
 export var throwing = function (){ throw error };
 
 export function test (name, impl){
@@ -81,14 +80,6 @@ export var promiseTimeout = function (t, p){
       setTimeout(rej, t, new Error(`Timeout of ${t}ms reached`));
     })
   ]);
-};
-
-export var failRes = function (x){
-  throw new Error(('Invalidly entered resolution branch with value ' + x));
-};
-
-export var failRej = function (x){
-  throw new Error(('Invalidly entered rejection branch with value ' + x));
 };
 
 export var assertIsFuture = function (x){

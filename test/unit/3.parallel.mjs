@@ -1,6 +1,6 @@
 import chai from 'chai';
 import {Future, parallel, resolve, reject, after} from '../../index.mjs';
-import {test, promiseTimeout, assertCrashed, assertRejected, assertResolved, assertValidFuture, error, failRej, failRes, noop, repeat, STACKSIZE} from '../util/util.mjs';
+import {test, promiseTimeout, assertCrashed, assertRejected, assertResolved, assertValidFuture, error, noop, repeat, STACKSIZE} from '../util/util.mjs';
 import * as F from '../util/futures.mjs';
 import {testFunction, positiveIntegerArg, futureArrayArg} from '../util/props.mjs';
 
@@ -59,11 +59,8 @@ test('runs all in parallel when given number larger than the array length', func
   return promiseTimeout(70, assertResolved(actual, ['a', 'b', 'c', 'd', 'e']));
 });
 
-test('can deal with synchronously resolving futures', function (done){
-  parallel(5)(repeat(10, resolve(1)))._interpret(done, failRej, function (xs){
-    expect(xs).to.have.length(10);
-    done();
-  });
+test('can deal with synchronously resolving futures', function (){
+  return assertResolved(parallel(5)(repeat(10, resolve(1))), [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
 });
 
 test('interprets the synchronous futures in the provided sequence', function (done){
@@ -120,9 +117,11 @@ test('rejects if one resolve the input rejects', function (){
   return assertRejected(actual, 'err');
 });
 
-test('does not reject multiple times', function (done){
-  var actual = parallel(2)([F.rejectedSlow, F.rejected]);
-  actual._interpret(done, function (){ return done() }, failRes);
+test('rejects with the first rejection value', function (){
+  return Promise.all([
+    assertRejected(parallel(2)([F.rejectedSlow, F.rejected]), 'rejected'),
+    assertRejected(parallel(2)([F.rejected, F.rejectedSlow]), 'rejected'),
+  ]);
 });
 
 test('cancels Futures when cancelled', function (done){
@@ -141,7 +140,7 @@ test('cancels only running Futures when cancelled', function (done){
       clearTimeout(x);
     };
   });
-  var cancel = parallel(2)([m, m, m, m])._interpret(done, failRej, failRes);
+  var cancel = parallel(2)([m, m, m, m])._interpret(done, noop, noop);
   setTimeout(function (){
     cancel();
     expect(i).to.equal(2);
@@ -152,13 +151,13 @@ test('cancels only running Futures when cancelled', function (done){
 
 test('does not interpret any computations after one rejects', function (done){
   var m = Future(function (){ done(error) });
-  parallel(2)([F.rejected, m])._interpret(done, noop, failRes);
+  parallel(2)([F.rejected, m])._interpret(done, noop, noop);
   done();
 });
 
 test('automatically cancels running computations when one rejects', function (done){
   var m = Future(function (){ return function (){ done() } });
-  parallel(2)([m, F.rejected])._interpret(done, noop, failRes);
+  parallel(2)([m, F.rejected])._interpret(done, noop, noop);
 });
 
 test('does not cancel settled computations (#123)', function (done){
@@ -180,25 +179,25 @@ test('does not cancel settled computations (#123)', function (done){
 });
 
 test('does not resolve after being cancelled', function (done){
-  var cancel = parallel(1)([F.resolvedSlow, F.resolvedSlow])
-  ._interpret(done, failRej, failRes);
+  const fail = () => done(error);
+  const cancel = parallel(1)([F.resolvedSlow, F.resolvedSlow])
+  ._interpret(done, fail, fail);
   setTimeout(cancel, 10);
   setTimeout(done, 50);
 });
 
 test('does not reject after being cancelled', function (done){
-  var cancel = parallel(1)([F.rejectedSlow, F.rejectedSlow])
-  ._interpret(done, failRej, failRes);
+  const fail = () => done(error);
+  const cancel = parallel(1)([F.rejectedSlow, F.rejectedSlow])
+  ._interpret(done, fail, fail);
   setTimeout(cancel, 10);
   setTimeout(done, 50);
 });
 
-test('is stack safe (#130)', function (done){
-  var ms = Array.from({length: STACKSIZE}, function (_, i){ return resolve(i) });
-  parallel(1)(ms)._interpret(done, failRej, function (xs){
-    expect(xs).to.have.length(STACKSIZE);
-    done();
-  });
+test('is stack safe (#130)', function (){
+  var ms = Array.from({length: STACKSIZE}, (_, i) => resolve(i));
+  var expected = Array.from({length: STACKSIZE}, (_, i) => i);
+  return assertResolved(parallel(1)(ms), expected);
 });
 
 test('returns the code to create the Parallel when cast to String', function (){

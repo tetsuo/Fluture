@@ -1,5 +1,5 @@
 import {mapRej} from '../../index.mjs';
-import {test, assertCrashed, assertRejected, assertResolved, assertValidFuture, bang, failRej, failRes, throwing, error, eq} from '../util/util.mjs';
+import {test, assertCrashed, assertRejected, assertResolved, assertValidFuture, bang, throwing, error, eq} from '../util/util.mjs';
 import {rejected, resolved, resolvedSlow, rejectedSlow} from '../util/futures.mjs';
 import {testFunction, functionArg, futureArg} from '../util/props.mjs';
 
@@ -14,12 +14,14 @@ test('maps the rejection branch with the given function', function (){
 });
 
 test('does not resolve after being cancelled', function (done){
-  mapRej(failRej)(resolvedSlow)._interpret(done, failRej, failRes)();
+  const fail = () => done(error);
+  mapRej(fail)(resolvedSlow)._interpret(done, fail, fail)();
   setTimeout(done, 25);
 });
 
 test('does not reject after being cancelled', function (done){
-  mapRej(failRej)(rejectedSlow)._interpret(done, failRej, failRes)();
+  const fail = () => done(error);
+  mapRej(fail)(rejectedSlow)._interpret(done, fail, fail)();
   setTimeout(done, 25);
 });
 
