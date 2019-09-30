@@ -265,7 +265,7 @@ The concrete types you will encounter throughout this documentation:
 - **Pair a b** - An array with exactly two elements: `[a, b]`.
 - **Iterator** - Objects with `next`-methods which conform to the [Iterator protocol][3].
 - **Cancel** - The nullary [cancellation](#cancellation) functions returned from computations.
-- **Catchable e f** - A function `f` which may throw an exception `e`.
+- **Throwing e a b** - A function from `a` to `b` that may throw an exception `e`.
 - **List** - Fluture's internal linked-list structure: `{ head :: Any, tail :: List }`.
 - **Context** - Fluture's internal debugging context object:
   `{ tag :: String, name :: String, stack :: String }`.
@@ -669,7 +669,7 @@ I recommend folding into an [`Either`][S:Either].
 #### attempt
 
 ```hs
-attempt :: Catchable e (Undefined -> r) -> Future e r
+attempt :: Throwing e Undefined r -> Future e r
 ```
 
 Creates a Future which resolves with the result of calling the given function,
@@ -725,7 +725,7 @@ Note that this function **does not support cancellation**.
 #### encase
 
 ```hs
-encase :: (Catchable e (a -> r)) -> a -> Future e r
+encase :: Throwing e a r -> a -> Future e r
 ```
 
 Takes a function and a value, and returns a Future which when forked calls the
