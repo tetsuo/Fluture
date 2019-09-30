@@ -121,8 +121,8 @@ declare module 'fluture' {
   /** Attempt to extract the resolution value. See https://github.com/fluture-js/Fluture#extractright */
   export function extractRight<L, R>(source: FutureInstance<L, R>): Array<R>
 
-  /** Fold both branches into the resolution branch. See https://github.com/fluture-js/Fluture#fold */
-  export function fold<LA, R>(lmapper: (left: LA) => R): <RA>(rmapper: (right: RA) => R) => (source: FutureInstance<LA, RA>) => FutureInstance<never, R>
+  /** Coalesce both branches into the resolution branch. See https://github.com/fluture-js/Fluture#coalesce */
+  export function coalesce<LA, R>(lmapper: (left: LA) => R): <RA>(rmapper: (right: RA) => R) => (source: FutureInstance<LA, RA>) => FutureInstance<never, R>
 
   /** Fork the given Future into the given continuations. See https://github.com/fluture-js/Fluture#fork */
   export function fork<L>(reject: RejectFunction<L>): <R>(resolve: ResolveFunction<R>) => (source: FutureInstance<L, R>) => Cancel
