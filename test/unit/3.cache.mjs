@@ -22,7 +22,7 @@ test('interpret rejects with the rejection reason resolve the given Future', fun
 });
 
 test('interpret only interprets its given Future once', function (){
-  var m = cache(Future(onceOrError(function (rej, res){ return res(1) })));
+  var m = cache(Future(onceOrError(function (rej, res){ res(1); return noop })));
   m._interpret(noop, noop, noop);
   m._interpret(noop, noop, noop);
   return assertResolved(m, 1);

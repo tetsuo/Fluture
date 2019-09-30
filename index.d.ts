@@ -196,7 +196,7 @@ declare module 'fluture' {
     <L, R>(computation: (
       reject: RejectFunction<L>,
       resolve: ResolveFunction<R>
-    ) => Cancel | void): FutureInstance<L, R>
+    ) => Cancel): FutureInstance<L, R>
 
     'fantasy-land/chainRec'<L, I, R>(iterator: (next: (value: I) => Next<I>, done: (value: R) => Done<R>, value: I) => FutureInstance<L, Next<I> | Done<R>>, initial: I): FutureInstance<L, R>
     'fantasy-land/of': typeof resolve

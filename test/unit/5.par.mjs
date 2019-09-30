@@ -97,14 +97,14 @@ test('map shows a reasonable representation when cast to string', function (){
 });
 
 test('alt rejects when the first one rejects', function (){
-  var m1 = Par(Future(function (rej, res){ return void setTimeout(res, 50, 1) }));
-  var m2 = Par(Future(function (rej){ return void setTimeout(rej, 5, error) }));
+  var m1 = Par(Future(function (rej, res){ setTimeout(res, 50, 1); return noop }));
+  var m2 = Par(Future(function (rej){ setTimeout(rej, 5, error); return noop }));
   return assertRejected(seq(alt(m1)(m2)), error);
 });
 
 test('alt resolves when the first one resolves', function (){
-  var m1 = Par(Future(function (rej, res){ return void setTimeout(res, 5, 1) }));
-  var m2 = Par(Future(function (rej){ return void setTimeout(rej, 50, error) }));
+  var m1 = Par(Future(function (rej, res){ setTimeout(res, 5, 1); return noop }));
+  var m2 = Par(Future(function (rej){ setTimeout(rej, 50, error); return noop }));
   return assertResolved(seq(alt(m1)(m2)), 1);
 });
 

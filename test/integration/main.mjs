@@ -91,7 +91,7 @@ test('does not run concurrent computations twice', function (done){
   var ran = false;
   var m = through(resolvedSlow, [
     chain(function (){ return resolvedSlow }),
-    race(Future(function (){ ran ? done(error) : (ran = true) })),
+    race(Future(function (){ ran ? done(error) : (ran = true); return noop })),
   ]);
   m._interpret(done, done, function (){ return done() });
 });

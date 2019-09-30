@@ -38,10 +38,11 @@ test('limits parallelism to the given number', function (){
   var m = Future(function (rej, res){
     running++;
     if(running > 2){ return void rej(new Error('More than two running in parallel')) }
-    return void setTimeout(function (){
+    setTimeout(function (){
       running--;
       res('a');
     }, 20);
+    return noop;
   });
   var actual = parallel(2)(repeat(8, m));
   return assertResolved(actual, repeat(8, 'a'));
@@ -72,6 +73,7 @@ test('interprets the synchronous futures in the provided sequence', function (do
     return Future(function (rej, res){
       xs.push(i);
       res(i);
+      return noop;
     });
   });
   parallel(5)(ms)._interpret(done, noop, function (out){
@@ -88,6 +90,7 @@ test('interprets the asynchronous futures in the provided sequence', function (d
     return Future(function (rej, res){
       xs.push(i);
       setTimeout(res, 10, i);
+      return noop;
     });
   });
   parallel(5)(ms)._interpret(done, noop, function (out){

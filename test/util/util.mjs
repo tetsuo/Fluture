@@ -236,7 +236,7 @@ export var onceOrError = function (f){
   return function (){
     if(called){ throw new Error('Function ' + show(f) + ' was called twice') }
     called = true;
-    f.apply(null, arguments);
+    return f.apply(null, arguments);
   };
 };
 
