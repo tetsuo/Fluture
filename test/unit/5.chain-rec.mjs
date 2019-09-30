@@ -2,7 +2,7 @@ import chai from 'chai';
 import {resolve, after, reject} from '../../index.mjs';
 import {chainRec} from '../../src/future.mjs';
 import {isIteration} from '../../src/internal/iteration.mjs';
-import {test, assertCrashed, assertRejected, assertResolved, error, failRej, failRes, noop} from '../util/util.mjs';
+import {test, assertCrashed, assertRejected, assertResolved, error, noop} from '../util/util.mjs';
 
 var expect = chai.expect;
 
@@ -60,14 +60,16 @@ test('responds to failure after chaining async', function (){
 });
 
 test('can be cancelled straight away', function (done){
+  const fail = () => done(error);
   chainRec(function (f, g, x){ return after(10)(g(x)) }, 1)
-  ._interpret(done, failRej, failRes)();
+  ._interpret(done, fail, fail)();
   setTimeout(done, 20);
 });
 
 test('can be cancelled after some iterations', function (done){
+  const fail = () => done(error);
   var m = chainRec(function (f, g, x){ return after(10)(x < 5 ? f(x + 1) : g(x)) }, 0);
-  var cancel = m._interpret(done, failRej, failRes);
+  var cancel = m._interpret(done, fail, fail);
   setTimeout(cancel, 25);
   setTimeout(done, 70);
 });

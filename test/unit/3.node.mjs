@@ -1,6 +1,6 @@
 import chai from 'chai';
 import {node} from '../../index.mjs';
-import {test, assertCrashed, assertRejected, assertResolved, assertValidFuture, error, failRej, failRes} from '../util/util.mjs';
+import {test, assertCrashed, assertRejected, assertResolved, assertValidFuture, error} from '../util/util.mjs';
 import {testFunction, functionArg} from '../util/props.mjs';
 
 var expect = chai.expect;
@@ -36,8 +36,9 @@ test('settles with the first asynchronous call to done', function (){
 });
 
 test('ensures no continuations are called after cancel', function (done){
+  const fail = () => done(error);
   var f = function (done){ return setTimeout(done, 5) };
-  node(f)._interpret(done, failRej, failRes)();
+  node(f)._interpret(done, fail, fail)();
   setTimeout(done, 20);
 });
 

@@ -1,9 +1,8 @@
 import oletus from 'oletus';
 import show from 'sanctuary-show';
-import type from 'sanctuary-type-identifiers';
-import {Future, isFuture, reject, resolve} from '../../index.mjs';
+import {reject, resolve} from '../../index.mjs';
 import {crash} from '../../src/future.mjs';
-import {strictEqual, deepStrictEqual} from 'assert';
+import * as assert from '../assertions.mjs';
 export * from '../../src/internal/predicates.mjs';
 
 export var STACKSIZE = (function r (){try{return 1 + r()}catch(e){return 1}}());
@@ -16,7 +15,6 @@ export var B = function (f){ return function (g){ return function (x){ return f(
 export var K = function (x){ return function (){ return x } };
 export var T = function (x){ return function (f){ return f(x) } };
 export var error = new Error('Intentional error for unit testing');
-export var throwit = function (it){ throw it };
 export var throwing = function (){ throw error };
 
 export function test (name, impl){
@@ -26,13 +24,7 @@ export function test (name, impl){
 }
 
 export var eq = function eq (actual, expected){
-  strictEqual(arguments.length, eq.length);
-  strictEqual(show(actual), show(expected));
-  //eslint-disable-next-line no-self-compare
-  if(actual !== actual && expected !== expected){
-    return;
-  }
-  deepStrictEqual(actual, expected);
+  assert.equality(actual)(expected);
 };
 
 export var throws = function throws (f, expected){
@@ -90,20 +82,8 @@ export var promiseTimeout = function (t, p){
   ]);
 };
 
-export var failRes = function (x){
-  throw new Error(('Invalidly entered resolution branch with value ' + x));
-};
-
-export var failRej = function (x){
-  throw new Error(('Invalidly entered rejection branch with value ' + x));
-};
-
 export var assertIsFuture = function (x){
-  eq(isFuture(x), true);
-  eq(x instanceof Future, true);
-  eq(x.constructor, Future);
-  eq(type(x), Future['@@type']);
-  return true;
+  return assert.future(x);
 };
 
 export var assertValidFuture = function (x){
@@ -128,99 +108,16 @@ export var assertValidFuture = function (x){
   return true;
 };
 
-var states = ['pending', 'crashed', 'rejected', 'resolved'];
+export var assertEqual = function (a, b){
+  return assert.equivalence(a)(b);
+};
 
-export function makeAssertEqual (equals){
-  return function assertEqual (ma, mb){
-    return new Promise(function (pass, fail){
-      var astate = 0, bstate = 0, val;
-      assertIsFuture(ma);
-      assertIsFuture(mb);
-
-      function twice (m, x, s1, s2){
-        fail(new Error(
-          'A Future ' + states[s2] + ' after already having ' + states[s1] + '.\n' +
-          '  First: Future({ <' + states[s1] + '> ' + show(val) + ' })\n' +
-          '  Second: Future({ <' + states[s1] + '> ' + show(x) + ' })\n' +
-          '  Future: ' + m.toString()
-        ));
-      }
-
-      function assertInnerEqual (a, b){
-        if(astate === bstate){
-          if(isFuture(a) && isFuture(b)){
-            assertEqual(a, b).then(pass, fail);
-            return;
-          } else if (equals(a, b)){
-            pass(true);
-            return;
-          }
-        }
-        fail(new Error(
-          '\n    ' + ma.toString() +
-          ' :: Future({ <' + states[astate] + '> ' + show(a) + ' })' +
-          '\n    does not equal:\n    ' + mb.toString() +
-          ' :: Future({ <' + states[bstate] + '> ' + show(b) + ' })\n  '
-        ));
-      }
-
-      ma._interpret(function (x){
-        if(astate > 0) twice(ma, x, astate, 1);
-        else {
-          astate = 1;
-          if(bstate > 0) assertInnerEqual(x, val);
-          else val = x;
-        }
-      }, function (x){
-        if(astate > 0) twice(ma, x, astate, 2);
-        else {
-          astate = 2;
-          if(bstate > 0) assertInnerEqual(x, val);
-          else val = x;
-        }
-      }, function (x){
-        if(astate > 0) twice(ma, x, astate, 3);
-        else {
-          astate = 3;
-          if(bstate > 0) assertInnerEqual(x, val);
-          else val = x;
-        }
-      });
-
-      mb._interpret(function (x){
-        if(bstate > 0) twice(mb, x, bstate, 1);
-        else {
-          bstate = 1;
-          if(astate > 0) assertInnerEqual(val, x);
-          else val = x;
-        }
-      }, function (x){
-        if(bstate > 0) twice(mb, x, bstate, 2);
-        else {
-          bstate = 2;
-          if(astate > 0) assertInnerEqual(val, x);
-          else val = x;
-        }
-      }, function (x){
-        if(bstate > 0) twice(mb, x, bstate, 3);
-        else {
-          bstate = 3;
-          if(astate > 0) assertInnerEqual(val, x);
-          else val = x;
-        }
-      });
-    });
-  };
-}
-
-export var assertEqual = makeAssertEqual(isDeepStrictEqual);
-
-var assertEqualByErrorMessage = makeAssertEqual(function (a, b){
-  return a.message === b.message;
+var assertEqualByErrorMessage = assert.makeEquivalence(a => b => {
+  return assert.equality(a.message)(b.message);
 });
 
 export var assertCrashed = function (m, x){
-  return assertEqualByErrorMessage(m, crash(x));
+  return assertEqualByErrorMessage(m)(crash(x));
 };
 
 export var assertRejected = function (m, x){

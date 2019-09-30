@@ -2,7 +2,7 @@
 
 import chai from 'chai';
 import {encaseP} from '../../index.mjs';
-import {test, assertCrashed, assertRejected, assertResolved, assertValidFuture, error, failRej, failRes, noop} from '../util/util.mjs';
+import {test, assertCrashed, assertRejected, assertResolved, assertValidFuture, error, noop} from '../util/util.mjs';
 import {testFunction, functionArg, anyArg} from '../util/props.mjs';
 
 var expect = chai.expect;
@@ -35,14 +35,16 @@ test('rejects with rejection reason of the returned Promise', function (){
 });
 
 test('ensures no resolution happens after cancel', function (done){
+  const fail = () => done(error);
   var actual = encaseP(function (x){ return Promise.resolve(x + 1) })(1);
-  actual._interpret(done, failRej, failRes)();
+  actual._interpret(done, fail, fail)();
   setTimeout(done, 20);
 });
 
 test('ensures no rejection happens after cancel', function (done){
+  const fail = () => done(error);
   var actual = encaseP(function (x){ return Promise.reject(x + 1) })(1);
-  actual._interpret(done, failRej, failRes)();
+  actual._interpret(done, fail, fail)();
   setTimeout(done, 20);
 });
 

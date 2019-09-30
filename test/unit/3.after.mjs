@@ -1,5 +1,5 @@
 import {after, never} from '../../index.mjs';
-import {eq, assertValidFuture, assertResolved, failRej, failRes, test} from '../util/util.mjs';
+import {eq, assertValidFuture, assertResolved, test, error} from '../util/util.mjs';
 import {testFunction, positiveIntegerArg, anyArg} from '../util/props.mjs';
 
 testFunction('after', after, [positiveIntegerArg, anyArg], assertValidFuture);
@@ -13,7 +13,8 @@ test('resolves with the given value', function (){
 });
 
 test('clears its internal timeout when cancelled', function (done){
-  after(20)(1)._interpret(done, failRej, failRes)();
+  const fail = () => done(error);
+  after(20)(1)._interpret(done, fail, fail)();
   setTimeout(done, 25);
 });
 
