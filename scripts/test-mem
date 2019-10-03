@@ -2,7 +2,7 @@
 
 /* global process setImmediate */
 
-var {Future, fork, race, chain, resolve: sync} = require('../cjs');
+var {Future, fork, race, chain, resolve: sync} = require('../index.cjs');
 var {log} = require('util');
 
 var start = Date.now();
