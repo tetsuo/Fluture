@@ -6,7 +6,7 @@ var dependencies = {
 };
 
 export default {
-  input: 'index.cjs.mjs',
+  input: 'index.cjs.js',
   external: Object.keys(dependencies),
   output: {
     format: 'umd',

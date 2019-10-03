@@ -55,7 +55,7 @@ functions: [`Object.create`][JS:Object.create],
 
 ### EcmaScript Module
 
-Fluture is written as modular JavaScript (`.mjs`). It can be loaded directly
+Fluture is written as modular JavaScript. It can be loaded directly
 by Node 9 and up using `--experimental-modules`, with the [esm loader][esm], or
 with TypeScript (typings included).
 
