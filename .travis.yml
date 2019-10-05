@@ -2,3 +2,7 @@ language: node_js
 node_js:
   - "12"
 after_success: npm run coverage:upload
+branches:
+  only:
+  - master
+  - 11.x
