@@ -75,7 +75,7 @@ getPackageName ('package.json')
 ### EcmaScript Module
 
 Fluture is written as modular JavaScript (`.mjs`). It can be loaded directly
-by Node 9 and up using `--experimental-modules`, with the [esm loader][esm].
+by Node 12 and up using `--experimental-modules`, with the [esm loader][esm].
 Note that the ESM code lives at `fluture/index.mjs`.
 
 Besides the module system, no other ES5+ features are used in Fluture's source,
