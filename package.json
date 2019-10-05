@@ -2,7 +2,7 @@
   "name": "fluture",
   "version": "12.0.0-beta.3",
   "description": "FantasyLand compliant (monadic) alternative to Promises",
-  "main": "index.js",
+  "main": "index.cjs",
   "type": "module",
   "types": "index.d.ts",
   "module": "index.js",

@@ -53,38 +53,14 @@ On older environments you may need to polyfill one or more of the following
 functions: [`Object.create`][JS:Object.create],
 [`Object.assign`][JS:Object.assign] and [`Array.isArray`][JS:Array.isArray].
 
-### EcmaScript Module
-
-Fluture is written as modular JavaScript. It can be loaded directly
-by Node 9 and up using `--experimental-modules`, with the [esm loader][esm], or
-with TypeScript (typings included).
-
-Besides the module system, no other ES5+ features are used in Fluture's source,
-which means that no transpilation is needed after concatenation.
-
-```js
-import {readFile} from 'fs'
-import {node, encase, chain, map, fork} from 'fluture'
-
-const getPackageName = file => (
-  node (done => { readFile (file, 'utf8', done) })
-  .pipe (chain (encase (JSON.parse)))
-  .pipe (map (x => x.name))
-)
-
-getPackageName ('package.json')
-.pipe (fork (console.error) (console.log))
-```
-
 ### CommonJS Module
 
-Although the Fluture source uses the EcmaScript module system, versions
-downloaded from the npm registry include a CommonJS build, which can be
-loaded with `require ("fluture/index.cjs")`.
+Although the Fluture source uses the EcmaScript module system,
+the `main` file points to a CommonJS version of Fluture.
 
 ```js
 const fs = require ('fs')
-const Future = require ('fluture/index.cjs')
+const Future = require ('fluture')
 
 const getPackageName = function (file) {
   return Future.node (function (done) { fs.readFile (file, 'utf8', done) })
@@ -94,6 +70,29 @@ const getPackageName = function (file) {
 
 getPackageName ('package.json')
 .pipe (Future.fork (console.error) (console.log))
+```
+
+### EcmaScript Module
+
+Fluture is written as modular JavaScript (`.mjs`). It can be loaded directly
+by Node 9 and up using `--experimental-modules`, with the [esm loader][esm].
+Note that the ESM code lives at `fluture/index.mjs`.
+
+Besides the module system, no other ES5+ features are used in Fluture's source,
+which means that no transpilation is needed after concatenation.
+
+```js
+import {readFile} from 'fs'
+import {node, encase, chain, map, fork} from 'fluture/index.mjs'
+
+const getPackageName = file => (
+  node (done => { readFile (file, 'utf8', done) })
+  .pipe (chain (encase (JSON.parse)))
+  .pipe (map (x => x.name))
+)
+
+getPackageName ('package.json')
+.pipe (fork (console.error) (console.log))
 ```
 
 ### Global Bundle (CDN)
