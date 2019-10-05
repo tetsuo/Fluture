@@ -16,7 +16,7 @@
   ],
   "repository": "https://github.com/fluture-js/Fluture.git",
   "scripts": {
-    "bench": "npm run build && sanctuary-benchmark",
+    "bench": "NODE_OPTIONS='--experimental-modules --no-warnings' ./scripts/bench",
     "build": "rollup -c rollup.config.js",
     "build:dist": "rollup -c rollup.config.dist.js",
     "clean": "rimraf npm-debug.log coverage index.cjs .esm-cache .nyc_output node_modules/.cache",
