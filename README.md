@@ -74,16 +74,17 @@ getPackageName ('package.json')
 
 ### EcmaScript Module
 
-Fluture is written as modular JavaScript (`.mjs`). It can be loaded directly
-by Node 12 and up using `--experimental-modules`, with the [esm loader][esm].
-Note that the ESM code lives at `fluture/index.mjs`.
+Fluture is written as modular JavaScript. It can be loaded directly by Node 12
+and up using `--experimental-modules`, or with the [esm loader][esm].
+Note that the ESM code lives at `fluture/index.js`, which is not the `main`
+file and must be imported explicitly.
 
 Besides the module system, no other ES5+ features are used in Fluture's source,
 which means that no transpilation is needed after concatenation.
 
 ```js
 import {readFile} from 'fs'
-import {node, encase, chain, map, fork} from 'fluture/index.mjs'
+import {node, encase, chain, map, fork} from 'fluture/index.js'
 
 const getPackageName = file => (
   node (done => { readFile (file, 'utf8', done) })
