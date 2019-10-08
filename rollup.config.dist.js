@@ -11,7 +11,7 @@ var banner = `/**
 `;
 
 export default {
-  input: 'index.cjs.mjs',
+  input: 'index.cjs.js',
   plugins: [node(), commonjs({include: 'node_modules/**'})],
   output: {
     banner: banner,
