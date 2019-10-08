@@ -1,5 +1,5 @@
 /**
- * Fluture bundled; version 12.0.0-beta.3
+ * Fluture bundled; version 12.0.0-beta.4
  */
 
 var Fluture = (function () {
@@ -272,7 +272,7 @@ var Fluture = (function () {
 	  return arr;
 	}
 
-	/* istanbul ignore next: non v8 compatibility */
+	/* c8 ignore next */
 	var captureStackTrace = Error.captureStackTrace || captureStackTraceFallback;
 	var _debug = debugHandleNone;
 
@@ -312,9 +312,9 @@ var Fluture = (function () {
 
 	function captureStackTraceFallback(x){
 	  var e = new Error;
-	  /* istanbul ignore else: non v8 compatibility */
 	  if(typeof e.stack === 'string'){
 	    x.stack = x.name + '\n' + e.stack.split('\n').slice(1).join('\n');
+	  /* c8 ignore next 3 */
 	  }else{
 	    x.stack = x.name;
 	  }
@@ -490,7 +490,7 @@ var Fluture = (function () {
 	}));
 	});
 
-	/* istanbul ignore next: non v8 compatibility */
+	/* c8 ignore next */
 	var setImmediate = typeof setImmediate === 'undefined' ? setImmediateFallback : setImmediate;
 
 	function noop(){}
@@ -833,14 +833,14 @@ var Fluture = (function () {
 	      if(open){
 	        cont();
 	      }
-	    }) || noop;
+	    });
 	  }catch(e){
 	    rec(wrapException(e, this));
 	    return noop;
 	  }
 	  if(!(isFunction(cancel) && cancel.length === 0)){
 	    rec(wrapException(typeError(
-	      'The computation was expected to return a nullary function or void\n' +
+	      'The computation was expected to return a nullary cancellation function\n' +
 	      '  Actual: ' + sanctuaryShow(cancel)
 	    ), this));
 	    return noop;
@@ -1420,18 +1420,22 @@ var Fluture = (function () {
 	  var cancel = noop;
 
 	  switch(this._state){
+	    /* c8 ignore next 4 */
 	    case Pending: cancel = this._addToQueue(rec, rej, res); break;
 	    case Crashed: rec(this._value); break;
 	    case Rejected: rej(this._value); break;
 	    case Resolved: res(this._value); break;
-	    default: cancel = this._addToQueue(rec, rej, res); this.run();
+	    default:
+	      this._queue = [];
+	      cancel = this._addToQueue(rec, rej, res);
+	      this.run();
 	  }
 
 	  return cancel;
 	});
 
 	Cache.prototype._cancel = noop;
-	Cache.prototype._queue = [];
+	Cache.prototype._queue = null;
 	Cache.prototype._queued = 0;
 	Cache.prototype._value = undefined;
 	Cache.prototype._state = Cold;
@@ -1566,22 +1570,22 @@ var Fluture = (function () {
 	  return m.extractRight();
 	}
 
-	var FoldTransformation = createTransformation(2, 'fold', {
-	  rejected: function FoldTransformation$rejected(x){
+	var CoalesceTransformation = createTransformation(2, 'coalesce', {
+	  rejected: function CoalesceTransformation$rejected(x){
 	    return new Resolve(this.context, call(this.$1, x));
 	  },
-	  resolved: function FoldTransformation$resolved(x){
+	  resolved: function CoalesceTransformation$resolved(x){
 	    return new Resolve(this.context, call(this.$2, x));
 	  }
 	});
 
-	function fold(f){
-	  var context1 = application1(fold, func, arguments);
-	  return function fold(g){
-	    var context2 = application(2, fold, func, arguments, context1);
-	    return function fold(m){
-	      var context3 = application(3, fold, future, arguments, context2);
-	      return m._transform(new FoldTransformation(context3, f, g));
+	function coalesce(f){
+	  var context1 = application1(coalesce, func, arguments);
+	  return function coalesce(g){
+	    var context2 = application(2, coalesce, func, arguments, context1);
+	    return function coalesce(m){
+	      var context3 = application(3, coalesce, future, arguments, context2);
+	      return m._transform(new CoalesceTransformation(context3, f, g));
 	    };
 	  };
 	}
@@ -2314,13 +2318,14 @@ var Fluture = (function () {
 
 
 	var Fluture = /*#__PURE__*/Object.freeze({
+		__proto__: null,
 		'default': Future,
 		Future: Future,
+		isFuture: isFuture,
+		isNever: isNever,
+		never: never,
 		reject: reject,
 		resolve: resolve,
-		isFuture: isFuture,
-		never: never,
-		isNever: isNever,
 		after: after,
 		alt: alt,
 		and: and,
@@ -2337,7 +2342,7 @@ var Fluture = (function () {
 		encase: encase,
 		extractLeft: extractLeft,
 		extractRight: extractRight,
-		fold: fold,
+		coalesce: coalesce,
 		forkCatch: forkCatch,
 		fork: fork,
 		go: go,
