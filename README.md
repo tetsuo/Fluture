@@ -18,7 +18,10 @@
 
 You're looking at the _beta_ version of the Fluture documentation.
 For the stable version, please consult the
-[11.x branch](https://github.com/fluture-js/Fluture/tree/11.x).
+[11.x branch](https://github.com/fluture-js/Fluture/tree/11.x). If you're
+interested in upgrading to the new version, check out the [upgrade guide][]!
+
+[upgrade guide]: https://gist.github.com/Avaq/ee2c6c819db4c37258e9a226e6380a38
 
 ----
 
