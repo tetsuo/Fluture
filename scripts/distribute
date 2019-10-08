@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 set -eufo pipefail
 
-echo "Publishing as $(npm whoami)"
+echo "Publishing as $(npm whoami)."
 
 if ! npm outdated --long; then
-  read -p "Continue? [y/N] " choice
-  [[ "${choice-n}" == 'y' ]] || exit 0
+  read -rp "Continue? [y/N] " choice
+  if [[ "${choice-n}" != 'y' ]]; then
+    echo 'Package distribution aborted.'
+    exit 2
+  fi
 fi
 
 npm run build
