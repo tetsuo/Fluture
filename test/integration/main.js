@@ -69,7 +69,7 @@ test('resolves the left-hand side first when running actions in parallel', funct
 
 test('does not forget about actions to run after early termination', function (){
   var m = through('a', [
-    after(30),
+    after(100),
     race(after(20)('b')),
     map(function (x){ return (x + 'c') }),
   ]);
