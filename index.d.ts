@@ -1,3 +1,6 @@
+/// <reference lib="es2015.generator" />
+/// <reference lib="es2015.iterable" />
+
 declare module 'fluture' {
 
   export interface RecoverFunction {
@@ -18,24 +21,6 @@ declare module 'fluture' {
 
   export interface Nodeback<E, R> {
     (err: E | null, value?: R): void
-  }
-
-  export interface Next<T> {
-    done: boolean
-    value: T
-  }
-
-  export interface Done<T> {
-    done: boolean
-    value: T
-  }
-
-  export interface Iterator<N, D> {
-    next(value?: N): Next<N> | Done<D>
-  }
-
-  export interface Generator<Y, R> {
-    (): Iterator<Y, R>
   }
 
   export interface ConcurrentFutureInstance<L, R> {
@@ -131,7 +116,7 @@ declare module 'fluture' {
   export function forkCatch(recover: RecoverFunction): <L>(reject: RejectFunction<L>) => <R>(resolve: ResolveFunction<R>) => (source: FutureInstance<L, R>) => Cancel
 
   /** Build a coroutine using Futures. See https://github.com/fluture-js/Fluture#go */
-  export function go<L, R>(generator: Generator<FutureInstance<L, any>, R>): FutureInstance<L, R>
+  export function go<L, R>(generator: () => Generator<FutureInstance<L, any>, R>): FutureInstance<L, R>
 
   /** Manage resources before and after the computation that needs them. See https://github.com/fluture-js/Fluture#hook */
   export function hook<L, H>(acquire: FutureInstance<L, H>): (dispose: (handle: H) => FutureInstance<any, any>) => <R>(consume: (handle: H) => FutureInstance<L, R>) => FutureInstance<L, R>
@@ -198,7 +183,7 @@ declare module 'fluture' {
       resolve: ResolveFunction<R>
     ) => Cancel): FutureInstance<L, R>
 
-    'fantasy-land/chainRec'<L, I, R>(iterator: (next: (value: I) => Next<I>, done: (value: R) => Done<R>, value: I) => FutureInstance<L, Next<I> | Done<R>>, initial: I): FutureInstance<L, R>
+    'fantasy-land/chainRec'<L, I, R>(iterator: (next: (value: I) => IteratorYieldResult<I>, done: (value: R) => IteratorReturnResult<R>, value: I) => FutureInstance<L, IteratorYieldResult<I> | IteratorReturnResult<R>>, initial: I): FutureInstance<L, R>
     'fantasy-land/of': typeof resolve
 
     '@@type': string
