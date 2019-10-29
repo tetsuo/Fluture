@@ -183,7 +183,7 @@ declare module 'fluture' {
       resolve: ResolveFunction<R>
     ) => Cancel): FutureInstance<L, R>
 
-    'fantasy-land/chainRec'<L, I, R>(iterator: (next: (value: I) => IteratorYieldResult<I>, done: (value: R) => IteratorReturnResult<R>, value: I) => FutureInstance<L, IteratorYieldResult<I> | IteratorReturnResult<R>>, initial: I): FutureInstance<L, R>
+    'fantasy-land/chainRec'<L, I, R>(iterator: (next: (value: I) => IteratorYieldResult<I>, done: (value: R) => IteratorReturnResult<R>, value: I) => FutureInstance<L, IteratorResult<I, R>>, initial: I): FutureInstance<L, R>
     'fantasy-land/of': typeof resolve
 
     '@@type': string
