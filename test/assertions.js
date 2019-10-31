@@ -13,8 +13,6 @@ export const equality = a => b => {
 
 export const future = x => {
   equality(isFuture(x))(true);
-  equality(x instanceof Future)(true);
-  equality(x.constructor)(Future);
   equality(type(x))(Future['@@type']);
   return true;
 };
