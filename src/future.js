@@ -63,6 +63,8 @@ Future['@@type'] = $$type;
 Future[FL.of] = resolve;
 Future[FL.chainRec] = chainRec;
 
+Future.prototype['@@type'] = $$type;
+
 Future.prototype['@@show'] = function Future$show(){
   return this.toString();
 };
