@@ -1,5 +1,5 @@
 /**
- * Fluture bundled; version 12.0.0-beta.6
+ * Fluture bundled; version 12.0.0
  */
 
 var Fluture = (function () {
