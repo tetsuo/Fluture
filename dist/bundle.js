@@ -1,5 +1,5 @@
 /**
- * Fluture bundled; version 12.0.0-beta.5
+ * Fluture bundled; version 12.0.0-beta.6
  */
 
 var Fluture = (function () {
@@ -737,6 +737,8 @@ var Fluture = (function () {
 	Future['@@type'] = $$type;
 	Future[FL.of] = resolve;
 	Future[FL.chainRec] = chainRec;
+
+	Future.prototype['@@type'] = $$type;
 
 	Future.prototype['@@show'] = function Future$show(){
 	  return this.toString();
@@ -2155,6 +2157,7 @@ var Fluture = (function () {
 	    Concurrently.prototype =
 	    construct.prototype = {constructor: construct};
 
+	    proto[$$type] = OUTERTYPE;
 	    construct[$$type] = OUTERTYPE;
 
 	    var mzero = new Concurrently (zero);
