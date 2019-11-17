@@ -85,6 +85,6 @@
     "sanctuary-either": "^2.0.0",
     "sanctuary-type-classes": "^12.0.0",
     "typescript": "^3.6.4",
-    "xyz": "github:davidchambers/xyz#340d089"
+    "xyz": "^4.0.0"
   }
 }
