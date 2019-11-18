@@ -130,11 +130,11 @@ declare module 'fluture' {
   /** Set up a cleanup Future to run after the given action has settled. See https://github.com/fluture-js/Fluture#lastly */
   export function lastly<L>(cleanup: FutureInstance<L, any>): <R>(action: FutureInstance<L, R>) => FutureInstance<L, R>
 
-  /** Map over the resolution value of the given Future. See https://github.com/fluture-js/Fluture#map */
-  export function map<RA, RB>(mapper: (value: RA) => RB): <L>(source: FutureInstance<L, RA>) => FutureInstance<L, RB>
-
-  /** Map over the resolution value of the given ConcurrentFuture. See https://github.com/fluture-js/Fluture#map */
-  export function map<RA, RB>(mapper: (value: RA) => RB): <L>(source: ConcurrentFutureInstance<L, RA>) => ConcurrentFutureInstance<L, RB>
+  /** Map over the resolution value of the given Future or ConcurrentFuture. See https://github.com/fluture-js/Fluture#map */
+  export function map<RA, RB>(mapper: (value: RA) => RB): {
+    <L>(source: FutureInstance<L, RA>): FutureInstance<L, RB>
+    <L>(source: ConcurrentFutureInstance<L, RA>): ConcurrentFutureInstance<L, RB>
+  }
 
   /** Map over the rejection reason of the given Future. See https://github.com/fluture-js/Fluture#maprej */
   export function mapRej<LA, LB>(mapper: (reason: LA) => LB): <R>(source: FutureInstance<LA, R>) => FutureInstance<LB, R>
