@@ -131,11 +131,11 @@ declare module 'fluture' {
   export function lastly<L>(cleanup: FutureInstance<L, any>): <R>(action: FutureInstance<L, R>) => FutureInstance<L, R>
 
   /** Map over the resolution value of the given Future or ConcurrentFuture. See https://github.com/fluture-js/Fluture#map */
-  export function map<RA, RB>(mapper: (value: RA) => RB): <T>(source: T) =>
-    T extends FutureInstance<infer U, infer V> ?
-    FutureInstance<U, V> :
-    T extends ConcurrentFutureInstance<infer U, infer V> ?
-    ConcurrentFutureInstance<U, V> :
+  export function map<RA, RB>(mapper: (value: RA) => RB): <T extends FutureInstance<any, RA> | ConcurrentFutureInstance<any, RA>>(source: T) =>
+    T extends FutureInstance<infer L, RA> ?
+    FutureInstance<L, RB> :
+    T extends ConcurrentFutureInstance<infer L, RA> ?
+    ConcurrentFutureInstance<L, RB> :
     never;
 
   /** Map over the rejection reason of the given Future. See https://github.com/fluture-js/Fluture#maprej */
