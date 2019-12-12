@@ -16,8 +16,8 @@ test('is a unary function', function (){
 test('throws when not given a Future', function (){
   var f = function (){ return Par(1) };
   throws(f, new TypeError(
-    'ConcurrentFuture expects its first argument to be of type "Future"\n' +
-    '  Actual: 1'
+    'Par() expects its first argument to be a valid Future.\n' +
+    '  Actual: 1 :: Number'
   ));
 });
 
@@ -76,7 +76,7 @@ test('ap creates a cancel function which cancels both Futures', function (done){
 
 test('ap shows a reasonable representation when cast to string', function (){
   var m = ap(Par(reject(0)))(Par(resolve(1)));
-  var s = 'ConcurrentFuture(pap (reject (0)) (resolve (1)))';
+  var s = 'Par (pap (reject (0)) (resolve (1)))';
   expect(m.toString()).to.equal(s);
 });
 
@@ -92,7 +92,7 @@ test('map does not map rejected state', function (){
 
 test('map shows a reasonable representation when cast to string', function (){
   var m = map(noop)(Par(resolved));
-  var expected = 'ConcurrentFuture(map (' + noop.toString() + ') (resolve ("resolved")))';
+  var expected = 'Par (map (' + noop.toString() + ') (resolve ("resolved")))';
   expect(m.toString()).to.equal(expected);
 });
 
@@ -110,6 +110,6 @@ test('alt resolves when the first one resolves', function (){
 
 test('alt shows a reasonable representation when cast to string', function (){
   var m = alt(Par(resolve(1)))(Par(resolve(2)));
-  var s = 'ConcurrentFuture(race (resolve (1)) (resolve (2)))';
+  var s = 'Par (race (resolve (1)) (resolve (2)))';
   expect(m.toString()).to.equal(s);
 });

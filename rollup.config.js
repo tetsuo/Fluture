@@ -1,5 +1,4 @@
 var dependencies = {
-  'concurrify': 'concurrify',
   'sanctuary-show': 'sanctuaryShow',
   'sanctuary-type-identifiers': 'sanctuaryTypeIdentifiers'
 };

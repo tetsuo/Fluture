@@ -60,7 +60,6 @@
     "sequential"
   ],
   "dependencies": {
-    "concurrify": "^2.0.0",
     "sanctuary-show": "^1.0.0",
     "sanctuary-type-identifiers": "^2.0.0"
   },
