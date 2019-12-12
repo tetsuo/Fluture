@@ -70,6 +70,9 @@ declare module 'fluture' {
   /** Apply the function in the left ConcurrentFuture to the value in the right ConcurrentFuture. See https://github.com/fluture-js/Fluture#ap */
   export function ap<L, RA>(value: ConcurrentFutureInstance<L, RA>): <RB>(apply: ConcurrentFutureInstance<L, (value: RA) => RB>) => ConcurrentFutureInstance<L, RB>
 
+  /** Apply the function in the right Future to the value in the left Future in parallel. See https://github.com/fluture-js/Fluture#pap */
+  export function pap<L, RA>(value: FutureInstance<L, RA>): <RB>(apply: FutureInstance<L, (value: RA) => RB>) => FutureInstance<L, RB>
+
   /** Create a Future which resolves with the return value of the given function, or rejects with the error it throws. See https://github.com/fluture-js/Fluture#attempt */
   export function attempt<L, R>(fn: () => R): FutureInstance<L, R>
 

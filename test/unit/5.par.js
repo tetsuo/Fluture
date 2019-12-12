@@ -34,7 +34,7 @@ test('zero creates a never-ending ConcurrentFuture', function (){
 test('ap throws TypeError when the Future does not resolve to a Function', function (){
   var m = seq(ap(Par(resolved))(Par(resolve(1))));
   return assertCrashed(m, new TypeError(
-    'parallelAp expects the second Future to resolve to a Function\n' +
+    'pap expects the second Future to resolve to a Function\n' +
     '  Actual: 1'
   ));
 });
@@ -76,7 +76,7 @@ test('ap creates a cancel function which cancels both Futures', function (done){
 
 test('ap shows a reasonable representation when cast to string', function (){
   var m = ap(Par(reject(0)))(Par(resolve(1)));
-  var s = 'ConcurrentFuture(parallelAp (reject (0)) (resolve (1)))';
+  var s = 'ConcurrentFuture(pap (reject (0)) (resolve (1)))';
   expect(m.toString()).to.equal(s);
 });
 

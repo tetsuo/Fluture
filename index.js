@@ -33,7 +33,7 @@ export {lastly} from './src/lastly.js';
 export {mapRej} from './src/map-rej.js';
 export {map} from './src/map.js';
 export {node} from './src/node.js';
-export {parallelAp} from './src/parallel-ap.js';
+export {pap} from './src/pap.js';
 export {parallel} from './src/parallel.js';
 export {Par} from './src/par.js';
 export {promise} from './src/promise.js';

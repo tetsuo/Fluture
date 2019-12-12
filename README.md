@@ -987,15 +987,32 @@ because of the Monadic nature of Futures. The execution order is, as
 specified by Fantasy Land, `m (a -> b)` first followed by `m a`.
 So that's *right before left*.
 
-\* If you'd like to use a parallel implementation of `ap`, you need to use a
-   non-monadic type. Fluture provides this through [`Par`](#concurrentfuture).
-   Wrapping your Future instances with `Par` before passing them to `ap` will
-   cause them to run in parallel!
+\* Have a look at [`pap`](#pap) for an `ap` function that runs its arguments
+   in parallel. If you must use `ap` (because you're creating a generalized
+   function), but still want Futures passed into it to run in parallel, then
+   you could use [ConcurrentFuture](#concurrentfuture) instead.
 
 ```js
 > fork (log ('rejection'))
 .      (log ('resolution'))
 .      (ap (resolve (7)) (ap (resolve (49)) (resolve (x => y => x - y))))
+[resolution]: 42
+```
+
+#### pap
+
+```hs
+pap :: Future a b -> Future a (b -> c) -> Future a c
+```
+
+Has the same signature and function as [`ap`](#ap), but runs the two Futures
+given to it in parallel. See also [ConcurrentFuture](#concurrentfuture) for a
+more general way to achieve this.
+
+```js
+> fork (log ('rejection'))
+.      (log ('resolution'))
+.      (pap (resolve (7)) (pap (resolve (49)) (resolve (x => y => x - y))))
 [resolution]: 42
 ```
 
