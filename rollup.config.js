@@ -1,6 +1,5 @@
 var dependencies = {
   'concurrify': 'concurrify',
-  'denque': 'Denque',
   'sanctuary-show': 'sanctuaryShow',
   'sanctuary-type-identifiers': 'sanctuaryTypeIdentifiers'
 };
