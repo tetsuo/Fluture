@@ -338,9 +338,9 @@ This means that none of the following operations result in a
 ```js
 > const add1 = x => x + 1
 
-> const m = resolve (1)
+> let m = resolve (1)
 
-> for (const i = 0; i < 100000; i++) {
+> for (let i = 0; i < 100000; i++) {
 .   m = map (add1) (m)
 . }
 
