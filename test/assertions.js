@@ -48,7 +48,7 @@ export function makeEquivalence (equals){
             }
           }else{
             inequivalent(
-              'One Future ' + states[astate] + ', and the other Future' + states[bstate]
+              'One Future ' + states[astate] + ', and the other Future ' + states[bstate]
             );
           }
           function inequivalent (message){

@@ -79,7 +79,7 @@ declare module 'fluture' {
   /** Convert a Promise-returning function to a Future. See https://github.com/fluture-js/Fluture#attemptP */
   export function attemptP<L, R>(fn: () => Promise<R>): FutureInstance<L, R>
 
-  /** Map over both branched of the given Bifunctor at once. See https://github.com/fluture-js/Fluture#bimap */
+  /** Map over both branches of the given Bifunctor at once. See https://github.com/fluture-js/Fluture#bimap */
   export function bimap<LA, LB>(lmapper: (reason: LA) => LB): <RA, RB>(rmapper: (value: RA) => RB) => (source: FutureInstance<LA, RA>) => FutureInstance<LB, RB>
 
   /** Wait for both Futures to resolve in parallel. See https://github.com/fluture-js/Fluture#both */
