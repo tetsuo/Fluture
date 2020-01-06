@@ -250,7 +250,7 @@ You can read in depth about [Hindley-Milner in JavaScript][Guide:HM] here.
 The concrete types you will encounter throughout this documentation:
 
 - **Future** - Instances of Future provided by [compatible versions](#casting-futures) of Fluture.
-- **ConcurrentFuture** - [Concurrified][concurrify] Futures ([`Future.Par`](#concurrentfuture)).
+- **ConcurrentFuture** - Futures wrapped with ([`Future.Par`](#concurrentfuture)).
 - **Promise a b** - Values which conform to the [Promises/A+ specification][7]
   and have a rejection reason of type `a` and a resolution value of type `b`.
 - **Nodeback a b** - A Node-style callback; A function of signature `(a | Nil, b) -> x`.
@@ -987,15 +987,32 @@ because of the Monadic nature of Futures. The execution order is, as
 specified by Fantasy Land, `m (a -> b)` first followed by `m a`.
 So that's *right before left*.
 
-\* If you'd like to use a parallel implementation of `ap`, you need to use a
-   non-monadic type. Fluture provides this through [`Par`](#concurrentfuture).
-   Wrapping your Future instances with `Par` before passing them to `ap` will
-   cause them to run in parallel!
+\* Have a look at [`pap`](#pap) for an `ap` function that runs its arguments
+   in parallel. If you must use `ap` (because you're creating a generalized
+   function), but still want Futures passed into it to run in parallel, then
+   you could use [ConcurrentFuture](#concurrentfuture) instead.
 
 ```js
 > fork (log ('rejection'))
 .      (log ('resolution'))
 .      (ap (resolve (7)) (ap (resolve (49)) (resolve (x => y => x - y))))
+[resolution]: 42
+```
+
+#### pap
+
+```hs
+pap :: Future a b -> Future a (b -> c) -> Future a c
+```
+
+Has the same signature and function as [`ap`](#ap), but runs the two Futures
+given to it in parallel. See also [ConcurrentFuture](#concurrentfuture) for a
+more general way to achieve this.
+
+```js
+> fork (log ('rejection'))
+.      (log ('resolution'))
+.      (pap (resolve (7)) (pap (resolve (49)) (resolve (x => y => x - y))))
 [resolution]: 42
 ```
 
@@ -1296,19 +1313,25 @@ some may fail, you can use `parallel` in combination with
 
 #### ConcurrentFuture
 
-The `ConcurrentFuture` type is the result of applying
-[`concurrify`][concurrify] to `Future`. It provides a mechanism for
-constructing a [Fantasy Land `Alternative`][FL:alternative] from a member of
-`Future`. This allows Futures to benefit from the Alternative Interface, which
-includes parallel `ap`, `zero` and `alt`.
+The `ConcurrentFuture` type is very similar to the `Future` type, except that
+it has *parallel* semantics where `Future` has *sequential* semantics.
+
+These sematics are most notable in the implementation of Applicative for
+`ConcurrentFuture`. When using [`ap`](#ap) on two ConcurrentFutures, they
+run parallely, whereas regular `Future` instances would've run sequentially.
+This means that `ConcurrentFuture` cannot be a Monad, which is why we have
+it as a separate type.
+
+The implementation of Alternative on `ConcurrentFuture` has parallel semantics
+as well. Whereas [`alt`](#alt) on regular Futures uses the failure effect to
+determine a winner, on ConcurrentFutures *timing* is used, and the winner will
+be whichever ConcurrentFuture settled first.
 
 The idea is that we can switch back and forth between `Future` and
 `ConcurrentFuture`, using [`Par`](#par) and [`seq`](#seq), to get sequential or
 concurrent behaviour respectively. It's a useful type to pass to abstractions
 that don't know about Future-specific functions like [`parallel`](#parallel) or
 [`race`](#race), but *do* know how to operate on Apply and Alternative.
-
-See also [`ap`](#ap) and [`alt`](#alt).
 
 ```js
 //Some dummy values
@@ -1590,8 +1613,6 @@ by Fluture to generate contextual stack traces.
 [FST]:                  https://github.com/fluture-js/fluture-sanctuary-types
 
 [$]:                    https://github.com/sanctuary-js/sanctuary-def
-
-[concurrify]:           https://github.com/fluture-js/concurrify
 
 [Rollup]:               https://rollupjs.org/
 [esm]:                  https://github.com/standard-things/esm
