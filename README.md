@@ -176,6 +176,7 @@ for sponsoring the project.
 - [`chainRej`: Asynchronously process the failure value in a Future](#chainrej)
 - [`coalesce`: Coerce success and failure values into the same success value](#coalesce)
 - [`ap`: Combine the success values of multiple Futures using a function](#ap)
+- [`pap`: Combine the success values of multiple Futures in parallel using a function](#pap)
 - [`and`: Logical *and* for Futures](#and)
 - [`alt`: Logical *or* for Futures](#alt)
 - [`lastly`: Run a Future after the previous settles](#lastly)
@@ -197,6 +198,7 @@ for sponsoring the project.
 
 <details><summary>Concurrency related utilities and data structures</summary>
 
+- [`pap`: Combine the success values of multiple Futures in parallel using a function](#pap)
 - [`race`: Race two Futures against each other](#race)
 - [`both`: Await both success values from two Futures](#both)
 - [`parallel`: Await all success values from many Futures](#parallel)
